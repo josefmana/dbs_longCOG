@@ -1,8 +1,8 @@
 # All analyses reported in the article (Mana et al., in review) ran in R version 4.0.5 (2021-03-31),
 # on x86_64-w64-mingw32/x64 (64-bit) platform under Windows 10 x64 (build 19043).
 
-# I used the following versions of packages employed: dplyr_1.0.7, tidyverse_1.3.0,
-# DiagrammeR_1.0.9, brms_2.16.3, psych_2.2.3, tidybayes_2.3.1, ggplot2_3.3.3 and patchwork_1.1.1
+# I used the following versions of packages employed: dplyr_1.0.7, tidyverse_1.3.0, DiagrammeR_1.0.9, DiagrammeRsvg_0.1,
+# rsvg_2.3.1, brms_2.16.3, psych_2.2.3, tidybayes_2.3.1, ggplot2_3.3.3 and patchwork_1.1.1
 
 # set working directory (works only in RStudio)
 setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
@@ -56,16 +56,17 @@ sapply(
 # reproducible on the same operating system with the same C++ compiler 
 # and version.
 
-# read the dataset
+# read the dataset and prepare subsets for individual analyses
 # In this file, my strategy is to label the sequential version
 # of dataset as d# (where # goes for a number of the data version)
-d0 <- read.csv( "data/20220423_dbs_longCOG_data.csv" , sep = "," )
-
+d0 <- read.csv( "data/20220426_dbs_longCOG_data.csv" , sep = "," )
+d1 <- d0[ d0$included == 1 , ] # only STN-DBS treated patients with pre- and post-surgery data
+d2 <- d1[ d1$ass_type == "pre" , ] # only pre-surgery assessments of included patients
 
 # ----------- participant inclusion flowchart  -----------
 
 # check that when selecting only rows containing pre-surgery assessment,
-# there is no patient duplicated
+# there ain't no patient duplicated
 isTRUE(
   all.equal(
     d0[ d0$ass_type == "pre" , ]$id,
@@ -152,14 +153,94 @@ grViz(flowchart) %>% export_svg %>% charToRaw %>% rsvg_png("figures/Fig.1 inclus
 
 # ----------- sample description  -----------
 
+# list all stimulation parameters
+pars <- names(d1)[52:ncol(d1)]
+
+# prepare dataframe to fill-in
+tab1 <- data.frame(
+  Md = rep( NA , length(pars) ), `Min-Max` = NA, M = NA, SD = NA, row.names = pars
+)
+
+# fill-in with statistics of all stimulation parameters
+for ( i in pars ) {
+  # median, rounded to hundredths
+  tab1[ i , "Md" ] <- sprintf(
+    "%.2f" , round( median( d1[[i]], na.rm = T ) , digits = 2 )
+  )
+  # min-max, rounded to decimals
+  tab1[ i , "Min.Max" ] <- paste0(
+    sprintf( "%.1f" , round( min( d1[[i]], na.rm = T ) , digits = 1 ) ), "-",
+    sprintf( "%.1f" , round( max( d1[[i]], na.rm = T ) , digits = 1 ) )
+  )
+  # mean, rounded to hundredths
+  tab1[ i , "M" ] <- sprintf(
+    "%.2f" , round( mean( d1[[i]], na.rm = T ) , digits = 2 )
+  )
+  # SD, rounded to hundredths
+  tab1[ i , "SD" ] <- sprintf(
+    "%.2f" , round( sd( d1[[i]], na.rm = T ) , digits = 2 )
+  )
+}
+
+# list all variables that will be included in Tab. 2 (baseline characteristics)
+vars <- names(d2)[10:43]
+
+# prepare a dataframe to fill-in
+tab2 <- data.frame(
+  N = rep( NA, length(vars) ), Md = NA, `Min-Max` = NA, M = NA, SD = NA, row.names = vars
+)
+
+# fill-in with statistics of all variables but sex (which is nominal)
+for ( i in vars[-3] ) {
+  # number of data points
+  tab2[ i , "N" ] <- sum( !is.na(d2[[i]]) )
+  # median, rounded to integers
+  tab2[ i , "Md" ] <- sprintf(
+    "%.0f" , round( median(d2[[i]], na.rm = T ) , digits = 0 )
+  )
+  # min-max, rounded to integers
+  tab2[ i , "Min.Max" ] <- paste0(
+    sprintf( "%.0f" , round( min(d2[[i]], na.rm = T ) , digits = 0 ) ), "-",
+    sprintf( "%.0f" , round( max(d2[[i]], na.rm = T ) , digits = 0 ) )
+  )
+  # mean, rounded to hundredths
+  tab2[ i , "M" ] <- sprintf(
+    "%.2f" , round( mean(d2[[i]], na.rm = T ) , digits = 2 )
+  )
+  # SD, rounded to hundredths
+  tab2[ i , "SD" ] <- sprintf(
+    "%.2f" , round( sd(d2[[i]], na.rm = T ) , digits = 2 )
+  )
+}
+
+# add frequency of males to the table sex row
+tab2[ "sex" , c("N","Min.Max")] <- c(
+  # number of entries
+  sum( !is.na(d2$sex) ),
+  # add frequency (percentage) to Min.Max
+  paste0(
+    # frequency
+    table(d2$sex)["male"], " (",
+    # percentage, rounded to integers
+    sprintf(
+      "%.0f" , round(
+        100 * ( table(d2$sex)[ "male" ] / sum( table(d2$sex) ) ), 0
+      )
+    ), " %)"
+  )
+)
+
+# figure 2
+
+
+# ----------- the pre-surgery cognitive profile  -----------
+
+
 
 # ----------- the total effect of time  -----------
 
 
 # ----------- the direct effect of time  -----------
-
-
-# ----------- the pre-surgery cognitive profile  -----------
 
 
 # ----------- participant inclusion flowchart  -----------
