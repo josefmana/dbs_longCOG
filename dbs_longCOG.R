@@ -272,9 +272,7 @@ f2.bin <- table( d1[ complete.cases(d1$drs_tot) , ]$id ) %>%
 f2.hist / f2.bin + plot_annotation( tag_levels = "A" )
 
 # save as Fig.2
-ggsave(
-  "figures/Fig.2 Fig.2 distribution of assessments.png" , height = 2 * 6.12 , width = 1.5 * 11.6 , dpi = "retina" 
-)
+ggsave( "figures/Fig.2 distribution of assessments.png" , height = 2 * 6.12 , width = 1.5 * 11.6 , dpi = "retina" )
 
 
 # ----------- pre-surgery cognitive profile  -----------
