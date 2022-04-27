@@ -33,7 +33,7 @@ sapply(
 )
 
 # set ggplot theme
-theme_set( bayesplot::theme_default(base_size = 25) )
+theme_set( theme_classic(base_size = 25) )
 
 # set rstan options
 options( mc.cores = parallel::detectCores() ) # use all parallel CPU cores
@@ -154,7 +154,7 @@ grViz(flowchart) %>% export_svg %>% charToRaw %>% rsvg_png("figures/Fig.1 inclus
 # ----------- sample description  -----------
 
 # list all stimulation parameters
-pars <- names(d1)[52:ncol(d1)]
+pars <- names(d1)[which(names(d1)=="current_r_mA"):which(names(d1)=="frequency_l_Hz")]
 
 # prepare dataframe to fill-in
 tab1 <- data.frame(
@@ -183,7 +183,7 @@ for ( i in pars ) {
 }
 
 # list all variables that will be included in Tab. 2 (baseline characteristics)
-vars <- names(d2)[10:43]
+vars <- names(d2)[which(names(d2)=="age_stim_y"):which(names(d2)=="fp_dr")]
 
 # prepare a dataframe to fill-in
 tab2 <- data.frame(
@@ -230,17 +230,148 @@ tab2[ "sex" , c("N","Min.Max")] <- c(
   )
 )
 
-# figure 2
+# prepare a histogram of the distribution of assessments across time (Fig. 2A)
+# need to use the complete.cases command because for three patient I have duplicated
+# rows due to more than one stimulation parameter
+f2.hist <- d1[ complete.cases(d1$drs_tot) , ] %>% 
+  ggplot( aes(x = time_y) ) +
+  stat_bin( binwidth = .5, position = position_nudge(x = -.5*.5) ) + # creates bars
+  stat_bin(
+    binwidth = .5, geom = "text", aes(label = ..count..), vjust = -1.0,
+    position = position_nudge(x = -.5*.5), size = 6
+  ) + # add numbers
+  labs(
+    x = "Time from STN-DBS surgery (years)",
+    y = "Number of Assessments"
+  ) +
+  scale_y_continuous(
+    expand = c(0, 0), limits = c(0, 69),
+    breaks = seq(0, 60, 10), labels = seq(0, 60, 10)
+  ) +
+  scale_x_continuous(
+    limits = c(-2, 12), breaks = seq(-2, 12, 1), labels = seq(-2, 12, 1)
+  )
+
+# prepare a bin plot showing distribution of the number of assessments per patient (Fig.2B)
+f2.bin <- table( d1[ complete.cases(d1$drs_tot) , ]$id ) %>%
+  as.data.frame() %>%
+  ggplot( aes(x = Freq) ) +
+  geom_bar( width = .25 ) +
+  geom_text(
+    stat = "count",
+    aes(label = ..count..),
+    vjust = -1.0, size = 6
+  ) +
+  scale_y_continuous( expand = c(0, 0), limits = c(0, 65) ) +
+  labs(
+    x = "Number of Assessments per Patient",
+    y = "Number of Patients"
+  )
+
+# arrange Fig.2A and Fig.2B for printing
+f2.hist / f2.bin + plot_annotation( tag_levels = "A" )
+
+# save as Fig.2
+ggsave(
+  "figures/Fig.2 Fig.2 distribution of assessments.png" , height = 2 * 6.12 , width = 1.5 * 11.6 , dpi = "retina" 
+)
 
 
-# ----------- the pre-surgery cognitive profile  -----------
+# ----------- pre-surgery cognitive profile  -----------
+
+# for EFA keep only id and cognitive tests in d2
+d2 <- d2[ , c( 2, which(names(d2) == "tmt_a"):which(names(d2) == "fp_dr"), which(names(d2) %in% paste0("staix",1:2)) ) ]
+
+# parallel test for number of factors
+fa.parallel( d2[ , -1 ] ) # suggests 4-6 factors and 4 components
+
+# fit EFA to get some meaningful latent cognitive factors from pre-surgery neuropsychology
+efa <- lapply(
+  X = 3:8, # fit 3-8 factor solutions
+  FUN = function(i)
+    fa(
+      d2[ -1 ], # use all pre-surgery cognitive test, drop id
+      nfactors = i, # fit 3-8 factor solutions
+      rotate = "varimax", # rotate via Varimax (to enforce orthogonality)
+      scores = "regression", # add regression scores inferred to each patient from the factor solutions
+      missing = T , impute = "median" # impute missing values with a median, the weakest part of the whole analysis
+    )
+)
+
+# create a table for performance indexes of each factor solution
+fat <- data.frame(
+  no_factors = 3 : (2+length(efa)), # identifiers
+  TLI = NA, # Tucker-Lewis index, > 0.9 is considered good
+  BIC = NA, # Bayesian Information Criterion, lower values (including negative) are considered better
+  RMSEA = NA, # root-mean square error of approximation, lower is better, < 0.08 is considered good
+  RMSEA_90_CI = NA, # 90% CI for RMSEA
+  var_account = NA # total variance "accounted for" by all included factors
+)
+
+# fill-in the fat table
+for (i in 1:length(efa)) {
+  fat[i, ] <- c(
+    i+2, # number of factors (because I fitted 3:8 factor solutions and this loop goes through i = 1:6, it's i+2)
+    sprintf( "%.3f" , round(efa[[i]]$TLI, 3) ), # Tucker-Lewis index
+    sprintf( "%.3f" , round(efa[[i]]$BIC, 3) ), # Bayesian Information Criterion
+    sprintf( "%.3f" , round(efa[[i]]$RMSEA[1], 3) ), # root-mean square error of approximation
+    paste0(
+      "[", sprintf( "%.3f", round(efa[[i]]$RMSEA[2], 3) ), ", ",
+      sprintf( "%.3f", round(efa[[i]]$RMSEA[3], 3) ), "]"
+    ), # root-mean square error of approximation, 90% CI
+    sprintf( "%.3f" , round(efa[[i]]$Vaccounted["Cumulative Var",i+2], 3) ) # total variance "accounted for"
+  )
+}
+
+# 6-factor solution is leading by my inspection of fat table:
+# 1) lowest BIC, 2) everything else solid w.r.t. competing  models
+# However, judging by TLI and RMSEA, the fit ain't ideal for either model, a limitation to mention
+# Check loading patterns of 5-8 factor solutions to see if they make sense
+print( efa[[3]]$loadings, cutoff = .4, sort = T ) # reasonable loadings but really bad stats
+print( efa[[4]]$loadings, cutoff = .4, sort = T ) # reasonable loadings, acceptable stats (w.r.t. competition)
+print( efa[[5]]$loadings, cutoff = .4, sort = T ) # MR7 includes only one test with loading > 0.4 (Sim.)
+print( efa[[6]]$loadings, cutoff = .4, sort = T ) # ok stats but MR7 includes only one test with loading > 0.4 (Sim.)
+
+# selecting the 6-factor solution due to the best BIC, reasonable stats w.r.t. competition and interpretable factors
+# which are missing in models with better stats that include a one-item factor
+# time to name cognitive domains inferred from pre-surgery tests
+for ( i in c("loadings","scores","Vaccounted")) {
+  colnames( efa[[4]][[i]] ) <- c(
+    "ment_flex", # 'mental flexibility' is loaded on primarily by Stroop task and verbal fluencies
+    "epis_mem", # 'episodic memory' is loaded on primarily by RAVLT
+    "visp_wm", # 'visuo-spatial working memory/switching' is loaded on primarily by Spatial Span, TMTs and LNS
+    "visp_mem", # 'visuo-spatial memory' is loaded on primarily by Family Picture Test
+    "verb_wm", # 'verbal working memory' is loaded on primarily by Digit Spans and Letter-Number sequencing (LNS)
+    "anxiety" # 'anxiety! is loaded on primarily by STAI
+  )
+}
+
+# prepare Tab.3 with loadings and variance accounted for by the 6-factor model
+tab3 <- unclass( efa[[4]]$loadings ) %>%
+  as.data.frame() %>%
+  # add variance accounted for
+  bind_rows( as.data.frame(efa[[4]]$Vaccounted[ c("Proportion Var", "Cumulative Var"), ]) ) %>%
+  # rename and round
+  mutate(
+    ment_flex = sprintf( "%.3f" , round( ment_flex , 3 ) ),
+    epis_mem = sprintf( "%.3f" , round( epis_mem , 3 ) ),
+    visp_wm = sprintf( "%.3f" , round( visp_wm , 3 ) ),
+    visp_mem = sprintf( "%.3f" , round( visp_mem , 3 ) ),
+    verb_wm = sprintf( "%.3f" , round( verb_wm , 3 ) ),
+    anxiety = sprintf( "%.3f" , round( anxiety , 3 ) )
+  ) %>%
+  # give rownames their own variable/column
+  rownames_to_column(
+    var = "variable"
+  )
+
+# merge longitudinal d1 with baseline factor scores from efa[[4]] (joining by id)
+d1 <- d1 %>% left_join( cbind.data.frame(id = d2$id, efa[[4]]$scores ) , by = "id" )
+
+# ----------- total effect of time  -----------
 
 
-
-# ----------- the total effect of time  -----------
-
-
-# ----------- the direct effect of time  -----------
+# ----------- direct effect of time  -----------
 
 
-# ----------- participant inclusion flowchart  -----------
+# ----------- prognostic pre-surgery cognitive profile  -----------
