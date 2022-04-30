@@ -15,6 +15,7 @@ pkgs <- c(
   "DiagrammeRsvg", # for saving plots crated in DiagrammeR
   "rsvg", # for saving plots crated in DiagrammeR
   "brms", # for Bayesian model fitting / interface with Stan
+  "loo", # for PSIS-LOO based operations
   "psych", # for EFA
   "tidybayes", # for posteriors manipulations
   "ggplot2", # for plotting
@@ -387,13 +388,7 @@ scl <- list(
     visp_wm = mean( d1[d1$ass_type=="pre", ]$visp_wm , na.rm = T ),
     visp_mem = mean( d1[d1$ass_type=="pre", ]$visp_mem , na.rm = T ),
     verb_wm = mean( d1[d1$ass_type=="pre", ]$verb_wm , na.rm = T ),
-    anxiety = mean( d1[d1$ass_type=="pre", ]$anxiety , na.rm = T ),
-    # pre-surgery prognostic factors/clinical variables
-    dur_stim = mean( d1[d1$ass_type=="pre", ]$dur_stim_y , na.rm = T ), # 11.67
-    age_stim = mean( d1[d1$ass_type=="pre", ]$age_stim_y , na.rm = T ), # 57.25
-    led_pre = mean( d1[d1$ass_type=="pre", ]$ledd_pre_mg , na.rm = T ), # 1696.88
-    updrsiii_pre = mean( d1[d1$ass_type=="pre", ]$mds_updrs_iii_med_off , na.rm = T ), # 45.79
-    ldopa_resp = mean( d1[d1$ass_type=="pre", ]$ldopa_resp , na.rm = T ) # 52.64
+    anxiety = mean( d1[d1$ass_type=="pre", ]$anxiety , na.rm = T )
   ),
   SD = list(
     # longitudinal variables, i.e., DRS-2 (outcome), BDI and LEDD (confounders)
@@ -406,13 +401,7 @@ scl <- list(
     visp_wm = sd( d1[d1$ass_type=="pre", ]$visp_wm , na.rm = T ), # 0.89
     visp_mem = sd( d1[d1$ass_type=="pre", ]$visp_mem , na.rm = T ), # 0.99
     verb_wm = sd( d1[d1$ass_type=="pre", ]$verb_wm , na.rm = T ), # 0.87
-    anxiety = sd( d1[d1$ass_type=="pre", ]$anxiety , na.rm = T ), # 0.90
-    # pre-surgery prognostic factors/clinical variables
-    dur_stim = sd( d1[d1$ass_type=="pre", ]$dur_stim_y , na.rm = T ), # 4.05
-    age_stim = sd( d1[d1$ass_type=="pre", ]$age_stim_y , na.rm = T ), # 7.96
-    led_pre = sd( d1[d1$ass_type=="pre", ]$ledd_pre_mg , na.rm = T ), # 672.33
-    updrsiii_pre = sd( d1[d1$ass_type=="pre", ]$mds_updrs_iii_med_off , na.rm = T ), # 10.93
-    ldopa_resp = sd( d1[d1$ass_type=="pre", ]$ldopa_resp , na.rm = T ) # 12.81
+    anxiety = sd( d1[d1$ass_type=="pre", ]$anxiety , na.rm = T ) # 0.90
   ),
   # add median time of pre-surgery assessment for GLMMs intercepts
   Md = list(
@@ -426,8 +415,9 @@ d3 <- d1 %>% mutate(
   time = time_y + scl$Md$time,
   drs = ( drs_tot - scl$M$drs ) / scl$SD$drs,
   bdi = ( bdi - scl$M$bdi ) / scl$SD$bdi,
-  #led = ( ledd_mg - scl$M$led ) / scl$SD$led,
+  led = ( ledd_mg - scl$M$led ) / scl$SD$led,
   sex = as.factor( sex ), # for better estimation of BDI in the second and third models
+  # censoring variables
   cens_drs = ifelse( drs == max(drs, na.rm = T) , "right" , "none" ), # right censoring for DRS == 144
   cens_bdi = ifelse( bdi == min(bdi, na.rm = T) , "left" , "none" ), # left censoring for BDI == 0
   # pre-surgery prognostic factors/cognitive profile, scale such that higher value imply deficit
@@ -436,25 +426,17 @@ d3 <- d1 %>% mutate(
   visp_wm = -( visp_wm - scl$M$visp_wm ) / scl$SD$visp_wm,
   visp_mem = -( visp_mem - scl$M$visp_mem ) / scl$SD$visp_mem,
   verb_wm = -( verb_wm - scl$M$verb_wm ) / scl$SD$verb_wm,
-  anxiety = -( anxiety - scl$M$anxiety ) / scl$SD$anxiety,
-  # pre-surgery prognostic factors/clinics
-  dur_stim = ( dur_stim_y - scl$M$dur_stim ) / scl$SD$dur_stim,
-  age_stim = ( age_stim_y - scl$M$age_stim ) / scl$SD$age_stim,
-  led_pre = ( ledd_pre_mg - scl$M$led_pre ) / scl$SD$led_pre,
-  updrsiii_pre = ( mds_updrs_iii_med_off - scl$M$updrsiii_pre ) / scl$SD$updrsiii_pre,
-  ldopa_resp = -( ldopa_resp - scl$M$ldopa_resp ) / scl$SD$ldopa_resp
+  anxiety = -( anxiety - scl$M$anxiety ) / scl$SD$anxiety
 ) %>% select(
   # keep only variables of interest
-  id, time, drs, cens_drs, bdi, cens_bdi, sex, # outcomes, time and sex
-  ment_flex, epis_mem, visp_wm, visp_mem, verb_wm, anxiety, # pre-surgery prognostic factors/cognitive profile
-  dur_stim, age_stim, led_pre, updrsiii_pre, ldopa_resp # pre-surgery prognostic factors/clinics
+  id, time, drs, cens_drs, bdi, cens_bdi, sex, led, # outcomes, time and sex
+  ment_flex, epis_mem, visp_wm, visp_mem, verb_wm, anxiety # pre-surgery prognostic factors/cognitive profile
 )
 
 
-# ----------- total effect of time  -----------
+# ----------- description models  -----------
 
-# prior predictive check
-
+# model with no covariates
 # set-up the linear model
 f.drs1 <- bf( drs | cens(cens_drs) ~ 1 + time + (1 + time | id) )
 
@@ -479,131 +461,185 @@ p1 <- c(
 m1 <- brm(
   formula = f.drs1, family = student(), prior = p1, data = d3,
   seed = s, chains = ch, iter = it, warmup = wu,
-  control = list( adapt_delta = ad ), file = "models/total_effect.rds"
+  control = list( adapt_delta = ad ), file = "models/descriptive.rds"
 )
 
 # add LOO and WAIC criteria
 add_criterion( m1 , criterion = c("loo","waic") )
 
+# save the PSIS-LOO
+loo1 <- loo(m1)
+
 # save the priors for documentation purposes
-pr <- list( glmm1 = prior_summary(m1) )
+pr <- list(
+  descriptive = list( glmm1 = prior_summary(m1) )
+)
 
 # some posterior checks
 max( rhat(m1) ) # 1.007
 max( loo(m1)$diagnostics$pareto_k ) # 0.53
-plot( loo(m1) ) # three cases > 0.5, no case > 0.7
 
-# ----------- direct effect of time  -----------
-
-# or rather depression confounded via LEDD effect?
-
-# prior predictive simulation
-
-# set-up the linear models
-f.drs2 <- bf( drs | cens(cens_drs) ~ 1 + time + mi(bdi) + (1 + time | p | id) )
-f.bdi2 <- bf( bdi | cens(cens_bdi) + mi() ~ 1 + time + sex + (1 + time | p | id) )
+# model with covariates
+# set-up the linear model
+f.drs2 <- bf( drs | cens(cens_drs) ~ 1 + mi(bdi) + mi(led)  + time+ (1 + time | id) )
+f.bdi2 <- bf( bdi | cens(cens_bdi) + mi() ~ 1 + mi(led) + sex + time + (1 + time | id) )
+f.led2 <- bf( led | mi() ~ t2(time) + (1 | id) )
 
 # set contrast for sex
 contrasts(d3$sex) <- -contr.sum(2)/2 # female = -0.5, male = 0.5
 
 # set-up priors
 p2 <- c(
-  # fixed-effects
-  prior( normal(0.3, .1), class = Intercept , resp = drs ),
-  prior( normal(-.2, .1), class = b, coef = time , resp = drs  ),
-  prior( normal(0, .1), class = b, coef = mibdi, resp = drs ),
-  prior( normal(.6, .5), class = Intercept, resp = bdi ),
-  prior( normal(0, .5), class = b, coef = time, resp = bdi ),
-  prior( normal(0, .5), class = b, coef = sex1, resp = bdi ),
-  # random-effects
-  prior( normal(0, .1), class = sd, coef = Intercept, group = id , resp = drs  ),
-  prior( normal(0, .1), class = sd, coef = time, group = id , resp = drs  ),
-  prior( normal(0, .5), class = sd, coef = Intercept, group = id, resp = bdi ),
-  prior( normal(0, .5), class = sd, coef = time, group = id, resp = bdi ),
-  # variances
-  prior( exponential(1), class = sd , resp = drs  ),
-  prior( exponential(1), class = sigma , resp = drs  ),
-  prior( exponential(1), class = sd, resp = bdi ),
-  prior( exponential(1), class = sigma, resp = bdi ),
-  # covariances
-  prior( lkj(2), class = cor ),
-  # "degrees of freedom"/"normality parameter" nu
-  prior( gamma(2, 0.1), class = nu , resp = drs  ),
-  prior( gamma(2, 0.1), class = nu, resp = bdi )
-)
-
-# fit the "direct" effect of time GLMM
-m2 <- brm(
-  formula = f.drs2 + f.bdi2 + set_rescor(F), family = student(), prior = p2, data = d3,
-  seed = s, chains = ch, iter = it, warmup = wu,
-  control = list( adapt_delta = ad ), file = "models/direct_effect.rds"
-)
-
-# add LOO and WAIC criteria
-add_criterion( m2 , criterion = c("loo","waic") , resp = "drs" )
-add_criterion( m2 , criterion = c("loo","waic") , resp = "bdi" , newdata = d3[ complete.cases(d3$bdi), ] )
-
-# save the priors for documentation purposes
-pr$glmm2 <- prior_summary(m2)
-
-# some posterior checks
-max( rhat(m2) ) # 1.008
-max( loo(m2, resp = "drs")$diagnostics$pareto_k ) # 0.53
-max( loo(m2, resp = "bdi", newdata = d3[ complete.cases(d3$bdi), ])$diagnostics$pareto_k ) # 0.68
-par( mfrow = c(2,1) )
-plot( loo(m2, resp = "drs") ) # four cases > 0.5, no case > 0.7
-plot( loo(m2, resp = "bdi", newdata = d3[ complete.cases(d3$bdi), ]$diagnostics$pareto_k) ) # seven cases > 0.5
-
-
-# ----------- prognostic pre-surgery cognitive profile  -----------
-
-# prior predictive simulation
-
-# set-up the linear models
-f.drs3 <- bf(
-  # covariates
-  drs | cens(cens_drs) ~ 1 + time +  mi(bdi) +
-    # demographic/clinic predictors
-    age_stim*time + mi(dur_stim)*time + mi(led_pre)*time + mi(updrsiii_pre)*time + mi(ldopa_resp)*time +
-    # pre-surgery cognitive profile predictors
-    ment_flex*time + epis_mem*time + visp_wm*time + visp_mem*time + verb_wm*time + anxiety*time +
-    # patient-specific effects
-    (1 + time | p | id)
-)
-
-# predictors with missing values
-f.bdi3 <- bf( bdi | cens(cens_bdi) + mi() ~ 1 + time + sex + (1 + time | p | id) )
-f.dur3 <- bf( dur_stim | mi() ~ 1 + age_stim )
-f.ledpre3 <- bf( led_pre | mi() ~ 1 + mi(dur_stim) )
-f.updrsiii3 <- bf( updrsiii_pre | mi() ~ 1 + sex + age_stim + mi(dur_stim) )
-f.ldoparesp3 <- bf( ldopa_resp | mi() ~ 1 )
-
-# set-up priors
-p3 <- c(
   # DRS-2
   prior( normal(0.3, .1), class = Intercept , resp = drs ),
   prior( normal(-.2, .1), class = b, coef = time , resp = drs  ),
   prior( normal(0, .1), class = b, coef = mibdi, resp = drs ),
-  prior( normal(0, .1), class = b, coef = age_stim, resp = drs ),
-  prior( normal(0, .1), class = b, coef = midur_stim, resp = drs ),
-  prior( normal(0, .1), class = b, coef = miled_pre, resp = drs ),
-  prior( normal(0, .1), class = b, coef = miupdrsiii_pre, resp = drs ),
-  prior( normal(0, .1), class = b, coef = mildopa_resp, resp = drs ),
+  prior( normal(0, .1), class = b, coef = miled, resp = drs ),
+  prior( normal(0, .1), class = sd, coef = Intercept, group = id , resp = drs  ),
+  prior( normal(0, .1), class = sd, coef = time, group = id , resp = drs  ),
+  prior( exponential(1), class = sd , resp = drs ),
+  prior( exponential(1), class = sigma , resp = drs ),
+  prior( gamma(2, 0.1), class = nu , resp = drs ),
+  # BDI-II
+  prior( normal(.6, .5), class = Intercept, resp = bdi ),
+  prior( normal(0, .5), class = b, coef = time, resp = bdi ),
+  prior( normal(0, .5), class = b, coef = sex1, resp = bdi ),
+  prior( normal(0, .5), class = b, coef = miled, resp = bdi ),
+  prior( normal(0, .5), class = sd, coef = Intercept, group = id, resp = bdi ),
+  prior( normal(0, .5), class = sd, coef = time, group = id, resp = bdi ),
+  prior( exponential(1), class = sd, resp = bdi ),
+  prior( exponential(1), class = sigma, resp = bdi ),
+  prior( gamma(2, 0.1), class = nu, resp = bdi ),
+  # LEDD
+  # keeping default for fixed-effect on LEDD
+  prior( normal(0, .5), class = sd, coef = Intercept, group = id, resp = led ),
+  prior( exponential(1), class = sd, resp = led ),
+  prior( exponential(1), class = sigma, resp = led ),
+  prior( gamma(2, 0.1), class = nu, resp = led ),
+  # group-level correlation matrix
+  prior( lkj(2), class = cor )
+)
+
+# fit the model
+m2 <- brm(
+  formula = f.drs2 + f.bdi2 + f.led2 + set_rescor(F),
+  family = student(), prior = p2, data = d3,
+  seed = s, chains = ch, iter = it, warmup = wu,
+  control = list( adapt_delta = ad ), file = "models/descriptive_w_cov.rds"
+)
+
+# add LOO and WAIC criteria
+add_criterion( m2 , criterion = c("loo","waic") , resp = "drs" )
+
+# save the PSIS-LOO
+loo2 <- loo(m2, resp = "drs")
+
+# save the priors for documentation purposes
+pr$descriptive$glmm2 <- prior_summary(m2)
+
+# some posterior checks
+max( rhat(m2) ) # 1.004
+max( loo(m2, resp = "drs")$diagnostics$pareto_k ) # 0.59
+
+
+# ----------- prognostic models  -----------
+
+# write down the cognitive domains
+doms <- colnames( efa[[4]]$scores )
+
+# model with no covariates
+# set-up the linear model
+f.drs3 <- bf(
+  as.formula(
+    paste0(
+      "drs | cens(cens_drs) ~ 1 + ",
+      paste( "time", doms, sep = " * " , collapse = " + " ),
+      " + (1 + time | id)"
+    )
+  )
+)
+
+# set-up priors
+p3 <- c(
+  # fixed effects
+  prior( normal(0.3, .1), class = Intercept ),
+  prior( normal(-.2, .1), class = b, coef = time ),
+  prior( normal(0, .1), class = b, coef = ment_flex ),
+  prior( normal(0, .1), class = b, coef = epis_mem ),
+  prior( normal(0, .1), class = b, coef = visp_wm ),
+  prior( normal(0, .1), class = b, coef = visp_mem ),
+  prior( normal(0, .1), class = b, coef = verb_wm ),
+  prior( normal(0, .1), class = b, coef = anxiety ),
+  prior( normal(0, .1), class = b, coef = time:ment_flex ),
+  prior( normal(0, .1), class = b, coef = time:epis_mem ),
+  prior( normal(0, .1), class = b, coef = time:visp_wm ),
+  prior( normal(0, .1), class = b, coef = time:visp_mem ),
+  prior( normal(0, .1), class = b, coef = time:verb_wm ),
+  prior( normal(0, .1), class = b, coef = time:anxiety ),
+  # random effects
+  prior( normal(0, .1), class = sd, coef = Intercept, group = id ),
+  prior( normal(0, .1), class = sd, coef = time, group = id ),
+  prior( exponential(1), class = sd ),
+  # other distribution parameters
+  prior( exponential(1), class = sigma ),
+  prior( gamma(2, 0.1), class = nu ),
+  # correlation matrices
+  prior( lkj(2), class = cor )
+)
+
+# fit the GLMM
+m3 <- brm(
+  formula = f.drs3, family = student(), prior = p3, data = d3,
+  seed = s, chains = ch, iter = it, warmup = wu,
+  control = list( adapt_delta = ad ), file = "models/prognostic.rds"
+)
+
+# add LOO and WAIC criteria
+add_criterion( m3 , criterion = c("loo","waic") )
+
+# save the PSIS-LOO
+loo3 <- loo(m3)
+
+# save the priors for documentation purposes
+pr$prognostic$glmm3 <- prior_summary(m3)
+
+# some posterior checks
+max( rhat(m3) ) # 1.006
+max( loo(m3)$diagnostics$pareto_k ) # 0.45
+
+# model with covariates
+# set-up the linear model
+f.drs4 <- bf(
+  as.formula(
+    paste0(
+      "drs | cens(cens_drs) ~ 1 + mi(bdi) + mi(led) + ",
+      paste( "time", doms, sep = " * " , collapse = " + " ),
+      " + (1 + time | id)"
+    )
+  )
+)
+
+# linear models for BDI-II and LEDD remain the same as in m2
+f.bdi4 <- f.bdi2
+f.led4 <- f.led2
+
+# set-up priors
+p4 <- c(
+  # DRS-2
+  prior( normal(0.3, .1), class = Intercept , resp = drs ),
+  prior( normal(-.2, .1), class = b, coef = time , resp = drs  ),
+  prior( normal(0, .1), class = b, coef = mibdi, resp = drs ),
+  prior( normal(0, .1), class = b, coef = miled, resp = drs ),
   prior( normal(0, .1), class = b, coef = ment_flex, resp = drs ),
   prior( normal(0, .1), class = b, coef = epis_mem, resp = drs ),
   prior( normal(0, .1), class = b, coef = visp_wm, resp = drs ),
-  prior( normal(0, .1), class = b, coef = visp_mem, resp = drs ),
+  prior( normal(0, .1), class = b, coef = visp_mem, resp = drs  ),
   prior( normal(0, .1), class = b, coef = verb_wm, resp = drs ),
   prior( normal(0, .1), class = b, coef = anxiety, resp = drs ),
-  prior( normal(0, .1), class = b, coef = time:age_stim, resp = drs ),
-  prior( normal(0, .1), class = b, coef = midur_stim:time, resp = drs ),
-  prior( normal(0, .1), class = b, coef = miled_pre:time, resp = drs ),
-  prior( normal(0, .1), class = b, coef = miupdrsiii_pre:time, resp = drs ),
-  prior( normal(0, .1), class = b, coef = mildopa_resp:time, resp = drs ),
   prior( normal(0, .1), class = b, coef = time:ment_flex, resp = drs ),
   prior( normal(0, .1), class = b, coef = time:epis_mem, resp = drs ),
   prior( normal(0, .1), class = b, coef = time:visp_wm, resp = drs ),
-  prior( normal(0, .1), class = b, coef = time:visp_mem, resp = drs ),
+  prior( normal(0, .1), class = b, coef = time:visp_mem, resp = drs  ),
   prior( normal(0, .1), class = b, coef = time:verb_wm, resp = drs ),
   prior( normal(0, .1), class = b, coef = time:anxiety, resp = drs ),
   prior( normal(0, .1), class = sd, coef = Intercept, group = id , resp = drs  ),
@@ -615,55 +651,86 @@ p3 <- c(
   prior( normal(.6, .5), class = Intercept, resp = bdi ),
   prior( normal(0, .5), class = b, coef = time, resp = bdi ),
   prior( normal(0, .5), class = b, coef = sex1, resp = bdi ),
+  prior( normal(0, .5), class = b, coef = miled, resp = bdi ),
   prior( normal(0, .5), class = sd, coef = Intercept, group = id, resp = bdi ),
   prior( normal(0, .5), class = sd, coef = time, group = id, resp = bdi ),
   prior( exponential(1), class = sd, resp = bdi ),
   prior( exponential(1), class = sigma, resp = bdi ),
   prior( gamma(2, 0.1), class = nu, resp = bdi ),
+  # LEDD
+  # keeping default for fixed-effect on LEDD
+  prior( normal(0, .5), class = sd, coef = Intercept, group = id, resp = led ),
+  prior( exponential(1), class = sd, resp = led ),
+  prior( exponential(1), class = sigma, resp = led ),
+  prior( gamma(2, 0.1), class = nu, resp = led ),
   # group-level correlation matrix
-  prior( lkj(2), class = cor ),
-  # pre-surgery disease duration
-  prior( student_t(3, -0.2, 2.5) , class = Intercept, resp = durstim),
-  prior( normal(0, .5), class = b, coef = age_stim, resp = durstim ),
-  prior( exponential(1), class = sigma, resp = durstim ),
-  prior( gamma(2, 0.1), class = nu, resp = durstim ),
-  # pre-surgery LED
-  prior( student_t(3, -0.1, 2.5), class = Intercept, resp = ledpre ),
-  prior( normal(0, .5), class = b, coef = midur_stim, resp = ledpre ),
-  prior( exponential(1), class = sigma, resp = ledpre ),
-  prior( gamma(2, 0.1), class = nu, resp = ledpre ),
-  # pre-surgery UPDRS-III (off medication)
-  prior( student_t(3, 0, 2.5), class = Intercept, resp = updrsiiipre ),
-  prior( normal(0, .5), class = b, coef = sex1, resp = updrsiiipre ),
-  prior( normal(0, .5), class = b, coef = age_stim, resp = updrsiiipre ),
-  prior( normal(0, .5), class = b, coef = midur_stim, resp = updrsiiipre ),
-  prior( exponential(1), class = sigma, resp = updrsiiipre ),
-  prior( gamma(2, 0.1), class = nu, resp = updrsiiipre ),
-  # pre-surgery levodopa response
-  prior( student_t(3, 0.2, 2.5), class = Intercept, resp = ldoparesp ),
-  prior( exponential(1), class = sigma, resp = ldoparesp ),
-  prior( gamma(2, 0.1), class = nu, resp = ldoparesp )
+  prior( lkj(2), class = cor )
 )
 
 # fit the "prognostic" model
-m3 <- brm(
-  formula = f.drs3 + f.bdi3 + f.dur3 + f.ledpre3 + f.updrsiii3 + f.ldoparesp3 + set_rescor(F),
-  family = student(), prior = p3, data = d3,
+m4 <- brm(
+  formula = f.drs4 + f.bdi4 + f.led4 + set_rescor(F),
+  family = student(), prior = p4, data = d3,
   seed = s, chains = ch, iter = it, warmup = wu,
-  control = list( adapt_delta = ad ), file = "models/prognostic.rds"
+  control = list( adapt_delta = ad ), file = "models/prognostic_w_cov.rds"
 )
 
 # add LOO and WAIC criteria
-add_criterion( m3 , criterion = c("loo","waic") , resp = "drs" )
-add_criterion( m3 , criterion = c("loo","waic") , resp = "bdi" , newdata = d3[ complete.cases(d3$bdi), ] )
+add_criterion( m4 , criterion = c("loo","waic") , resp = "drs" )
+
+# save the PSIS-LOO
+loo4 <- loo(m4, resp = "drs")
 
 # save the priors for documentation purposes
-pr$glmm3 <- prior_summary(m3)
+pr$prognostic$glmm4 <- prior_summary(m4)
 
 # some posterior checks
-max( rhat(m3) ) # 1.01
-max( loo(m3, resp = "drs")$diagnostics$pareto_k ) # 0.47
-max( loo(m3, resp = "bdi", newdata = d3[ complete.cases(d3$bdi), ])$diagnostics$pareto_k ) # 0.66
-par( mfrow = c(2,1) )
-plot( loo(m3, resp = "drs") ) # all cases < 0.5
-plot( loo(m3, resp = "bdi", newdata = d3[ complete.cases(d3$bdi), ]$diagnostics$pareto_k) ) # nine cases > 0.5
+max( rhat(m4) ) # 1.004
+max( loo(m4, resp = "drs")$diagnostics$pareto_k ) # 0.51
+
+
+# ----------- joint quality check & model comparisons  -----------
+
+# plot Pareto Ks of each model
+par( mfrow = c(2,2) )
+plot( loo(m1) , main = "Descriptive" , pch = 16 )
+plot( loo(m2, resp = "drs") , main = "Descriptive w/ covariates" , pch = 16 )
+plot( loo(m3) , main = "Prognostic" , pch = 16 )
+plot( loo(m4, resp = "drs") , main = "Prognostic w/ covariates" , pch = 16 )
+
+# compare the models via PSIS-LOO
+# for now compare m1 to m3 and m2 to m4 (because the have different number of points for PSIS-LOO)
+# prepare pointwise elpd matrixes
+lpd_point <- list(
+  no_cov = cbind( loo1$pointwise[,"elpd_loo"], loo3$pointwise[,"elpd_loo"]),
+  w_cov = cbind( loo2$pointwise[,"elpd_loo"], loo4$pointwise[,"elpd_loo"])
+)
+
+# crate the table
+comp <- list(
+  no_cov = loo_compare( loo1 , loo3 )[c("m1","m3"),c("elpd_diff","se_diff")] %>% as.data.frame(),
+  w_cov = loo_compare( loo2 , loo4 )[c("m2","m4"),c("elpd_diff","se_diff")] %>% as.data.frame()
+)
+
+# add weights
+for ( i in names(comp) ) {
+  # pseudo-BMA weights
+  comp[[i]][,"pseudobma"] <- rbind(
+    pseudobma_weights( lpd_point[[i]], BB = F )[[1]],
+    pseudobma_weights( lpd_point[[i]], BB = F )[[2]]
+  )[,1]
+  # pseudo-BMA+ weights (with Bayesian bootstrap)
+  comp[[i]][,"pseudobma+"] <- rbind(
+    pseudobma_weights( lpd_point[[i]], BB = T )[[1]],
+    pseudobma_weights( lpd_point[[i]], BB = T )[[2]]
+  )[,1]
+  # stacking weigts
+  comp[[i]][,"stacking"] <- rbind(
+    stacking_weights( lpd_point[[i]] )[[1]],
+    stacking_weights( lpd_point[[i]] )[[2]]
+  )[,1]
+}
+
+# round the results
+for ( i in names(comp) ) comp[[i]] <- comp[[i]] %>%
+  mutate_if( is.numeric, round, 3 )
