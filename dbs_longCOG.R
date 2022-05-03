@@ -2,7 +2,7 @@
 # on x86_64-w64-mingw32/x64 (64-bit) platform under Windows 10 x64 (build 19043).
 
 # I used the following versions of packages employed: dplyr_1.0.7, tidyverse_1.3.0, DiagrammeR_1.0.9, DiagrammeRsvg_0.1,
-# rsvg_2.3.1, brms_2.16.3, psych_2.2.3, tidybayes_2.3.1, ggplot2_3.3.3 and patchwork_1.1.1
+# rsvg_2.3.1, missMDA_1.18, psych_2.2.3, brms_2.16.3, psych_2.2.3, tidybayes_2.3.1, ggplot2_3.3.3 and patchwork_1.1.1
 
 # set working directory (works only in RStudio)
 setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
@@ -14,9 +14,10 @@ pkgs <- c(
   "DiagrammeR", # for flowcharts
   "DiagrammeRsvg", # for saving plots crated in DiagrammeR
   "rsvg", # for saving plots crated in DiagrammeR
+  "missMDA", # for imputation
+  "psych", # for EFA
   "brms", # for Bayesian model fitting / interface with Stan
   "loo", # for PSIS-LOO based operations
-  "psych", # for EFA
   "tidybayes", # for posteriors manipulations
   "ggplot2", # for plotting
   "patchwork" # for ggplots manipulations
@@ -281,55 +282,78 @@ ggsave( "figures/Fig.2 distribution of assessments.png" , height = 2.5 * 6.12 , 
 # for EFA keep only id and cognitive tests in d2
 d2 <- d2[ , c( 2, which(names(d2) == "tmt_a"):which(names(d2) == "fp_dr"), which(names(d2) %in% paste0("staix",1:2)) ) ]
 
-# parallel test for number of factors
-fa.parallel( d2[ , -1 ] ) # suggests 4-6 factors and 4 components
+# multiply impute missing values in d2
+# first find out the optimal number of components for multiple combinations
+nb <- estim_ncpPCA( d2[,-1] , ncp.max = 10 )
 
-# fit EFA to get some meaningful latent cognitive factors from pre-surgery neuropsychology
+# impute via PCA-based multiple imputation (n = 100 imputations)
+set.seed(s) # set seed for reproducility
+d2.imp <- MIPCA( d2[ ,- 1] , ncp = nb$ncp )
+
+# fit EFA to each imputed dataset with 3:8 factors
 efa <- lapply(
-  X = 3:8, # fit 3-8 factor solutions
-  FUN = function(i)
-    fa(
-      d2[ -1 ], # use all pre-surgery cognitive test, drop id
-      nfactors = i, # fit 3-8 factor solutions
-      rotate = "varimax", # rotate via Varimax (to enforce orthogonality)
-      scores = "regression", # add regression scores inferred to each patient from the factor solutions
-      missing = T , impute = "median" # impute missing values with a median, the weakest part of the whole analysis
+  # loop through all 100 datasets
+  1:length(d2.imp$res.MI), function(i)
+    lapply(
+      # loop through three to eight latent factors for each imputation
+      3:8, function(j)
+        fa(
+          d2.imp$res.MI[[i]], # one-by-one use each imputed dataset
+          nfactors = j, # fit 3-8 factor solutions
+          rotate = "varimax", # rotate varimax to enforce orthogonality and for interpretation purposes
+          scores = "regression" # compute regression scores for each patient
+        )
     )
 )
 
-# create a table for performance indexes of each factor solution
-fat <- data.frame(
-  no_factors = 3 : (2+length(efa)), # identifiers
-  TLI = NA, # Tucker-Lewis index, > 0.9 is considered good
-  BIC = NA, # Bayesian Information Criterion, lower values (including negative) are considered better
-  RMSEA = NA, # root-mean square error of approximation, lower is better, < 0.08 is considered good
-  RMSEA_90_CI = NA, # 90% CI for RMSEA
-  var_account = NA # total variance "accounted for" by all included factors
+# prepare a table for performance indexes of each solution for each imputed dataset
+fat <- array(
+  # create n x m x l array
+  dim = c(
+    length( efa[[1]] ), # m = number of factor solutions I computed above
+    6, # n = six dimensions for performance indexes
+    length( d2.imp$res.MI ) # l = number of imputations
+  ),
+  # add dimension names
+  dimnames = list(
+    paste0( 1:length(efa[[1]])+2, "_factors" ), # number of factors
+    c("TLI", "BIC", "RMSEA", "RMSEA_90_CI_low", "RMSEA_90_CI_upp", "var_account"), # performance indexes
+    1:length(d2.imp$res.MI) # number of imputed dataset
+  )
 )
 
-# fill-in the fat table
-for (i in 1:length(efa)) {
-  fat[i, ] <- c(
-    i+2, # number of factors (because I fitted 3:8 factor solutions and this loop goes through i = 1:6, it's i+2)
-    sprintf( "%.3f" , round(efa[[i]]$TLI, 3) ), # Tucker-Lewis index
-    sprintf( "%.3f" , round(efa[[i]]$BIC, 3) ), # Bayesian Information Criterion
-    sprintf( "%.3f" , round(efa[[i]]$RMSEA[1], 3) ), # root-mean square error of approximation
-    paste0(
-      "[", sprintf( "%.3f", round(efa[[i]]$RMSEA[2], 3) ), ", ",
-      sprintf( "%.3f", round(efa[[i]]$RMSEA[3], 3) ), "]"
-    ), # root-mean square error of approximation, 90% CI
-    sprintf( "%.3f" , round(efa[[i]]$Vaccounted["Cumulative Var",i+2], 3) ) # total variance "accounted for"
-  )
+# loop through the array and gather all performance indexes
+# loop through the array and gather all performance indexes
+for ( i in 1:length(d2.imp$res.MI) ) {
+  for ( j in 1:length(efa[[i]]) ) {
+    fat[ j , , i ] <- c(
+      round( efa[[i]][[j]]$TLI , 3 ), # Tucker-Lewis index, > 0.9 is considered good
+      round( efa[[i]][[j]]$BIC , 3 ), # Bayesian Information Criterion, lower values are considered better
+      round( efa[[i]][[j]]$RMSEA[1], 3 ), # root-mean square error of approximation, < 0.08 is considered good
+      round( efa[[i]][[j]]$RMSEA[1], 3 ), # 90% CI RMSEA, lower boundary
+      round( efa[[i]][[j]]$RMSEA[1], 3 ), # 90% CI RMSEA, upper boundary
+      round(efa[[i]][[j]]$Vaccounted["Cumulative Var",j+2], 3) # total variance "accounted for" by all included factors
+    )
+  }
 }
 
-# 6-factor solution is leading by my inspection of fat table:
-# 1) lowest BIC, 2) everything else solid w.r.t. competing  models
-# However, judging by TLI and RMSEA, the fit ain't ideal for either model, a limitation to mention
-# Check loading patterns of 5-8 factor solutions to see if they make sense
-print( efa[[3]]$loadings, cutoff = .4, sort = T ) # reasonable loadings but really bad stats
-print( efa[[4]]$loadings, cutoff = .4, sort = T ) # reasonable loadings, acceptable stats (w.r.t. competition)
-print( efa[[5]]$loadings, cutoff = .4, sort = T ) # MR7 includes only one test with loading > 0.4 (Sim.)
-print( efa[[6]]$loadings, cutoff = .4, sort = T ) # ok stats but MR7 includes only one test with loading > 0.4 (Sim.)
+# print the upper 90% CI of RMSEA for all model/imputation pairs
+# get rid of values > .08 to see only models with good fit
+t(fat[ , "RMSEA_90_CI_upp" , ] ) %>%
+  as.data.frame %>%
+  mutate( across( everything() , ~ replace( . , . > .08 , "") ) )
+
+# go through all six-factor solutions' loading matrices
+# create a convenience function so that I don't go crazy immediately
+print_load <- function(i) print( efa[[i]][[4]]$loadings, cutoff = .4, sort = T )
+# weird ones - # 24, 31, 38, 45, 52, 63, 82
+# include reverse scored factors - # 15, 19, 24, 38, 45, 46, 47, 63, 91, 98
+
+# save the imputed data set for future control
+saveRDS( d2.imp , "data/20220503_100_imputed_df.rds" )
+
+
+
 
 # selecting the 6-factor solution due to the best BIC, reasonable stats w.r.t. competition and interpretable factors
 # which are missing in models with better stats that include a one-item factor
@@ -463,7 +487,7 @@ p1 <- c(
 # fit the total effect of time GLMM
 m$desc$no_cov <- brm(
   formula = f1.drs, family = student(), prior = p1, data = d3,
-  seed = s, chains = ch, iter = it, warmup = wu,
+  sample_prior = T, seed = s, chains = ch, iter = it, warmup = wu,
   control = list( adapt_delta = ad ), file = "models/descriptive.rds"
 )
 
@@ -477,8 +501,8 @@ l$desc$no_cov <- loo(m$desc$no_cov)
 pr <- list( desc = list( no_cov = prior_summary(m$desc$no_cov) ) )
 
 # some posterior checks
-max( rhat(m$desc$no_cov) ) # 1.007
-max( loo(m$desc$no_cov)$diagnostics$pareto_k ) # 0.53
+max( rhat(m$desc$no_cov) ) # 1.005
+max( loo(m$desc$no_cov)$diagnostics$pareto_k ) # 0.57
 
 # model with covariates
 # set-up the linear model
@@ -524,7 +548,7 @@ p2 <- c(
 # fit the model
 m$desc$w_cov <- brm(
   formula = f2.drs + f2.bdi + f2.led + set_rescor(F),
-  family = student(), prior = p2, data = d3,
+  family = student(), prior = p2, data = d3, sample_prior = T,
   seed = s, chains = ch, iter = it, warmup = wu,
   control = list( adapt_delta = ad ), file = "models/descriptive_w_cov.rds"
 )
@@ -539,8 +563,8 @@ l$desc$w_cov <- loo(m$desc$w_cov, resp = "drs")
 pr$desc$w_cov <- prior_summary(m$desc$w_cov)
 
 # some posterior checks
-max( rhat(m$desc$w_cov) ) # 1.004
-max( loo(m$desc$w_cov, resp = "drs")$diagnostics$pareto_k ) # 0.59
+max( rhat(m$desc$w_cov) ) # 1.011
+max( loo(m$desc$w_cov, resp = "drs")$diagnostics$pareto_k ) # 0.60
 
 
 # ----------- prognostic models  -----------
@@ -591,7 +615,7 @@ p3 <- c(
 # fit the GLMM
 m$prog$no_cov <- brm(
   formula = f3.drs, family = student(), prior = p3, data = d3,
-  seed = s, chains = ch, iter = it, warmup = wu,
+  sample_prior = T, seed = s, chains = ch, iter = it, warmup = wu,
   control = list( adapt_delta = ad ), file = "models/prognostic.rds"
 )
 
@@ -605,8 +629,8 @@ l$prog$no_cov <- loo(m$prog$no_cov)
 pr$prog$no_cov <- prior_summary(m$prog$no_cov)
 
 # some posterior checks
-max( rhat(m$prog$no_cov) ) # 1.006
-max( loo(m$prog$no_cov)$diagnostics$pareto_k ) # 0.45
+max( rhat(m$prog$no_cov) ) # 1.004
+max( loo(m$prog$no_cov)$diagnostics$pareto_k ) # 0.55
 
 # model with covariates
 # set-up the linear model
@@ -671,7 +695,7 @@ p4 <- c(
 # fit the "prognostic" model
 m$prog$w_cov <- brm(
   formula = f4.drs + f4.bdi + f4.led + set_rescor(F),
-  family = student(), prior = p4, data = d3,
+  family = student(), prior = p4, data = d3, sample_prior = T,
   seed = s, chains = ch, iter = it, warmup = wu,
   control = list( adapt_delta = ad ), file = "models/prognostic_w_cov.rds"
 )
@@ -686,8 +710,8 @@ l$prog$w_cov <- loo(m$prog$w_cov, resp = "drs")
 pr$prog$w_cov <- prior_summary(m$prog$w_cov)
 
 # some posterior checks
-max( rhat(m$prog$w_cov) ) # 1.004
-max( loo(m$prog$w_cov, resp = "drs")$diagnostics$pareto_k ) # 0.51
+max( rhat(m$prog$w_cov) ) # 1.060
+max( loo(m$prog$w_cov, resp = "drs")$diagnostics$pareto_k ) # 0.46
 
 
 # ----------- joint quality check & model comparisons  -----------
@@ -750,10 +774,7 @@ for ( i in names(comp) ) comp[[i]] <- comp[[i]] %>%
 
 # prepare colors to use in graphs (rangi2 and a colorblind palette)
 rangi2 <- "#8080FF"
-cbPal <- c(
-  "#999999", "#E69F00", "#56B4E9", "#009E73",
-  "#F0E442", "#0072B2", "#D55E00", "#CC79A7"
-)
+cbPal <- c( "#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7" )
 
 # loop through each model to create PSIS-LOO Pareto k plots
 f.s1 <- list()
