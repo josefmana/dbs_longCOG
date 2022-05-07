@@ -287,12 +287,21 @@ d2 <- d2[ , c( 2, which(names(d2) == "tmt_a"):which(names(d2) == "fp_dr"), which
 nb <- estim_ncpPCA( d2[,-1] , ncp.max = 10 )
 
 # impute via PCA-based multiple imputation (n = 100 imputations)
-set.seed(s) # set seed for reproducility
+set.seed(s) # set seed for reproducibility
 d2.imp <- MIPCA( d2[ ,- 1] , ncp = nb$ncp )
 
-# fit EFA to each imputed dataset with 3:8 factors
+# calculate parallel test for each imputed data set 
+set.seed(s) # set seed for reproducibility
+p.test <- lapply(
+  1:100 , function(i) fa.parallel( d2.imp$res.MI[[i]] )
+)
+
+# look at the results of parallel test
+table( sapply( 1:100 , function(i) p.test[[i]]$nfact ) )
+
+# fit EFA to each imputed data set with 3:8 factors
 efa <- lapply(
-  # loop through all 100 datasets
+  # loop through all 100 data sets
   1:length(d2.imp$res.MI), function(i)
     lapply(
       # loop through three to eight latent factors for each imputation
@@ -311,90 +320,192 @@ fat <- array(
   # create n x m x l array
   dim = c(
     length( efa[[1]] ), # m = number of factor solutions I computed above
-    6, # n = six dimensions for performance indexes
+    5, # n = five dimensions for performance indexes
     length( d2.imp$res.MI ) # l = number of imputations
   ),
   # add dimension names
   dimnames = list(
     paste0( 1:length(efa[[1]])+2, "_factors" ), # number of factors
-    c("TLI", "BIC", "RMSEA", "RMSEA_90_CI_low", "RMSEA_90_CI_upp", "var_account"), # performance indexes
+    c("TLI", "RMSEA", "RMSEA_90_CI_low", "RMSEA_90_CI_upp", "var_account"), # performance indexes
     1:length(d2.imp$res.MI) # number of imputed dataset
   )
 )
 
 # loop through the array and gather all performance indexes
-# loop through the array and gather all performance indexes
 for ( i in 1:length(d2.imp$res.MI) ) {
   for ( j in 1:length(efa[[i]]) ) {
     fat[ j , , i ] <- c(
       round( efa[[i]][[j]]$TLI , 3 ), # Tucker-Lewis index, > 0.9 is considered good
-      round( efa[[i]][[j]]$BIC , 3 ), # Bayesian Information Criterion, lower values are considered better
       round( efa[[i]][[j]]$RMSEA[1], 3 ), # root-mean square error of approximation, < 0.08 is considered good
-      round( efa[[i]][[j]]$RMSEA[1], 3 ), # 90% CI RMSEA, lower boundary
-      round( efa[[i]][[j]]$RMSEA[1], 3 ), # 90% CI RMSEA, upper boundary
+      round( efa[[i]][[j]]$RMSEA[2], 3 ), # 90% CI RMSEA, lower boundary
+      round( efa[[i]][[j]]$RMSEA[3], 3 ), # 90% CI RMSEA, upper boundary
       round(efa[[i]][[j]]$Vaccounted["Cumulative Var",j+2], 3) # total variance "accounted for" by all included factors
     )
   }
 }
 
-# print the upper 90% CI of RMSEA for all model/imputation pairs
-# get rid of values > .08 to see only models with good fit
-t(fat[ , "RMSEA_90_CI_upp" , ] ) %>%
-  as.data.frame %>%
-  mutate( across( everything() , ~ replace( . , . > .08 , "") ) )
+# summarize the fat table
+fat_sum <- data.frame(
+  # model labels
+  model = paste0( 3:8, "_factors"),
+  # performance indexes
+  TLI = NA, RMSEA = NA, RMSEA_90_CI_upp = NA, var_account = NA
+)
 
-# go through all six-factor solutions' loading matrices
+# fill-in summary of each model into fat_sum
+for ( i in fat_sum$model ) {
+  for ( j in names(fat_sum)[-1] ) {
+    fat_sum[ which(fat_sum$model == i) , j ] <- paste0(
+      sprintf( "%.3f" , round( mean( fat[ i, j, ] ), 3 ) ), " (",
+      sprintf( "%.3f" , round( sd( fat[ i, j, ] ), 3 ) ), ")"
+    )
+  }
+}
+
+# prepare a list for a summary of RMSEA and TLI
+fat_perc <- list(
+  # upper RMSEA lower than 0.08
+  `RMSEA_upp < 0.08 (%)` = t( fat[ , "RMSEA_90_CI_upp" , ] ) %>%
+    as.data.frame %>%
+    mutate( across( everything() , ~ replace( . , . > .08 , NA) ) ),
+  # TLI higher than 0.9
+  `TLI > 0.90 (%)` = t( fat[ , "TLI" , ] ) %>%
+    as.data.frame %>%
+    mutate( across( everything() , ~ replace( . , . < .9 , NA) ) )
+)
+
+# calculate the percentages
+for ( i in names(fat_perc) ) fat_perc[[i]] <- sapply(
+  names(fat_perc[[i]]), function(j) sum( complete.cases( fat_perc[[i]][[j]] ) )
+)
+
+# bind the percentages to the FA summary table (fat_sum)
+fat_sum <- fat_sum %>% left_join(
+  do.call( cbind.data.frame , fat_perc ) %>%
+    # prepare a column "model" and bind the percentages to the fat_sum
+    rownames_to_column( var = "model")
+)
+
+# go through all six-factor and seven-factor solutions' loading matrices
 # create a convenience function so that I don't go crazy immediately
-print_load <- function(i) print( efa[[i]][[4]]$loadings, cutoff = .4, sort = T )
-# weird ones - # 24, 31, 38, 45, 52, 63, 82
-# include reverse scored factors - # 15, 19, 24, 38, 45, 46, 47, 63, 91, 98
+print_load <- function(i, f = 7, c = .4) {
+  print( efa[[i]][[f-2]]$loadings, cutoff = c, sort = T )
+}
+
+# six-factor weird ones:
+# data set 24, 31, 38, 52, 82 (visp_wm is set_shift & visp_mem is visp_wm)
+# data set 45 (visp_mem is set_shift & anxiety includes visp_wm)
+# data set 63 (visp_mem is hard to define)
+
+
+# seven-factor weird ones:
+# data sets 40, 42, 43, 54, 57, 84, 88, 89, 91 (sim-based set_shift),
+# data set 48 (fluency-base set_shift)
+# data set 65 (pst_c-base set_shift),
+# data set 73 (set_shift twice),
+# data sets 95, 99 (ravlt-based set_shift)
+
+# read the table with seven-factor solutions' loadings summary
+doms_sum <- list( nms = read.csv( "data/20220507_imp_seven_fact.csv" , sep = "," , row.names = 1, header = T) )
+
+# fill-in signs to know which factor scores should be reversed
+doms_sum$sgn <- apply( doms_sum$nms , 2 , function(x) startsWith( x , "-") ) %>%
+  as.data.frame %>%
+  mutate( across( everything() , ~ ifelse( . == T , -1 , 1 ) ) )
+
+# get rid of the minus sign in loading names list
+doms_sum$nms <- doms_sum$nms %>%
+  mutate( across( everything() , ~ gsub( "-" , "" , . ) ) )
+
+# switch sign where appropriate in EFA loadings and scores
+for ( i in 1:length(efa) ) {
+  for ( j in c("loadings","scores","Vaccounted") ) {
+    # multiply by a diagonal matrix of 1 and -1
+    if( j %in% c("loadings","scores") ) {
+      efa[[i]][[5]][[j]] <- efa[[i]][[5]][[j]] %*% diag(doms_sum$sgn[i, ]) 
+    }
+    # next rename the columns
+    colnames( efa[[i]][[5]][[j]] ) <- doms_sum$nms[i, ]
+  }
+}
+
+# prepare a loading matrix for each imputed data set
+loads <- lapply(
+  1:length(efa) , function(i)
+    efa[[i]][[5]]$loadings %>%
+      as.data.frame %>%
+      bind_rows( efa[[i]][[5]]$Vaccounted[ "Proportion Var", ] ) %>%
+      rownames_to_column( var = "test" ) %>%
+      mutate( test = ifelse( test == "...24" , "Proportion Var" , test) )
+)
+
+# write down all the domains
+doms <- c(
+  "ment_flex",
+  "epis_mem",
+  "visp_mem",
+  "verb_wm",
+  "set_shift",
+  "visp_wm",
+  "anxiety"
+)
+
+# order columns according to the list above
+# and then add cumulative variation accounted for
+for ( i in 1:length(loads) ){
+  loads[[i]] <- loads[[i]][ c("test", doms) ] %>%
+    bind_rows(
+      t(apply( loads[[1]][24,2:8] , 1 , cumsum )) %>% # add number of tests and number of factors as variables to make the code more general
+        as.data.frame() %>%
+        mutate( test = "Cumulative Var")
+    )
+}
+
+# write down a summary of loadings across all 100 imputed data sets
+loads_sum <- matrix(
+  data = NA, nrow = nrow(loads[[1]]), ncol = ncol(loads[[1]]),
+  dimnames = list( 1:nrow(loads[[1]]) , colnames(loads[[1]]) )
+) %>% as.data.frame()
+
+# fill-in the "test" column (loads_sums[,1])
+loads_sum[ , "test"] <- loads[[1]]$test
+
+# fill in the rest
+for ( i in loads_sum$test ) {
+    loads_sum[ loads_sum$test == i , 2:8 ] <- paste0(
+      sprintf(
+        "%.3f" , round(
+          do.call( rbind.data.frame , loads ) %>%
+            filter( test == i ) %>%
+            select( - test ) %>%
+            colMeans,
+          2
+        )
+      )
+    )
+}
 
 # save the imputed data set for future control
 saveRDS( d2.imp , "data/20220503_100_imputed_df.rds" )
 
-
-
-
-# selecting the 6-factor solution due to the best BIC, reasonable stats w.r.t. competition and interpretable factors
-# which are missing in models with better stats that include a one-item factor
-# time to name cognitive domains inferred from pre-surgery tests
-for ( i in c("loadings","scores","Vaccounted")) {
-  colnames( efa[[4]][[i]] ) <- c(
-    "ment_flex", # 'mental flexibility' is loaded on primarily by Stroop task and verbal fluencies
-    "epis_mem", # 'episodic memory' is loaded on primarily by RAVLT
-    "visp_wm", # 'visuo-spatial working memory/switching' is loaded on primarily by Spatial Span, TMTs and LNS
-    "visp_mem", # 'visuo-spatial memory' is loaded on primarily by Family Picture Test
-    "verb_wm", # 'verbal working memory' is loaded on primarily by Digit Spans and Letter-Number sequencing (LNS)
-    "anxiety" # 'anxiety! is loaded on primarily by STAI
-  )
-}
-
-# prepare Tab.3 with loadings and variance accounted for by the 6-factor model
-tab3 <- unclass( efa[[4]]$loadings ) %>%
-  as.data.frame() %>%
-  # add variance accounted for
-  bind_rows( as.data.frame(efa[[4]]$Vaccounted[ c("Proportion Var", "Cumulative Var"), ]) ) %>%
-  # rename and round
-  mutate(
-    ment_flex = sprintf( "%.3f" , round( ment_flex , 3 ) ),
-    epis_mem = sprintf( "%.3f" , round( epis_mem , 3 ) ),
-    visp_wm = sprintf( "%.3f" , round( visp_wm , 3 ) ),
-    visp_mem = sprintf( "%.3f" , round( visp_mem , 3 ) ),
-    verb_wm = sprintf( "%.3f" , round( verb_wm , 3 ) ),
-    anxiety = sprintf( "%.3f" , round( anxiety , 3 ) )
-  ) %>%
-  # give rownames their own variable/column
-  rownames_to_column(
-    var = "variable"
-  )
-
 # save all EFA models
 saveRDS( object = efa, file = "models/efa.rds" )
+
+
+
+
+
+
+
+
+
+
 
 # merge longitudinal d1 with baseline factor scores from efa[[4]] (joining by id)
 d1 <- d1 %>%
   left_join( cbind.data.frame(id = d2$id, efa[[4]]$scores ) , by = "id" ) %>%
   filter( complete.cases(drs_tot) ) # get rid of three dummy rows due to more than one stimulation parameter (no DRS-2)
+
 
 # ----------- pre-processing for longitudinal analyses  -----------
 
