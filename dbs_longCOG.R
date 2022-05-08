@@ -38,13 +38,18 @@ sapply(
 # set ggplot theme
 theme_set( theme_classic(base_size = 25) )
 
-# set rstan options
+# prepare colors to use in graphs (rangi2 and a colorblind palette)
+rangi2 <- "#8080FF"
+cbPal <- c( "#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7" )
+
+# set rstan options and other shinanigans
 options( mc.cores = parallel::detectCores() ) # use all parallel CPU cores
 s = 87542 # seed for reproducibility
 ch = 4 # number of chains
 it = 2500 # iterations per chain
 wu = 500 # warm-up iterations, to be discarded
 ad = .99 # adapt_delta parameter
+imp = 100 # multiply impute missing values in d2, choosing 100 imputations
 
 # create folders "models", "figures" and "tables" to store results in
 # prints TRUE and creates the folder if it was not present,
@@ -62,7 +67,7 @@ sapply(
 # read the dataset and prepare subsets for individual analyses
 # In this file, my strategy is to label the sequential version
 # of dataset as d# (where # goes for a number of the data version)
-d0 <- read.csv( "data/20220426_dbs_longCOG_data.csv" , sep = "," )
+d0 <- read.csv( "data/20220508_dbs_longCOG_data.csv" , sep = "," )
 d1 <- d0[ d0$included == 1 , ] # only STN-DBS treated patients with pre- and post-surgery data
 d2 <- d1[ d1$ass_type == "pre" , ] # only pre-surgery assessments of included patients
 
@@ -282,9 +287,11 @@ ggsave( "figures/Fig.2 distribution of assessments.png" , height = 2.5 * 6.12 , 
 # for EFA keep only id and cognitive tests in d2
 d2 <- d2[ , c( 2, which(names(d2) == "tmt_a"):which(names(d2) == "fp_dr"), which(names(d2) %in% paste0("staix",1:2)) ) ]
 
-# multiply impute missing values in d2
-# first find out the optimal number of components for multiple combinations
-nb <- estim_ncpPCA( d2[,-1] , ncp.max = 10 )
+# log-transform raction times before analysis
+for ( i in c( paste0("tmt_", c("a","b")), paste0("pst_", c("d","w","c")) ) ) d2[[i]] <- log( d2[[i]] )
+
+# find out the optimal number of components for multiple combinations
+nb <- estim_ncpPCA( d2[,-1] , ncp.min = 0, ncp.max = 10 , nbsim = imp )
 
 # impute via PCA-based multiple imputation (n = 100 imputations)
 set.seed(s) # set seed for reproducibility
@@ -302,7 +309,7 @@ table( sapply( 1:100 , function(i) p.test[[i]]$nfact ) )
 # fit EFA to each imputed data set with 3:8 factors
 efa <- lapply(
   # loop through all 100 data sets
-  1:length(d2.imp$res.MI), function(i)
+  1:imp, function(i)
     lapply(
       # loop through three to eight latent factors for each imputation
       3:8, function(j)
@@ -317,22 +324,18 @@ efa <- lapply(
 
 # prepare a table for performance indexes of each solution for each imputed dataset
 fat <- array(
-  # create n x m x l array
-  dim = c(
-    length( efa[[1]] ), # m = number of factor solutions I computed above
-    5, # n = five dimensions for performance indexes
-    length( d2.imp$res.MI ) # l = number of imputations
-  ),
+  # create an empty 6 (factor solutions) x 5 (performance indexes) x 100 (imputations) array
+  data = NA, dim = c( length( efa[[1]] ), 5, imp ),
   # add dimension names
   dimnames = list(
     paste0( 1:length(efa[[1]])+2, "_factors" ), # number of factors
     c("TLI", "RMSEA", "RMSEA_90_CI_low", "RMSEA_90_CI_upp", "var_account"), # performance indexes
-    1:length(d2.imp$res.MI) # number of imputed dataset
+    1:imp # number of imputed dataset
   )
 )
 
 # loop through the array and gather all performance indexes
-for ( i in 1:length(d2.imp$res.MI) ) {
+for ( i in 1:imp ) {
   for ( j in 1:length(efa[[i]]) ) {
     fat[ j , , i ] <- c(
       round( efa[[i]][[j]]$TLI , 3 ), # Tucker-Lewis index, > 0.9 is considered good
@@ -386,102 +389,122 @@ fat_sum <- fat_sum %>% left_join(
     rownames_to_column( var = "model")
 )
 
+# visualize performance indexes across imputed data sets with density plots
+f.s1 <- list()
+for ( i in c("TLI","RMSEA_90_CI_upp") ) f.s1[[i]] <- fat[ , i , ] %>%
+  t %>% as.data.frame %>%
+  pivot_longer( everything() , names_to = "Model" , values_to = i ) %>%
+  mutate( Model = substr( gsub( "_", "-", Model ) , 1 , nchar(Model)-1 ) ) %>%
+  rename( "index" = i ) %>%
+  ggplot( aes( x = index , fill = `Model`) ) +
+    geom_density( alpha = .4 , color = NA ) +
+    scale_fill_manual( values = cbPal[3:8] ) +
+    geom_vline(linetype = "dashed" ,
+               size = 1.2,
+               xintercept = case_when(
+                 i == "TLI" ~ .9,
+                 i == "RMSEA_90_CI_upp" ~ .08
+                 )
+               ) +
+    labs(y = "Density",
+         x = case_when(
+           i == "TLI" ~ "TLI",
+           i == "RMSEA_90_CI_upp" ~ "RMSEA (upper 90% CI)"
+           )
+         )
+
+# arrange Fig. S1 for printing
+f.s1$TLI / f.s1$RMSEA_90_CI_upp +
+  plot_layout( guides = "collect" ) +
+  plot_annotation( tag_levels = "A" )
+
+# save as Fig.2
+ggsave(
+  "figures/Fig S1 factor analysis performance indexes.png",
+  height = 1.5 * 6.07, width = 1.5 * 11.5, dpi = "retina"
+)
+
 # go through all six-factor and seven-factor solutions' loading matrices
 # create a convenience function so that I don't go crazy immediately
-print_load <- function(i, f = 7, c = .4) {
+print_load <- function( i, c = .4, f = 7 ) {
   print( efa[[i]][[f-2]]$loadings, cutoff = c, sort = T )
 }
 
-# six-factor weird ones:
-# data set 24, 31, 38, 52, 82 (visp_wm is set_shift & visp_mem is visp_wm)
-# data set 45 (visp_mem is set_shift & anxiety includes visp_wm)
-# data set 63 (visp_mem is hard to define)
+# choosing 7-factor solution due to good performance indexes,
+# and theoretical interpretability superior to the 6-factor solution
+nf = 7
 
+# prepare array for summaries of seven-factor solutions' loadings
+doms_sum <- array(
+  # create an empty 2 (names/signs) x 7 (factors) x 100 (imputations) array
+  data = NA, dim = c(2, nf, imp),
+  dimnames = list( c("nms","sgn"), paste0("F", 1:nf), 1:imp )
+)
 
-# seven-factor weird ones:
-# data sets 40, 42, 43, 54, 57, 84, 88, 89, 91 (sim-based set_shift),
-# data set 48 (fluency-base set_shift)
-# data set 65 (pst_c-base set_shift),
-# data set 73 (set_shift twice),
-# data sets 95, 99 (ravlt-based set_shift)
+# read the table with seven-factor solutions' loading summary
+doms_sum["nms", , ] <- t( read.csv( "data/20220508_imp_seven_fact.csv" , sep = "," , row.names = 1, header = T) )
 
-# read the table with seven-factor solutions' loadings summary
-doms_sum <- list( nms = read.csv( "data/20220507_imp_seven_fact.csv" , sep = "," , row.names = 1, header = T) )
-
-# fill-in signs to know which factor scores should be reversed
-doms_sum$sgn <- apply( doms_sum$nms , 2 , function(x) startsWith( x , "-") ) %>%
-  as.data.frame %>%
-  mutate( across( everything() , ~ ifelse( . == T , -1 , 1 ) ) )
+# fill-in signs of each factor in each imptation to know which scores should be reversed
+doms_sum["sgn", , ] <- apply( doms_sum["nms", , ] , 2 , function(x) startsWith( x , "-") ) %>%
+  t %>% as.data.frame %>% mutate( across( everything() , ~ ifelse( . == T , -1 , 1 ) ) ) %>% t
 
 # get rid of the minus sign in loading names list
-doms_sum$nms <- doms_sum$nms %>%
-  mutate( across( everything() , ~ gsub( "-" , "" , . ) ) )
-
-# switch sign where appropriate in EFA loadings and scores
-for ( i in 1:length(efa) ) {
-  for ( j in c("loadings","scores","Vaccounted") ) {
-    # multiply by a diagonal matrix of 1 and -1
-    if( j %in% c("loadings","scores") ) {
-      efa[[i]][[5]][[j]] <- efa[[i]][[5]][[j]] %*% diag(doms_sum$sgn[i, ]) 
-    }
-    # next rename the columns
-    colnames( efa[[i]][[5]][[j]] ) <- doms_sum$nms[i, ]
-  }
-}
-
-# prepare a loading matrix for each imputed data set
-loads <- lapply(
-  1:length(efa) , function(i)
-    efa[[i]][[5]]$loadings %>%
-      as.data.frame %>%
-      bind_rows( efa[[i]][[5]]$Vaccounted[ "Proportion Var", ] ) %>%
-      rownames_to_column( var = "test" ) %>%
-      mutate( test = ifelse( test == "...24" , "Proportion Var" , test) )
-)
+doms_sum["nms", , ] <- doms_sum["nms", , ] %>%
+  t %>% as.data.frame %>% mutate( across( everything() , ~ gsub( "-" , "" , . ) ) ) %>% t
 
 # write down all the domains
 doms <- c(
-  "ment_flex",
-  "epis_mem",
-  "visp_mem",
-  "verb_wm",
-  "set_shift",
-  "visp_wm",
-  "anxiety"
+  "ment_flex", # loaded on primarily by PST, the first factor in 83% data sets
+  "epis_mem", # loaded on primarily by RAVLT, the second factor in 81% data sets
+  "verb_wm", # loaded on primarily by DS, the third factor in 62% data sets
+  "visp_mem", # loaded on primarily by FP, the fourth factor in 46% data sets
+  "set_shift", # loaded on primarily by TMT and RAVLT-B, the fifth factor in 28% data sets
+  "anxiety", # loaded on primarily by STAI, the sixth factor in 60% data sets
+  "visp_wm" # loaded on primarily by SS, the seventh factor in 49% data sets
 )
 
-# order columns according to the list above
-# and then add cumulative variation accounted for
-for ( i in 1:length(loads) ){
-  loads[[i]] <- loads[[i]][ c("test", doms) ] %>%
-    bind_rows(
-      t(apply( loads[[1]][24,2:8] , 1 , cumsum )) %>% # add number of tests and number of factors as variables to make the code more general
-        as.data.frame() %>%
-        mutate( test = "Cumulative Var")
-    )
+# switch sign where appropriate in EFA loadings and scores, and
+# rename and sort columns
+for ( i in 1:imp ) {
+  for ( j in c("loadings","scores","Vaccounted") ) {
+    # multiply by a diagonal matrix of 1 and -1
+    if( j %in% c("loadings","scores") ) {
+      efa[[i]][[nf-2]][[j]] <- efa[[i]][[nf-2]][[j]] %*% diag(doms_sum["sgn", , i ]) 
+    }
+    # rename the columns
+    colnames( efa[[i]][[5]][[j]] ) <- doms_sum["nms", , i ]
+    # reorder the columns such that they are the same in each imputation
+    efa[[i]][[nf-2]][[j]] <- efa[[i]][[nf-2]][[j]][doms]
+  }
 }
 
+# prepare an array for loading matrixes of each imputed EFA
+loads <- array(
+  # create an empty 25 ( 23 tests + 2 variance accounted) x 7 (factors) x 100 (imputations) array
+  data = NA, dim = c(25, nf, imp),
+  dimnames = list( c( rownames(efa[[1]][[nf-2]]$loadings) , "Proportion Var", "Cumulative Var" ), doms, 1:imp )
+)
+
+# fill-in all values from efa objects prepared above
+for( i in 1:imp ) loads[ , , i ] <- efa[[i]][[nf-2]]$loadings %>%
+  as.data.frame %>%
+  bind_rows( efa[[i]][[nf-2]]$Vaccounted[ "Proportion Var", ] ) %>%
+  bind_rows(
+    apply( efa[[i]][[nf-2]]$Vaccounted[ "Proportion Var", ] %>% t, 1 , cumsum ) %>% t %>% as.data.frame()
+  ) %>% as.matrix()
+
+
 # write down a summary of loadings across all 100 imputed data sets
-loads_sum <- matrix(
-  data = NA, nrow = nrow(loads[[1]]), ncol = ncol(loads[[1]]),
-  dimnames = list( 1:nrow(loads[[1]]) , colnames(loads[[1]]) )
+t3 <- matrix(
+  data = NA, nrow = nrow(loads[ , , 1]), ncol = ncol(loads[ , , 1]),
+  dimnames = list( rownames(loads[ , , 1 ]) , colnames(loads[ , , 1]) )
 ) %>% as.data.frame()
 
-# fill-in the "test" column (loads_sums[,1])
-loads_sum[ , "test"] <- loads[[1]]$test
-
-# fill in the rest
-for ( i in loads_sum$test ) {
-    loads_sum[ loads_sum$test == i , 2:8 ] <- paste0(
-      sprintf(
-        "%.3f" , round(
-          do.call( rbind.data.frame , loads ) %>%
-            filter( test == i ) %>%
-            select( - test ) %>%
-            colMeans,
-          2
-        )
-      )
+# fill in averages across 100 imputations 
+for ( i in rownames(t3) ) {
+  t3[ i , ] <- paste0(
+      sprintf( "%.2f" , round( loads[i, , ] %>% t %>% colMeans , 2 ) ), " (", # mean
+      sprintf( "%.2f" , round( loads[i, , ] %>% t %>% apply( . , 2 , sd ), 2) ), ")" # SD
     )
 }
 
@@ -491,7 +514,9 @@ saveRDS( d2.imp , "data/20220503_100_imputed_df.rds" )
 # save all EFA models
 saveRDS( object = efa, file = "models/efa.rds" )
 
-
+# next time - visuaùise factor loadings (see for example https://rpubs.com/danmirman/plotting_factor_analysis),
+# merge factor scores with longitudinal data sets (leading to 100 imputed longitudinal dfs),
+# and compute the longitudinal analysis
 
 
 
@@ -872,7 +897,7 @@ for ( i in names(comp) ) {
     pseudobma_weights( lpd_point[[i]], BB = T )[[1]],
     pseudobma_weights( lpd_point[[i]], BB = T )[[2]]
   )[,1]
-  # stacking weigts
+  # stacking weights
   comp[[i]][,"stacking"] <- rbind(
     stacking_weights( lpd_point[[i]] )[[1]],
     stacking_weights( lpd_point[[i]] )[[2]]
@@ -882,10 +907,6 @@ for ( i in names(comp) ) {
 # round the results
 for ( i in names(comp) ) comp[[i]] <- comp[[i]] %>%
   mutate_if( is.numeric, round, 3 )
-
-# prepare colors to use in graphs (rangi2 and a colorblind palette)
-rangi2 <- "#8080FF"
-cbPal <- c( "#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7" )
 
 # loop through each model to create PSIS-LOO Pareto k plots
 f.s1 <- list()
