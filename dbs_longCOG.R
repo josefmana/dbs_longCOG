@@ -42,14 +42,16 @@ theme_set( theme_classic(base_size = 25) )
 rangi2 <- "#8080FF"
 cbPal <- c( "#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7" )
 
-# set rstan options and other shinanigans
+# set number of multiple imputations to account for missing pre-surgery data
+imp = 100
+
+# set rstan options
 options( mc.cores = parallel::detectCores() ) # use all parallel CPU cores
 s = 87542 # seed for reproducibility
 ch = 4 # number of chains
 it = 2500 # iterations per chain
 wu = 500 # warm-up iterations, to be discarded
 ad = .99 # adapt_delta parameter
-imp = 100 # multiply impute missing values in d2, choosing 100 imputations
 
 # create folders "models", "figures" and "tables" to store results in
 # prints TRUE and creates the folder if it was not present,
@@ -71,6 +73,9 @@ d0 <- read.csv( "data/20220508_dbs_longCOG_data.csv" , sep = "," )
 d1 <- d0[ d0$included == 1 , ] # only STN-DBS treated patients with pre- and post-surgery data
 d2 <- d1[ d1$ass_type == "pre" , ] # only pre-surgery assessments of included patients
 
+# read a file obtaining mapping from variables' names used in the script to variables' names for the manuscript
+var_nms <- read.csv( "data/var_nms.csv" , sep = ";" , row.names = 1 )
+
 # ----------- participant inclusion flowchart  -----------
 
 # check that when selecting only rows containing pre-surgery assessment,
@@ -83,8 +88,8 @@ isTRUE(
 ) # TRUE
 
 # create a table summarizing reasons for excluding patients
-t <- table(d0[ d0$ass_type == "pre" , ]$why_excluded)
-print(t)
+t0 <- table(d0[ d0$ass_type == "pre" , ]$why_excluded)
+print(t0)
 
 # using numbers from t create an inclusion/exclusion flowchart
 f1 <- " digraph {
@@ -153,7 +158,7 @@ f1 <- " digraph {
   }" 
 
 # save the flowchart as png
-grViz(f1) %>% export_svg %>% charToRaw %>% rsvg_png("figures/Fig.1 inclusion-exclusion flowchart.png")
+grViz(f1) %>% export_svg %>% charToRaw %>% rsvg_png("figures/Fig 1 inclusion-exclusion flowchart.png")
 
 
 # ----------- sample description  -----------
@@ -161,7 +166,7 @@ grViz(f1) %>% export_svg %>% charToRaw %>% rsvg_png("figures/Fig.1 inclusion-exc
 # list all stimulation parameters
 pars <- names(d1)[which(names(d1)=="current_r_mA"):which(names(d1)=="frequency_l_Hz")]
 
-# prepare dataframe to fill-in
+# prepare a data frame to fill-in by summary of stimulation parameters
 t1 <- data.frame(
   Md = rep( NA , length(pars) ), `Min-Max` = NA, M = NA, SD = NA, row.names = pars
 )
@@ -190,7 +195,7 @@ for ( i in pars ) {
 # list all variables that will be included in Tab. 2 (baseline characteristics)
 vars <- names(d2)[which(names(d2)=="age_stim_y"):which(names(d2)=="fp_dr")]
 
-# prepare a dataframe to fill-in
+# prepare a data frame to fill-in by baseline characteristics
 t2 <- data.frame(
   N = rep( NA, length(vars) ), Md = NA, `Min-Max` = NA, M = NA, SD = NA, row.names = vars
 )
@@ -235,11 +240,11 @@ t2[ "sex" , c("N","Min.Max")] <- c(
   )
 )
 
-# prepare a histogram of the distribution of assessments across time (Fig. 2A)
+# prepare a histogram of the distribution of assessments across time (Fig 2A)
 f2 <- list()
 
-# need to use the complete.cases command because for three patient I have duplicated
-# rows due to more than one stimulation parameter
+# need to use the complete.cases command because three patient have duplicated rows
+# due to more than one stimulation parameter
 f2$hist <- d1[ complete.cases(d1$drs_tot) , ] %>% 
   ggplot( aes(x = time_y) ) +
   stat_bin( binwidth = .5, position = position_nudge(x = -.5*.5) ) + # creates bars
@@ -259,7 +264,7 @@ f2$hist <- d1[ complete.cases(d1$drs_tot) , ] %>%
     limits = c(-2, 12), breaks = seq(-2, 12, 1), labels = seq(-2, 12, 1)
   )
 
-# prepare a bin plot showing distribution of the number of assessments per patient (Fig.2B)
+# prepare a bin plot showing distribution of the number of assessments per patient (Fig 2B)
 f2$bin <- table( d1[ complete.cases(d1$drs_tot) , ]$id ) %>%
   as.data.frame() %>%
   ggplot( aes(x = Freq) ) +
@@ -275,11 +280,11 @@ f2$bin <- table( d1[ complete.cases(d1$drs_tot) , ]$id ) %>%
     y = "Number of Patients"
   )
 
-# arrange Fig.2A and Fig.2B for printing
+# arrange Fig 2A and Fig 2B for printing
 f2$hist / f2$bin + plot_annotation( tag_levels = "A" )
 
-# save as Fig.2
-ggsave( "figures/Fig.2 distribution of assessments.png" , height = 2.5 * 6.12 , width = 1.5 * 11.6 , dpi = "retina" )
+# save as Fig 2
+ggsave( "figures/Fig 2 distribution of assessments.png" , height = 2.5 * 6.12 , width = 1.5 * 11.6 , dpi = "retina" )
 
 
 # ----------- pre-surgery cognitive profile  -----------
@@ -287,7 +292,7 @@ ggsave( "figures/Fig.2 distribution of assessments.png" , height = 2.5 * 6.12 , 
 # for EFA keep only id and cognitive tests in d2
 d2 <- d2[ , c( 2, which(names(d2) == "tmt_a"):which(names(d2) == "fp_dr"), which(names(d2) %in% paste0("staix",1:2)) ) ]
 
-# log-transform raction times before analysis
+# log-transform reaction times before analysis
 for ( i in c( paste0("tmt_", c("a","b")), paste0("pst_", c("d","w","c")) ) ) d2[[i]] <- log( d2[[i]] )
 
 # find out the optimal number of components for multiple combinations
@@ -303,7 +308,7 @@ p.test <- lapply(
   1:100 , function(i) fa.parallel( d2.imp$res.MI[[i]] )
 )
 
-# look at the results of parallel test
+# look at the results of parallel tests
 table( sapply( 1:100 , function(i) p.test[[i]]$nfact ) )
 
 # fit EFA to each imputed data set with 3:8 factors
@@ -314,7 +319,7 @@ efa <- lapply(
       # loop through three to eight latent factors for each imputation
       3:8, function(j)
         fa(
-          d2.imp$res.MI[[i]], # one-by-one use each imputed dataset
+          d2.imp$res.MI[[i]], # one-by-one use each imputed data set
           nfactors = j, # fit 3-8 factor solutions
           rotate = "varimax", # rotate varimax to enforce orthogonality and for interpretation purposes
           scores = "regression" # compute regression scores for each patient
@@ -322,7 +327,7 @@ efa <- lapply(
     )
 )
 
-# prepare a table for performance indexes of each solution for each imputed dataset
+# prepare a table for performance indexes of each solution for each imputed data set
 fat <- array(
   # create an empty 6 (factor solutions) x 5 (performance indexes) x 100 (imputations) array
   data = NA, dim = c( length( efa[[1]] ), 5, imp ),
@@ -330,7 +335,7 @@ fat <- array(
   dimnames = list(
     paste0( 1:length(efa[[1]])+2, "_factors" ), # number of factors
     c("TLI", "RMSEA", "RMSEA_90_CI_low", "RMSEA_90_CI_upp", "var_account"), # performance indexes
-    1:imp # number of imputed dataset
+    1:imp # the number of imputed data set
   )
 )
 
@@ -341,19 +346,14 @@ for ( i in 1:imp ) {
       round( efa[[i]][[j]]$TLI , 3 ), # Tucker-Lewis index, > 0.9 is considered good
       round( efa[[i]][[j]]$RMSEA[1], 3 ), # root-mean square error of approximation, < 0.08 is considered good
       round( efa[[i]][[j]]$RMSEA[2], 3 ), # 90% CI RMSEA, lower boundary
-      round( efa[[i]][[j]]$RMSEA[3], 3 ), # 90% CI RMSEA, upper boundary
+      round( efa[[i]][[j]]$RMSEA[3], 3 ), # 90% CI RMSEA, upper boundary (ideally should be < 0.08)
       round(efa[[i]][[j]]$Vaccounted["Cumulative Var",j+2], 3) # total variance "accounted for" by all included factors
     )
   }
 }
 
 # summarize the fat table
-fat_sum <- data.frame(
-  # model labels
-  model = paste0( 3:8, "_factors"),
-  # performance indexes
-  TLI = NA, RMSEA = NA, RMSEA_90_CI_upp = NA, var_account = NA
-)
+fat_sum <- data.frame( model = paste0( 3:8, "_factors"), TLI = NA, RMSEA = NA, RMSEA_90_CI_upp = NA, var_account = NA )
 
 # fill-in summary of each model into fat_sum
 for ( i in fat_sum$model ) {
@@ -365,7 +365,7 @@ for ( i in fat_sum$model ) {
   }
 }
 
-# prepare a list for a summary of RMSEA and TLI
+# prepare a list for a summary of RMSEA and TLI frequencies across all imputations
 fat_perc <- list(
   # upper RMSEA lower than 0.08
   `RMSEA_upp < 0.08 (%)` = t( fat[ , "RMSEA_90_CI_upp" , ] ) %>%
@@ -377,7 +377,7 @@ fat_perc <- list(
     mutate( across( everything() , ~ replace( . , . < .9 , NA) ) )
 )
 
-# calculate the percentages
+# calculate the percentages/frequencies
 for ( i in names(fat_perc) ) fat_perc[[i]] <- sapply(
   names(fat_perc[[i]]), function(j) sum( complete.cases( fat_perc[[i]][[j]] ) )
 )
@@ -389,66 +389,55 @@ fat_sum <- fat_sum %>% left_join(
     rownames_to_column( var = "model")
 )
 
-# visualize performance indexes across imputed data sets with density plots
+# visualize performance indexes across imputed data sets with density plots (Fig S1)
+# set a list to contain Fig S1 component figures
 f.s1 <- list()
-for ( i in c("TLI","RMSEA_90_CI_upp") ) f.s1[[i]] <- fat[ , i , ] %>%
-  t %>% as.data.frame %>%
-  pivot_longer( everything() , names_to = "Model" , values_to = i ) %>%
-  mutate( Model = substr( gsub( "_", "-", Model ) , 1 , nchar(Model)-1 ) ) %>%
-  rename( "index" = i ) %>%
-  ggplot( aes( x = index , fill = `Model`) ) +
+
+# loop through TLI and upper 90% CI RMSEA
+for ( i in c("TLI","RMSEA_90_CI_upp") ) {
+  f.s1[[i]] <- fat[ , i , ] %>%
+    # formatting the table for plotting
+    t %>% as.data.frame %>%
+    pivot_longer( everything() , names_to = "Model" , values_to = i ) %>%
+    # mutating variables to an appropriate form
+    mutate( Model = substr( gsub( "_", "-", Model ) , 1 , nchar(Model)-1 ) ) %>%
+    rename( "index" = i ) %>%
+    # plotting proper
+    ggplot( aes( x = index , fill = Model) ) +
     geom_density( alpha = .4 , color = NA ) +
-    scale_fill_manual( values = cbPal[3:8] ) +
-    geom_vline(linetype = "dashed" ,
-               size = 1.2,
-               xintercept = case_when(
-                 i == "TLI" ~ .9,
-                 i == "RMSEA_90_CI_upp" ~ .08
-                 )
-               ) +
-    labs(y = "Density",
-         x = case_when(
-           i == "TLI" ~ "TLI",
-           i == "RMSEA_90_CI_upp" ~ "RMSEA (upper 90% CI)"
-           )
-         )
-
-# arrange Fig. S1 for printing
-f.s1$TLI / f.s1$RMSEA_90_CI_upp +
-  plot_layout( guides = "collect" ) +
-  plot_annotation( tag_levels = "A" )
-
-# save as Fig.2
-ggsave(
-  "figures/Fig S1 factor analysis performance indexes.png",
-  height = 1.5 * 6.07, width = 1.5 * 11.5, dpi = "retina"
-)
-
-# go through all six-factor and seven-factor solutions' loading matrices
-# create a convenience function so that I don't go crazy immediately
-print_load <- function( i, c = .4, f = 7 ) {
-  print( efa[[i]][[f-2]]$loadings, cutoff = c, sort = T )
+    scale_fill_manual( values = cbPal[3:8] ) + # use colorblind-friendly palette
+    geom_vline( # add a vertical line depicting good performance heuristic
+      linetype = "dashed", size = 1.2, xintercept = case_when( i == "TLI" ~ .9, i == "RMSEA_90_CI_upp" ~ .08 )
+    ) +
+    labs( y = "Density", x = case_when( i == "TLI" ~ "TLI", i == "RMSEA_90_CI_upp" ~ "RMSEA (upper 90% CI)" ) )
 }
+
+# arrange Fig S1 for printing
+f.s1$TLI / f.s1$RMSEA_90_CI_upp + plot_layout( guides = "collect" ) + plot_annotation( tag_levels = "A" )
+
+# save as Fig S1
+ggsave( "figures/Fig S1 factor analysis performance indexes.png", height = 1.75*6.07, width = 1.75*11.5, dpi = "retina" )
+
+# one-by-one inspect all six-factor and seven-factor solutions' loading matrices
+# create a convenience function so that I don't go crazy immediately
+print_load <- function( i, c = .4, f = 7 ) print( efa[[i]][[f-2]]$loadings, cutoff = c, sort = T )
 
 # choosing 7-factor solution due to good performance indexes,
 # and theoretical interpretability superior to the 6-factor solution
 nf = 7
 
-# prepare array for summaries of seven-factor solutions' loadings
-doms_sum <- array(
-  # create an empty 2 (names/signs) x 7 (factors) x 100 (imputations) array
-  data = NA, dim = c(2, nf, imp),
-  dimnames = list( c("nms","sgn"), paste0("F", 1:nf), 1:imp )
-)
+# prepare an array for labels of seven-factor solution factors
+# create an empty 2 (names/signs) x 7 (factors) x 100 (imputations) array
+doms_sum <- array( data = NA, dim = c(2, nf, imp), dimnames = list( c("nms","sgn"), paste0("F", 1:nf), 1:imp ) )
 
-# read the table with seven-factor solutions' loading summary
-doms_sum["nms", , ] <- t( read.csv( "data/20220508_imp_seven_fact.csv" , sep = "," , row.names = 1, header = T) )
+# read the table with seven-factor labels
+doms_sum["nms", , ] <- t( read.csv( "data/dbs_longCOG_efa_labels.csv" , sep = "," , row.names = 1, header = T) )
 
-# fill-in signs of each factor in each imptation to know which scores should be reversed
+# fill-in signs of each factor in each imputation to know which scores should be reversed
 doms_sum["sgn", , ] <- apply( doms_sum["nms", , ] , 2 , function(x) startsWith( x , "-") ) %>%
   t %>% as.data.frame %>% mutate( across( everything() , ~ ifelse( . == T , -1 , 1 ) ) ) %>% t
 
-# get rid of the minus sign in loading names list
+# get rid of the minus sign in labels table
 doms_sum["nms", , ] <- doms_sum["nms", , ] %>%
   t %>% as.data.frame %>% mutate( across( everything() , ~ gsub( "-" , "" , . ) ) ) %>% t
 
@@ -463,29 +452,26 @@ doms <- c(
   "visp_wm" # loaded on primarily by SS, the seventh factor in 49% data sets
 )
 
-# switch sign where appropriate in EFA loadings and scores, and
-# rename and sort columns
+# switch signs where appropriate in EFA loadings and scores, and rename and sort columns
 for ( i in 1:imp ) {
   for ( j in c("loadings","scores","Vaccounted") ) {
     # multiply by a diagonal matrix of 1 and -1
-    if( j %in% c("loadings","scores") ) {
-      efa[[i]][[nf-2]][[j]] <- efa[[i]][[nf-2]][[j]] %*% diag(doms_sum["sgn", , i ]) 
-    }
+    if( j %in% c("loadings","scores") ) efa[[i]][[nf-2]][[j]] <- efa[[i]][[nf-2]][[j]] %*% diag(doms_sum["sgn", , i ] )
     # rename the columns
     colnames( efa[[i]][[5]][[j]] ) <- doms_sum["nms", , i ]
-    # reorder the columns such that they are the same in each imputation
-    efa[[i]][[nf-2]][[j]] <- efa[[i]][[nf-2]][[j]][doms]
+    # reorder the columns such that they are in the same order for each imputation
+    efa[[i]][[nf-2]][[j]] <- efa[[i]][[nf-2]][[j]][, doms]
   }
 }
 
-# prepare an array for loading matrixes of each imputed EFA
+# prepare an array for loading matrices of each imputed EFA
 loads <- array(
   # create an empty 25 ( 23 tests + 2 variance accounted) x 7 (factors) x 100 (imputations) array
   data = NA, dim = c(25, nf, imp),
   dimnames = list( c( rownames(efa[[1]][[nf-2]]$loadings) , "Proportion Var", "Cumulative Var" ), doms, 1:imp )
 )
 
-# fill-in all values from efa objects prepared above
+# fill-in all loadings from efa objects prepared above
 for( i in 1:imp ) loads[ , , i ] <- efa[[i]][[nf-2]]$loadings %>%
   as.data.frame %>%
   bind_rows( efa[[i]][[nf-2]]$Vaccounted[ "Proportion Var", ] ) %>%
@@ -500,7 +486,7 @@ t3 <- matrix(
   dimnames = list( rownames(loads[ , , 1 ]) , colnames(loads[ , , 1]) )
 ) %>% as.data.frame()
 
-# fill in averages across 100 imputations 
+# fill-in averages and SDs across all 100 imputations 
 for ( i in rownames(t3) ) {
   t3[ i , ] <- paste0(
       sprintf( "%.2f" , round( loads[i, , ] %>% t %>% colMeans , 2 ) ), " (", # mean
@@ -508,31 +494,69 @@ for ( i in rownames(t3) ) {
     )
 }
 
-# save the imputed data set for future control
-saveRDS( d2.imp , "data/20220503_100_imputed_df.rds" )
+# visualize loadings (i.e.,median loadings across imputations)
+# prepare labels for the factors
+lab <- as_labeller( c( "ment_flex" = "Mental\nflexibility",
+                       "epis_mem" = "Episodic\nmemory",
+                       "verb_wm" = "Verbal\nworking memory",
+                       "visp_mem" = "Visuospatial\nmemory",
+                       "set_shift" = "Set shifting",
+                       "anxiety" = "Anxiety",
+                       "visp_wm" = "Spatial\nworking memory"
+                       )
+                    )
+
+# prepare the median factor loading plot as Fig 3
+# start by calculating median loading for each test/factor pairs across imputations
+f3 <- sapply (
+  rownames(t3)[ 1:(nrow(t3)-2) ],
+  function(i) loads[ i , , ] %>% t %>% apply( . , 2 , median )
+) %>% as.data.frame %>%
+  # mutate the df to appropriate format
+  mutate( f.order = 1:nf ) %>% # prepare an order variable to sort tests on y-axis
+  rownames_to_column( var = "Factor" )  %>% # make factors from row names to explicit variables
+  pivot_longer( # change to a long formant
+    rownames(t3)[ 1:(nrow(t3)-2) ] , values_to = "Loading" , names_to = "Test"
+  ) %>%
+  mutate( t.order = rep(1:(nrow(t3)-2), nf ) ) %>% # prepare an order variable to sort factors
+  # plot it
+  ggplot( aes( x = reorder(Test, -t.order) , y = abs(Loading) , fill = Loading) ) +
+    facet_wrap( ~ reorder(Factor, f.order) , nrow = 1 , labeller = lab ) + # place the factors to separate facets
+    geom_bar( stat = "identity" ) + # create the bars
+    coord_flip() + # flip axes so that tests are on the y-axis and loadings on x-axis
+    scale_fill_gradient2( # define the fill color gradient: orange = positive, blue = negative
+      name = "Loading", high = cbPal[2], mid = "white", low = cbPal[6], midpoint = 0, guide = F
+    ) +
+    scale_x_discrete( name = "Test" , labels = rev( var_nms[ rownames(t3)[ 1:(nrow(t3)-2) ] , ] )  ) +
+    scale_y_continuous(
+      name = "Loading Strength", limits = c(-0.05,1.05),
+      labels = sprintf( "%.1f" , round( seq(0, 1, .4) , 2 ) ), breaks = seq(0, 1, .4) 
+    ) +
+  theme( panel.grid.major = element_line() )
+
+# save as Fig 3
+ggsave( "figures/Fig 3 factor loadings.png", height = 1.5*11.8, width = 1.8*10.8, dpi = "retina" )
 
 # save all EFA models
 saveRDS( object = efa, file = "models/efa.rds" )
 
-# next time - visuaùise factor loadings (see for example https://rpubs.com/danmirman/plotting_factor_analysis),
-# merge factor scores with longitudinal data sets (leading to 100 imputed longitudinal dfs),
-# and compute the longitudinal analysis
-
-
-
-
-
-
-
-
-
-# merge longitudinal d1 with baseline factor scores from efa[[4]] (joining by id)
-d1 <- d1 %>%
-  left_join( cbind.data.frame(id = d2$id, efa[[4]]$scores ) , by = "id" ) %>%
-  filter( complete.cases(drs_tot) ) # get rid of three dummy rows due to more than one stimulation parameter (no DRS-2)
-
-
 # ----------- pre-processing for longitudinal analyses  -----------
+
+# merge longitudinal d1 with baseline factor scores (joining by id)
+d3 <- lapply(
+  1:imp,
+  function(i) d1 %>%
+    # first prepare a pre-surgery df with id and factor scores for each patient
+    left_join( cbind.data.frame(id = d2$id, efa[[i]][[nf-2]]$scores ) , by = "id" ) %>%
+    filter( complete.cases(drs_tot) ) # get rid of three dummy rows due to more than one stimulation parameter (no DRS-2)
+)
+
+
+# next time continue by checking if the imputed longitudinal data sets make sense,
+# outcome transformation (create transform and back-transform functions),
+# prior prediction, fitting and post-processing
+
+
 
 # save scaling values for variables to be included in longitudinal analyses
 scl <- list(
