@@ -2,7 +2,7 @@
 # on x86_64-w64-mingw32/x64 (64-bit) platform under Windows 10 x64 (build 19043).
 
 # I used the following versions of packages employed: dplyr_1.0.7, tidyverse_1.3.0, DiagrammeR_1.0.9, DiagrammeRsvg_0.1,
-# rsvg_2.3.1, missMDA_1.18, psych_2.2.3, brms_2.16.3, psych_2.2.3, tidybayes_2.3.1, ggplot2_3.3.3 and patchwork_1.1.1
+# rsvg_2.3.1, missMDA_1.18, psych_2.2.3, brms_2.16.3, loo_2.4.1, tidybayes_2.3.1, ggplot2_3.3.3 and patchwork_1.1.1
 
 # set working directory (works only in RStudio)
 setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
@@ -17,7 +17,7 @@ pkgs <- c(
   "missMDA", # for imputation
   "psych", # for EFA
   "brms", # for Bayesian model fitting / interface with Stan
-  "loo", # for PSIS-LOO based operations
+  #"loo", # for PSIS-LOO based operations
   "tidybayes", # for posteriors manipulations
   "ggplot2", # for plotting
   "patchwork" # for ggplots manipulations
@@ -38,24 +38,15 @@ sapply(
 # set ggplot theme
 theme_set( theme_classic(base_size = 25) )
 
-# prepare colors to use in graphs (rangi2 and a colorblind palette)
-rangi2 <- "#8080FF"
+# prepare colors to use in graphs (a colorblind-friendly palette)
 cbPal <- c( "#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7" )
 
 # set number of multiple imputations to account for missing pre-surgery data
 imp = 100
-
-# set rstan options
-options( mc.cores = parallel::detectCores() ) # use all parallel CPU cores
 s = 87542 # seed for reproducibility
-ch = 4 # number of chains
-it = 2500 # iterations per chain
-wu = 500 # warm-up iterations, to be discarded
-ad = .99 # adapt_delta parameter
 
 # create folders "models", "figures" and "tables" to store results in
-# prints TRUE and creates the folder if it was not present,
-# prints NULL if the folder was already present.
+# prints TRUE and creates the folder if it was not present, prints NULL if the folder was already present.
 sapply(
   c("models", "figures", "tables"), # folders to be created
   function(i)
@@ -63,23 +54,20 @@ sapply(
 )
 
 # Note that although I set a seed for all models, the results are only exactly
-# reproducible on the same operating system with the same C++ compiler 
-# and version.
+# reproducible on the same operating system with the same C++ compiler and version.
 
-# read the dataset and prepare subsets for individual analyses
-# In this file, my strategy is to label the sequential version
-# of dataset as d# (where # goes for a number of the data version)
+# read the data set and prepare subsets for individual analyses
 d0 <- read.csv( "data/20220508_dbs_longCOG_data.csv" , sep = "," )
 d1 <- d0[ d0$included == 1 , ] # only STN-DBS treated patients with pre- and post-surgery data
 d2 <- d1[ d1$ass_type == "pre" , ] # only pre-surgery assessments of included patients
 
-# read a file obtaining mapping from variables' names used in the script to variables' names for the manuscript
+# read a file with mapping variables' names used in the script to variables' names for the manuscript
 var_nms <- read.csv( "data/var_nms.csv" , sep = ";" , row.names = 1 )
+
 
 # ----------- participant inclusion flowchart  -----------
 
-# check that when selecting only rows containing pre-surgery assessment,
-# there ain't no patient duplicated
+# check that when selecting only rows containing pre-surgery assessment there ain't no patient duplicated
 isTRUE(
   all.equal(
     d0[ d0$ass_type == "pre" , ]$id,
@@ -91,31 +79,31 @@ isTRUE(
 t0 <- table(d0[ d0$ass_type == "pre" , ]$why_excluded)
 print(t0)
 
-# using numbers from t create an inclusion/exclusion flowchart
+# using numbers from t0 create an inclusion/exclusion flowchart
 f1 <- " digraph {
   
   /// define nodes which will include numbers reflecting the inclusion/exclusion process
   node [ fontname = Calibri, fontsize = 24, shape = box, style = rounded , width = 2.5 , margin= 0.25 , penwidth = 2 ];
   
-  /// box for all patients, i.e., sum(t) = 200 patients
+  /// create a box for all patients, i.e., sum(t) = 200 patients
   all_pats [ label =<
   <b>200 consecutive PD patients </b><br/><br/>Local database 2000-2020<br/>General University Hospital<br/>in Prague
   >];
          
-  /// box for all STN-DBS patients, i.e., sum(t[c(1,4,5,6,7,8,9,11)])) = 173 patients
+  /// create a box for all STN-DBS patients, i.e., sum(t[c(1,4,5,6,7,8,9,11)])) = 173 patients
   all_stn [ label =<
   <b>173 patients </b><br/><br/>implanted with STN-DBS
   >];
   
-  /// box for all included patients, i.e., t[4] = 126 patients
+  /// create a box for all included patients, i.e., t[4] = 126 patients
   all_incl [ label =<
   <b>126 patients </b><br/><br/>followed-up longitudinally
   >];
   
-  /// nodes for exluded patients, specifying only these characteristics that will differ from the nodes above
+  /// create nodes for exluded patients, specifying only these characteristics that will differ from the nodes above
   node [ fixedsize = T, width = 5.5, height = 2.2 ];
   
-  /// box for non-STN-DBS patients, i.e., t[c(3,13,2,10,12)] with sum(t[c(3,13,2,10,12)]) = 27 patients
+  /// create a box for non-STN-DBS patients, i.e., t[c(3,13,2,10,12)] with sum(t[c(3,13,2,10,12)]) = 27 patients
   excl_nostn [ label =<
   <b>27 patients excluded due to</b><br align = 'left'/><br align = 'left'/>
   12 GPi-DBS<br align = 'left'/>
@@ -125,7 +113,7 @@ f1 <- " digraph {
   2 suspended<br align = 'left'/>
   >];
   
-  /// box for STN-DBS excluded patients, i.e., t[c(1,7,9, 8, 6,11, 5)] with sum(t[c(1,7,9,8,6,11,5)]) = 57 patients
+  /// create a box for STN-DBS excluded patients, i.e., t[c(1,7,9, 8, 6,11, 5)], sum(t[c(1,7,9,8,6,11,5)]) = 47 patients
   excl_stn [ label =<
   <b>47 patients excluded due to</b><br align = 'left'/><br align = 'left'/>
   24 pre-surgery data missing<br align = 'left'/>
@@ -134,7 +122,7 @@ f1 <- " digraph {
   2 not speaking Czech<br align = 'left'/>
   >];
   
-  /// dummy nodes for horizontally forking out of the vertical 'inclusion flow' to excluded sides
+  /// create dummy nodes for horizontally forking out of the vertical 'inclusion flow' to excluded sides
   node [ shape = rectangle, width = 0, height = 0, label = '', fill = black ];
   
   /// create directed edges in the inclusion (from dummy/fork vertically to inclusion boxes)
@@ -142,10 +130,10 @@ f1 <- " digraph {
   /// first make the arrows bigger
   edge [ arrowsize = 2.5, penwidth = 2.5 ]
   
-  /// next specifiy paths
+  /// specifiy paths
   fork1 -> all_stn; fork2 -> all_incl;
   
-  /// for the horizontal paths use 'rank = same' to ensure they nodes are level
+  /// for the horizontal paths use 'rank = same' to ensure their nodes are level
   { rank = same ; fork1 -> excl_nostn }
   { rank = same ; fork2 -> excl_stn }
   
@@ -153,11 +141,11 @@ f1 <- " digraph {
   edge [ dir = none, penwidth = 2.5 ]
   all_pats -> fork1; all_stn -> fork2;
 
-  /// finally seperate dummy/fork nodes from exclusion boxes by some reasonable distance (in inches)
+  /// seperate dummy/fork nodes from exclusion boxes by some reasonable distance (in inches)
   nodesep = 1
-  }" 
+  }"
 
-# save the flowchart as png
+# save the flowchart as Fig 1
 grViz(f1) %>% export_svg %>% charToRaw %>% rsvg_png("figures/Fig 1 inclusion-exclusion flowchart.png")
 
 
@@ -166,7 +154,7 @@ grViz(f1) %>% export_svg %>% charToRaw %>% rsvg_png("figures/Fig 1 inclusion-exc
 # list all stimulation parameters
 pars <- names(d1)[which(names(d1)=="current_r_mA"):which(names(d1)=="frequency_l_Hz")]
 
-# prepare a data frame to fill-in by summary of stimulation parameters
+# prepare a data frame to be filled-in with stimulation parameters' summary
 t1 <- data.frame(
   Md = rep( NA , length(pars) ), `Min-Max` = NA, M = NA, SD = NA, row.names = pars
 )
@@ -192,10 +180,10 @@ for ( i in pars ) {
   )
 }
 
-# list all variables that will be included in Tab. 2 (baseline characteristics)
+# list all variables that will be included in Tab 2 (baseline characteristics)
 vars <- names(d2)[which(names(d2)=="age_stim_y"):which(names(d2)=="fp_dr")]
 
-# prepare a data frame to fill-in by baseline characteristics
+# prepare a data frame to be filled-in with baseline characteristics
 t2 <- data.frame(
   N = rep( NA, length(vars) ), Md = NA, `Min-Max` = NA, M = NA, SD = NA, row.names = vars
 )
@@ -292,10 +280,10 @@ ggsave( "figures/Fig 2 distribution of assessments.png" , height = 2.5 * 6.12 , 
 # for EFA keep only id and cognitive tests in d2
 d2 <- d2[ , c( 2, which(names(d2) == "tmt_a"):which(names(d2) == "fp_dr"), which(names(d2) %in% paste0("staix",1:2)) ) ]
 
-# log-transform reaction times before analysis
+# log-transform reaction times before the analysis
 for ( i in c( paste0("tmt_", c("a","b")), paste0("pst_", c("d","w","c")) ) ) d2[[i]] <- log( d2[[i]] )
 
-# find out the optimal number of components for multiple combinations
+# find out the optimal number of components for multiple imputation
 nb <- estim_ncpPCA( d2[,-1] , ncp.min = 0, ncp.max = 10 , nbsim = imp )
 
 # impute via PCA-based multiple imputation (n = 100 imputations)
@@ -304,9 +292,7 @@ d2.imp <- MIPCA( d2[ ,- 1] , ncp = nb$ncp )
 
 # calculate parallel test for each imputed data set 
 set.seed(s) # set seed for reproducibility
-p.test <- lapply(
-  1:100 , function(i) fa.parallel( d2.imp$res.MI[[i]] )
-)
+p.test <- lapply( 1:100 , function(i) fa.parallel( d2.imp$res.MI[[i]] ) )
 
 # look at the results of parallel tests
 table( sapply( 1:100 , function(i) p.test[[i]]$nfact ) )
@@ -335,7 +321,7 @@ fat <- array(
   dimnames = list(
     paste0( 1:length(efa[[1]])+2, "_factors" ), # number of factors
     c("TLI", "RMSEA", "RMSEA_90_CI_low", "RMSEA_90_CI_upp", "var_account"), # performance indexes
-    1:imp # the number of imputed data set
+    1:imp # number of imputed data set
   )
 )
 
@@ -365,7 +351,7 @@ for ( i in fat_sum$model ) {
   }
 }
 
-# prepare a list for a summary of RMSEA and TLI frequencies across all imputations
+# prepare a list for RMSEA and TLI frequencies across all imputations
 fat_perc <- list(
   # upper RMSEA lower than 0.08
   `RMSEA_upp < 0.08 (%)` = t( fat[ , "RMSEA_90_CI_upp" , ] ) %>%
@@ -390,23 +376,23 @@ fat_sum <- fat_sum %>% left_join(
 )
 
 # visualize performance indexes across imputed data sets with density plots (Fig S1)
-# set a list to contain Fig S1 component figures
+# set-up a list to contain Fig S1 component figures
 f.s1 <- list()
 
 # loop through TLI and upper 90% CI RMSEA
 for ( i in c("TLI","RMSEA_90_CI_upp") ) {
   f.s1[[i]] <- fat[ , i , ] %>%
-    # formatting the table for plotting
+    # format the table for plotting
     t %>% as.data.frame %>%
     pivot_longer( everything() , names_to = "Model" , values_to = i ) %>%
-    # mutating variables to an appropriate form
+    # mutate variables to an appropriate form
     mutate( Model = substr( gsub( "_", "-", Model ) , 1 , nchar(Model)-1 ) ) %>%
     rename( "index" = i ) %>%
     # plotting proper
     ggplot( aes( x = index , fill = Model) ) +
     geom_density( alpha = .4 , color = NA ) +
     scale_fill_manual( values = cbPal[3:8] ) + # use colorblind-friendly palette
-    geom_vline( # add a vertical line depicting good performance heuristic
+    geom_vline( # add a vertical line depicting good performance heuristics
       linetype = "dashed", size = 1.2, xintercept = case_when( i == "TLI" ~ .9, i == "RMSEA_90_CI_upp" ~ .08 )
     ) +
     labs( y = "Density", x = case_when( i == "TLI" ~ "TLI", i == "RMSEA_90_CI_upp" ~ "RMSEA (upper 90% CI)" ) )
@@ -416,17 +402,19 @@ for ( i in c("TLI","RMSEA_90_CI_upp") ) {
 f.s1$TLI / f.s1$RMSEA_90_CI_upp + plot_layout( guides = "collect" ) + plot_annotation( tag_levels = "A" )
 
 # save as Fig S1
-ggsave( "figures/Fig S1 factor analysis performance indexes.png", height = 1.75*6.07, width = 1.75*11.5, dpi = "retina" )
+ggsave(
+  "figures/Fig S1 factor analysis performance indexes.png", height = 1.75 * 6.07, width = 1.75 * 11.5, dpi = "retina"
+)
 
 # one-by-one inspect all six-factor and seven-factor solutions' loading matrices
 # create a convenience function so that I don't go crazy immediately
 print_load <- function( i, c = .4, f = 7 ) print( efa[[i]][[f-2]]$loadings, cutoff = c, sort = T )
 
 # choosing 7-factor solution due to good performance indexes,
-# and theoretical interpretability superior to the 6-factor solution
+# and theoretically sound loading patterns across imputed data sets
 nf = 7
 
-# prepare an array for labels of seven-factor solution factors
+# prepare an array for labels of the seven-factor solution factors
 # create an empty 2 (names/signs) x 7 (factors) x 100 (imputations) array
 doms_sum <- array( data = NA, dim = c(2, nf, imp), dimnames = list( c("nms","sgn"), paste0("F", 1:nf), 1:imp ) )
 
@@ -441,9 +429,9 @@ doms_sum["sgn", , ] <- apply( doms_sum["nms", , ] , 2 , function(x) startsWith( 
 doms_sum["nms", , ] <- doms_sum["nms", , ] %>%
   t %>% as.data.frame %>% mutate( across( everything() , ~ gsub( "-" , "" , . ) ) ) %>% t
 
-# write down all the domains
+# list all the domains
 doms <- c(
-  "ment_flex", # loaded on primarily by PST, the first factor in 83% data sets
+  "proc_spd", # loaded on primarily by PST, the first factor in 83% data sets
   "epis_mem", # loaded on primarily by RAVLT, the second factor in 81% data sets
   "verb_wm", # loaded on primarily by DS, the third factor in 62% data sets
   "visp_mem", # loaded on primarily by FP, the fourth factor in 46% data sets
@@ -480,7 +468,7 @@ for( i in 1:imp ) loads[ , , i ] <- efa[[i]][[nf-2]]$loadings %>%
   ) %>% as.matrix()
 
 
-# write down a summary of loadings across all 100 imputed data sets
+# write a summary of loadings across all 100 imputed data sets
 t3 <- matrix(
   data = NA, nrow = nrow(loads[ , , 1]), ncol = ncol(loads[ , , 1]),
   dimnames = list( rownames(loads[ , , 1 ]) , colnames(loads[ , , 1]) )
@@ -496,7 +484,7 @@ for ( i in rownames(t3) ) {
 
 # visualize loadings (i.e.,median loadings across imputations)
 # prepare labels for the factors
-lab <- as_labeller( c( "ment_flex" = "Mental\nflexibility",
+lab <- as_labeller( c( "proc_spd" = "Processing\nspeed",
                        "epis_mem" = "Episodic\nmemory",
                        "verb_wm" = "Verbal\nworking memory",
                        "visp_mem" = "Visuospatial\nmemory",
@@ -506,16 +494,16 @@ lab <- as_labeller( c( "ment_flex" = "Mental\nflexibility",
                        )
                     )
 
-# prepare the median factor loading plot as Fig 3
+# create a median factor loading plot as Fig 3
 # start by calculating median loading for each test/factor pairs across imputations
 f3 <- sapply (
   rownames(t3)[ 1:(nrow(t3)-2) ],
   function(i) loads[ i , , ] %>% t %>% apply( . , 2 , median )
 ) %>% as.data.frame %>%
-  # mutate the df to appropriate format
+  # change to an appropriate format
   mutate( f.order = 1:nf ) %>% # prepare an order variable to sort tests on y-axis
   rownames_to_column( var = "Factor" )  %>% # make factors from row names to explicit variables
-  pivot_longer( # change to a long formant
+  pivot_longer( # change to a long format
     rownames(t3)[ 1:(nrow(t3)-2) ] , values_to = "Loading" , names_to = "Test"
   ) %>%
   mutate( t.order = rep(1:(nrow(t3)-2), nf ) ) %>% # prepare an order variable to sort factors
@@ -532,7 +520,7 @@ f3 <- sapply (
       name = "Loading Strength", limits = c(-0.05,1.05),
       labels = sprintf( "%.1f" , round( seq(0, 1, .4) , 2 ) ), breaks = seq(0, 1, .4) 
     ) +
-  theme( panel.grid.major = element_line() )
+  theme( panel.grid.major = element_line() ) # add grid lines for easier orientation
 
 # save as Fig 3
 ggsave( "figures/Fig 3 factor loadings.png", height = 1.5*11.8, width = 1.8*10.8, dpi = "retina" )
@@ -542,49 +530,19 @@ saveRDS( object = efa, file = "models/efa.rds" )
 
 # ----------- pre-processing for longitudinal analyses  -----------
 
-# merge longitudinal d1 with baseline factor scores (joining by id)
-d3 <- lapply(
-  1:imp,
-  function(i) d1 %>%
-    # first prepare a pre-surgery df with id and factor scores for each patient
-    left_join( cbind.data.frame(id = d2$id, efa[[i]][[nf-2]]$scores ) , by = "id" ) %>%
-    filter( complete.cases(drs_tot) ) # get rid of three dummy rows due to more than one stimulation parameter (no DRS-2)
-)
-
-
-# next time continue by checking if the imputed longitudinal data sets make sense,
-# outcome transformation (create transform and back-transform functions),
-# prior prediction, fitting and post-processing
-
-
-
-# save scaling values for variables to be included in longitudinal analyses
+# before merging compute scaling values for DRS-2, BDI-II, LEDD, age and time
 scl <- list(
   M = list(
-    # longitudinal variables, i.e., DRS-2 (outcome), BDI and LEDD (confounders)
     drs = mean( d1$drs_tot , na.rm = T ), # 136.90
     bdi = mean( d1$bdi , na.rm = T ), # 10.95
-    led = mean( d1$ledd_mg , na.rm = T ), # 1194.03
-    # pre-surgery prognostic factors/cognitive profile (calculate M from pre-surgery assessments only), all zero
-    ment_flex = mean( d1[d1$ass_type=="pre", ]$ment_flex , na.rm = T ),
-    epis_mem = mean( d1[d1$ass_type=="pre", ]$epis_mem , na.rm = T ),
-    visp_wm = mean( d1[d1$ass_type=="pre", ]$visp_wm , na.rm = T ),
-    visp_mem = mean( d1[d1$ass_type=="pre", ]$visp_mem , na.rm = T ),
-    verb_wm = mean( d1[d1$ass_type=="pre", ]$verb_wm , na.rm = T ),
-    anxiety = mean( d1[d1$ass_type=="pre", ]$anxiety , na.rm = T )
+    led = mean( d1$ledd_mg , na.rm = T ), # 1197.21
+    age = mean( d1$age_ass_y, na.rm = T ) # 59.63
   ),
   SD = list(
-    # longitudinal variables, i.e., DRS-2 (outcome), BDI and LEDD (confounders)
     drs = sd( d1$drs_tot , na.rm = T ), # 7.72
     bdi = sd( d1$bdi , na.rm = T ), # 7.19
-    led = sd( d1$ledd_mg , na.rm = T ), # 686.69
-    # pre-surgery prognostic factors/cognitive profile (calculate SD from pre-surgery assessments only)
-    ment_flex = sd( d1[d1$ass_type=="pre", ]$ment_flex , na.rm = T ), # 0.91
-    epis_mem = sd( d1[d1$ass_type=="pre", ]$epis_mem , na.rm = T ), # 0.93
-    visp_wm = sd( d1[d1$ass_type=="pre", ]$visp_wm , na.rm = T ), # 0.89
-    visp_mem = sd( d1[d1$ass_type=="pre", ]$visp_mem , na.rm = T ), # 0.99
-    verb_wm = sd( d1[d1$ass_type=="pre", ]$verb_wm , na.rm = T ), # 0.87
-    anxiety = sd( d1[d1$ass_type=="pre", ]$anxiety , na.rm = T ) # 0.90
+    led = sd( d1$ledd_mg , na.rm = T ), # 687.20
+    age = sd( d1$age_ass_y, na.rm = T ) # 8.27
   ),
   # add median time of pre-surgery assessment for GLMMs intercepts
   Md = list(
@@ -592,64 +550,176 @@ scl <- list(
   )
 )
 
-# prepare dataset for all longitudinal analyses
-d3 <- d1 %>% mutate(
-  # base variable for a longitudinal model
-  time = time_y + scl$Md$time,
-  drs = ( drs_tot - scl$M$drs ) / scl$SD$drs,
-  bdi = ( bdi - scl$M$bdi ) / scl$SD$bdi,
-  led = ( ledd_mg - scl$M$led ) / scl$SD$led,
-  sex = as.factor( sex ), # for better estimation of BDI in the second and third models
-  # censoring variables
-  cens_drs = ifelse( drs == max(drs, na.rm = T) , "right" , "none" ), # right censoring for DRS == 144
-  cens_bdi = ifelse( bdi == min(bdi, na.rm = T) , "left" , "none" ), # left censoring for BDI == 0
-  # pre-surgery prognostic factors/cognitive profile, scale such that higher value imply deficit
-  ment_flex = -( ment_flex - scl$M$ment_flex ) / scl$SD$ment_flex,
-  epis_mem = -( epis_mem - scl$M$epis_mem ) / scl$SD$epis_mem,
-  visp_wm = -( visp_wm - scl$M$visp_wm ) / scl$SD$visp_wm,
-  visp_mem = -( visp_mem - scl$M$visp_mem ) / scl$SD$visp_mem,
-  verb_wm = -( verb_wm - scl$M$verb_wm ) / scl$SD$verb_wm,
-  anxiety = -( anxiety - scl$M$anxiety ) / scl$SD$anxiety
-) %>% select(
-  # keep only variables of interest
-  id, time, drs, cens_drs, bdi, cens_bdi, sex, led, # outcomes, time and sex
-  ment_flex, epis_mem, visp_wm, visp_mem, verb_wm, anxiety # pre-surgery prognostic factors/cognitive profile
+# merge longitudinal d1 with baseline factor scores (joining by id)
+d3 <- lapply(
+  1:imp,
+  function(i) d1 %>%
+    # first prepare a pre-surgery df with id and factor scores for each patient
+    left_join( cbind.data.frame(id = d2$id, efa[[i]][[nf-2]]$scores ) , by = "id" ) %>%
+    filter( complete.cases(drs_tot) ) %>% # get rid of three dummy rows due to more than one stimulation parameter (no DRS-2)
+    # scale all DRS-2, BDI-II, LEDD and time already
+    mutate(
+      time = time_y + scl$Md$time,
+      drs = ( drs_tot - scl$M$drs ) / scl$SD$drs,
+      bdi = ( bdi - scl$M$bdi ) / scl$SD$bdi,
+      led = ( ledd_mg - scl$M$led ) / scl$SD$led,
+      age = ( age_ass_y - scl$M$age ) / scl$SD$age,
+      sex = as.factor( sex ), # for better estimation of BDI in the second (covariate) model
+      cens_drs = ifelse( drs == max(drs, na.rm = T) , "right" , "none" ), # right censoring for DRS == 144
+    ) %>%
+    # keep only variables of interest
+    select(
+      id, time, drs, cens_drs, bdi, led, age, sex, # outcomes, demographics, clinics
+      proc_spd, epis_mem, verb_wm, visp_mem, set_shift, anxiety, visp_wm # pre-surgery cognition
+    )
 )
 
+# loop across all imputations to get means and SDs of the pre-surgery cognitive domains,
+# then transform the pre-surgery cognition in each data set to (pre-surgery) zero mean, unit SD variables
+for( i in doms ) {
+  for ( j in 1:imp ) {
+    # calculate scaling values
+    scl$M[[i]][[j]] <- d3[[j]][[i]] %>% mean( na.rm = T )
+    scl$SD[[i]][[j]] <- d3[[j]][[i]] %>% sd( na.rm = T )
+    # scale in the jth imputed data set
+    d3[[j]][[i]] <- case_when(
+      # all but anxiety measures will be inverse such that parameters
+      # can be interpreted as effect of deficit in said measure
+      i == "anxiety" ~ ( d3[[j]][[i]] - scl$M[[i]][[j]] ) / scl$SD[[i]][[j]],
+      i != "anxiety" ~ -( d3[[j]][[i]] - scl$M[[i]][[j]] ) / scl$SD[[i]][[j]]
+    )
+  }
+}
 
-# ----------- description models  -----------
+# clean environment for space (will need it)
+rm( list = ls()[ !( ls() %in% c( "cbPal", "d1", "d3", "doms", "s", "scl", "var_nms" ) ) ] )
+gc() # garbage collection to ease RAM a bit if needed
 
-# prepare a list for all models and PSIS-LOOs
-m <- list()
-l <- list()
+# set rstan options
+options( mc.cores = parallel::detectCores() ) # use all parallel CPU cores
+ch = 4 # number of chains
+it = 2000 # iterations per chain
+wu = 500 # warm-up iterations, to be discarded
+ad = .99 # adapt_delta parameter
 
-# model with no covariates
+
+# ----------- no covariates prognostic model  -----------
+
 # set-up the linear model
-f1.drs <- bf( drs | cens(cens_drs) ~ 1 + time + (1 + time | id) )
+f1.drs <- paste0(
+  "drs | cens(cens_drs) ~ 1 + ", # outcome and intercept
+  paste( "time", doms, sep = " * " , collapse = " + " ), # population-level effects/fixed-effects
+  " + (1 + time || id)"  # varying-effects (patient-level)/random-effects
+) %>% as.formula %>% bf
 
 # set-up priors
 p1 <- c(
-  # fixed-effects
+  # fixed effects
   prior( normal(0.3, .1), class = Intercept ),
   prior( normal(-.2, .1), class = b, coef = time ),
-  # random-effects
-  prior( normal(0, .1), class = sd, coef = Intercept, group = id ),
-  prior( normal(0, .1), class = sd, coef = time, group = id ),
-  # variances
-  prior( exponential(1), class = sd ),
+  prior( normal(0, .1), class = b, coef = proc_spd ),
+  prior( normal(0, .1), class = b, coef = epis_mem ),
+  prior( normal(0, .1), class = b, coef = verb_wm ),
+  prior( normal(0, .1), class = b, coef = visp_mem ),
+  prior( normal(0, .1), class = b, coef = set_shift ),
+  prior( normal(0, .1), class = b, coef = anxiety ),
+  prior( normal(0, .1), class = b, coef = visp_wm ),
+  prior( normal(0, .1), class = b, coef = time:proc_spd ),
+  prior( normal(0, .1), class = b, coef = time:epis_mem ),
+  prior( normal(0, .1), class = b, coef = time:verb_wm ),
+  prior( normal(0, .1), class = b, coef = time:visp_mem ),
+  prior( normal(0, .1), class = b, coef = time:set_shift ),
+  prior( normal(0, .1), class = b, coef = time:anxiety ),
+  prior( normal(0, .1), class = b, coef = time:visp_wm ),
+  # random effects
+  prior( exponential(10), class = sd, coef = Intercept, group = id ),
+  prior( exponential(10), class = sd, coef = time, group = id ),
+  prior( exponential(10), class = sd ),
+  # other distributional parameters
   prior( exponential(1), class = sigma ),
-  # covariances
-  prior( lkj(2), class = cor ),
-  # "degrees of freedom"/"normality parameter" nu
   prior( gamma(2, 0.1), class = nu )
 )
 
-# fit the total effect of time GLMM
-m$desc$no_cov <- brm(
+# fit the model with Student response function
+brm_multiple(
   formula = f1.drs, family = student(), prior = p1, data = d3,
   sample_prior = T, seed = s, chains = ch, iter = it, warmup = wu,
-  control = list( adapt_delta = ad ), file = "models/descriptive.rds"
+  control = list( adapt_delta = ad ), file = "models/m1_nocov.rds"
+) # not creating an object to spare RAM
+
+
+# ----------- prognostic model with flat priors  -----------
+
+# the same linear model as for m1
+f2.drs <- f1.drs
+
+# will be using brms default priors
+p2 <- NULL
+
+# fit the model with Student response function
+brm_multiple(
+  formula = f2.drs, family = student(), prior = p2, data = d3,
+  sample_prior = T, seed = s, chains = ch, iter = it, warmup = wu,
+  control = list( adapt_delta = ad ), file = "models/m2_flat_priors.rds"
 )
+
+
+
+
+
+
+
+# ----------- prognostic model with covariates -----------
+
+# set-up the linear model
+f2.drs <- paste0(
+  "drs | cens(cens_drs) ~ 1 + age + mi(bdi) + mi(led) + ", # outcome and covariates
+  paste( "time", doms, sep = " * " , collapse = " + " ), # population-level effects/fixed-effects
+  " + (1 + time || id)"  # varying-effects (patient-level)/random-effects
+) %>% as.formula %>% bf
+
+# set-up linear models for covariates with missing values
+f2.bdi <- bf( bdi | mi() ~ 1 + mi(led) + sex + time + (1 + time | id) )
+f2.led <- bf( led | mi() ~ t2(time) + (1 | id) )
+
+# set-up priors
+p2 <- c(
+  # fixed effects
+  prior( normal(0.3, .1), class = Intercept, resp = drs ),
+  prior( normal(-.2, .1), class = b, coef = time, resp = drs ),
+  prior( normal(0, .1), class = b, coef = proc_spd, resp = drs ),
+  prior( normal(0, .1), class = b, coef = epis_mem, resp = drs ),
+  prior( normal(0, .1), class = b, coef = verb_wm, resp = drs ),
+  prior( normal(0, .1), class = b, coef = visp_mem, resp = drs ),
+  prior( normal(0, .1), class = b, coef = set_shift, resp = drs ),
+  prior( normal(0, .1), class = b, coef = anxiety, resp = drs ),
+  prior( normal(0, .1), class = b, coef = visp_wm, resp = drs ),
+  prior( normal(0, .1), class = b, coef = time:proc_spd, resp = drs ),
+  prior( normal(0, .1), class = b, coef = time:epis_mem, resp = drs ),
+  prior( normal(0, .1), class = b, coef = time:verb_wm, resp = drs ),
+  prior( normal(0, .1), class = b, coef = time:visp_mem, resp = drs ),
+  prior( normal(0, .1), class = b, coef = time:set_shift, resp = drs ),
+  prior( normal(0, .1), class = b, coef = time:anxiety, resp = drs ),
+  prior( normal(0, .1), class = b, coef = time:visp_wm, resp = drs ),
+  # random effects
+  prior( exponential(10), class = sd, coef = Intercept, group = id ),
+  prior( exponential(10), class = sd, coef = time, group = id ),
+  prior( exponential(10), class = sd ),
+  # other distributional parameters
+  prior( exponential(1), class = sigma ),
+  prior( gamma(2, 0.1), class = nu )
+)
+
+# fit the model with Student response function
+m1 <- brm_multiple(
+  formula = f1.drs, family = student(), prior = p1, data = d3,
+  sample_prior = T, seed = s, chains = ch, iter = it, warmup = wu,
+  control = list( adapt_delta = ad ), file = "models/m1_nocov.rds"
+)
+
+
+
+
 
 # add LOO and WAIC criteria
 add_criterion( m$desc$no_cov , criterion = c("loo","waic") )
