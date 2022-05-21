@@ -17,7 +17,6 @@ pkgs <- c(
   "missMDA", # for imputation
   "psych", # for EFA
   "brms", # for Bayesian model fitting / interface with Stan
-  #"loo", # for PSIS-LOO based operations
   "tidybayes", # for posteriors manipulations
   "ggplot2", # for plotting
   "patchwork" # for ggplots manipulations
@@ -565,7 +564,7 @@ d3 <- lapply(
       led = ( ledd_mg - scl$M$led ) / scl$SD$led,
       age = ( age_ass_y - scl$M$age ) / scl$SD$age,
       sex = as.factor( sex ), # for better estimation of BDI in the second (covariate) model
-      cens_drs = ifelse( drs == max(drs, na.rm = T) , "right" , "none" ), # right censoring for DRS == 144
+      cens_drs = ifelse( drs == max(drs, na.rm = T) , "right" , "none" ) # right censoring for DRS == 144
     ) %>%
     # keep only variables of interest
     select(
@@ -600,20 +599,20 @@ options( mc.cores = parallel::detectCores() ) # use all parallel CPU cores
 ch = 4 # number of chains
 it = 2000 # iterations per chain
 wu = 500 # warm-up iterations, to be discarded
-ad = .99 # adapt_delta parameter
+ad = .95 # adapt_delta parameter
 
 
-# ----------- no covariates prognostic model  -----------
+# ----------- baseline model with correlated random-effects  -----------
 
 # set-up the linear model
-f1.drs <- paste0(
+f0.drs <- paste0(
   "drs | cens(cens_drs) ~ 1 + ", # outcome and intercept
   paste( "time", doms, sep = " * " , collapse = " + " ), # population-level effects/fixed-effects
-  " + (1 + time || id)"  # varying-effects (patient-level)/random-effects
+  " + (1 + time | id)"  # varying-effects (patient-level)/random-effects
 ) %>% as.formula %>% bf
 
 # set-up priors
-p1 <- c(
+p0 <- c(
   # fixed effects
   prior( normal(0.3, .1), class = Intercept ),
   prior( normal(-.2, .1), class = b, coef = time ),
@@ -632,9 +631,9 @@ p1 <- c(
   prior( normal(0, .1), class = b, coef = time:anxiety ),
   prior( normal(0, .1), class = b, coef = time:visp_wm ),
   # random effects
-  prior( exponential(10), class = sd, coef = Intercept, group = id ),
-  prior( exponential(10), class = sd, coef = time, group = id ),
-  prior( exponential(10), class = sd ),
+  prior( normal(0, .1), class = sd, coef = Intercept, group = id ),
+  prior( normal(0, .1), class = sd, coef = time, group = id ),
+  prior( lkj(2), class = cor ),
   # other distributional parameters
   prior( exponential(1), class = sigma ),
   prior( gamma(2, 0.1), class = nu )
@@ -642,13 +641,33 @@ p1 <- c(
 
 # fit the model with Student response function
 brm_multiple(
-  formula = f1.drs, family = student(), prior = p1, data = d3,
+  formula = f0.drs, family = student(), prior = p0, data = d3,
   sample_prior = T, seed = s, chains = ch, iter = it, warmup = wu,
-  control = list( adapt_delta = ad ), file = "models/m1_nocov.rds"
+  control = list( adapt_delta = ad ), file = "models/m0_base.rds"
 ) # not creating an object to spare RAM
 
 
-# ----------- prognostic model with flat priors  -----------
+# ----------- primary model with uncorrelated random-effects  -----------
+
+# set-up the linear model
+f1.drs <- paste0(
+  "drs | cens(cens_drs) ~ 1 + ", # outcome and intercept
+  paste( "time", doms, sep = " * " , collapse = " + " ), # population-level effects/fixed-effects
+  " + (1 + time || id)"  # varying-effects (patient-level)/random-effects
+) %>% as.formula %>% bf
+
+# set-up priors
+p1 <- p0[ -which(p0$class == "cor"), ]
+
+# fit the model with Student response function
+brm_multiple(
+  formula = f1.drs, family = student(), prior = p1, data = d3,
+  sample_prior = T, seed = s, chains = ch, iter = it, warmup = wu,
+  control = list( adapt_delta = ad ), file = "models/m1_nocov.rds"
+)
+
+
+# ----------- sensitivity check with flat priors  -----------
 
 # the same linear model as for m1
 f2.drs <- f1.drs
@@ -664,29 +683,30 @@ brm_multiple(
 )
 
 
+# ----------- model with covariates  -----------
 
+# set contrast for sex as a factor
+for( i in 1:length(d3) ) contrasts(d3[[i]]$sex) <- -contr.sum(2)/2 # female = -0.5, male = 0.5
 
-
-
-
-# ----------- prognostic model with covariates -----------
-
-# set-up the linear model
-f2.drs <- paste0(
-  "drs | cens(cens_drs) ~ 1 + age + mi(bdi) + mi(led) + ", # outcome and covariates
+# set-up the linear model for outcome
+f3.drs <- paste0(
+  "drs | cens(cens_drs) ~ 1 + age + mi(bdi) + mi(led) + ", # outcome and intercept
   paste( "time", doms, sep = " * " , collapse = " + " ), # population-level effects/fixed-effects
   " + (1 + time || id)"  # varying-effects (patient-level)/random-effects
-) %>% as.formula %>% bf
+) %>% as.formula %>% bf + student()
 
 # set-up linear models for covariates with missing values
-f2.bdi <- bf( bdi | mi() ~ 1 + mi(led) + sex + time + (1 + time | id) )
-f2.led <- bf( led | mi() ~ t2(time) + (1 | id) )
+f3.bdi <- bf( bdi | mi() ~ 1 + time + sex + age + mi(led) + (1 + time || id) ) + gaussian()
+f3.led <- bf( led | mi() ~ t2(time) + (1 | id) ) + gaussian()
 
 # set-up priors
-p2 <- c(
-  # fixed effects
+p3 <- c(
+  # DRS-2
   prior( normal(0.3, .1), class = Intercept, resp = drs ),
   prior( normal(-.2, .1), class = b, coef = time, resp = drs ),
+  prior( normal(0, .1), class = b, coef = age, resp = drs ),
+  prior( normal(0, .1), class = b, coef = mibdi, resp = drs ),
+  prior( normal(0, .1), class = b, coef = miled, resp = drs ),
   prior( normal(0, .1), class = b, coef = proc_spd, resp = drs ),
   prior( normal(0, .1), class = b, coef = epis_mem, resp = drs ),
   prior( normal(0, .1), class = b, coef = verb_wm, resp = drs ),
@@ -701,60 +721,10 @@ p2 <- c(
   prior( normal(0, .1), class = b, coef = time:set_shift, resp = drs ),
   prior( normal(0, .1), class = b, coef = time:anxiety, resp = drs ),
   prior( normal(0, .1), class = b, coef = time:visp_wm, resp = drs ),
-  # random effects
-  prior( exponential(10), class = sd, coef = Intercept, group = id ),
-  prior( exponential(10), class = sd, coef = time, group = id ),
-  prior( exponential(10), class = sd ),
-  # other distributional parameters
-  prior( exponential(1), class = sigma ),
-  prior( gamma(2, 0.1), class = nu )
-)
-
-# fit the model with Student response function
-m1 <- brm_multiple(
-  formula = f1.drs, family = student(), prior = p1, data = d3,
-  sample_prior = T, seed = s, chains = ch, iter = it, warmup = wu,
-  control = list( adapt_delta = ad ), file = "models/m1_nocov.rds"
-)
-
-
-
-
-
-# add LOO and WAIC criteria
-add_criterion( m$desc$no_cov , criterion = c("loo","waic") )
-
-# save the PSIS-LOO
-l$desc$no_cov <- loo(m$desc$no_cov)
-
-# save the priors for documentation purposes
-pr <- list( desc = list( no_cov = prior_summary(m$desc$no_cov) ) )
-
-# some posterior checks
-max( rhat(m$desc$no_cov) ) # 1.005
-max( loo(m$desc$no_cov)$diagnostics$pareto_k ) # 0.57
-
-# model with covariates
-# set-up the linear model
-f2.drs <- bf( drs | cens(cens_drs) ~ 1 + mi(bdi) + mi(led)  + time+ (1 + time | id) )
-f2.bdi <- bf( bdi | cens(cens_bdi) + mi() ~ 1 + mi(led) + sex + time + (1 + time | id) )
-f2.led <- bf( led | mi() ~ t2(time) + (1 | id) )
-
-# set contrast for sex
-contrasts(d3$sex) <- -contr.sum(2)/2 # female = -0.5, male = 0.5
-
-# set-up priors
-p2 <- c(
-  # DRS-2
-  prior( normal(0.3, .1), class = Intercept , resp = drs ),
-  prior( normal(-.2, .1), class = b, coef = time , resp = drs  ),
-  prior( normal(0, .1), class = b, coef = mibdi, resp = drs ),
-  prior( normal(0, .1), class = b, coef = miled, resp = drs ),
-  prior( normal(0, .1), class = sd, coef = Intercept, group = id , resp = drs  ),
-  prior( normal(0, .1), class = sd, coef = time, group = id , resp = drs  ),
-  prior( exponential(1), class = sd , resp = drs ),
-  prior( exponential(1), class = sigma , resp = drs ),
-  prior( gamma(2, 0.1), class = nu , resp = drs ),
+  prior( normal(0, .1), class = sd, coef = Intercept, group = id, resp = drs ),
+  prior( normal(0, .1), class = sd, coef = time, group = id, resp = drs ),
+  prior( exponential(1), class = sigma, resp = drs ),
+  prior( gamma(2, 0.1), class = nu, resp = drs ),
   # BDI-II
   prior( normal(.6, .5), class = Intercept, resp = bdi ),
   prior( normal(0, .5), class = b, coef = time, resp = bdi ),
@@ -762,414 +732,17 @@ p2 <- c(
   prior( normal(0, .5), class = b, coef = miled, resp = bdi ),
   prior( normal(0, .5), class = sd, coef = Intercept, group = id, resp = bdi ),
   prior( normal(0, .5), class = sd, coef = time, group = id, resp = bdi ),
-  prior( exponential(1), class = sd, resp = bdi ),
   prior( exponential(1), class = sigma, resp = bdi ),
-  prior( gamma(2, 0.1), class = nu, resp = bdi ),
   # LEDD
-  # keeping default for fixed-effect on LEDD
+  prior( normal(0, 100), class = Intercept, resp = led ),
+  prior( normal(0, 100), class = b, coef = t2time_1, resp = led ),
   prior( normal(0, .5), class = sd, coef = Intercept, group = id, resp = led ),
-  prior( exponential(1), class = sd, resp = led ),
-  prior( exponential(1), class = sigma, resp = led ),
-  prior( gamma(2, 0.1), class = nu, resp = led ),
-  # group-level correlation matrix
-  prior( lkj(2), class = cor )
+  prior( exponential(1), class = sigma, resp = led )
 )
 
-# fit the model
-m$desc$w_cov <- brm(
-  formula = f2.drs + f2.bdi + f2.led + set_rescor(F),
-  family = student(), prior = p2, data = d3, sample_prior = T,
-  seed = s, chains = ch, iter = it, warmup = wu,
-  control = list( adapt_delta = ad ), file = "models/descriptive_w_cov.rds"
+# fit the model as defined above
+brm_multiple(
+  formula = f3.drs + f3.bdi + f3.led, prior = p3, data = d3,
+  sample_prior = F, seed = s, chains = ch, iter = it, warmup = wu, # not saving priors to spare some memory
+  control = list( adapt_delta = ad ), file = "models/m3_wcov.rds"
 )
-
-# add LOO and WAIC criteria
-add_criterion( m$desc$w_cov , criterion = c("loo","waic") , resp = "drs" )
-
-# save the PSIS-LOO
-l$desc$w_cov <- loo(m$desc$w_cov, resp = "drs")
-
-# save the priors for documentation purposes
-pr$desc$w_cov <- prior_summary(m$desc$w_cov)
-
-# some posterior checks
-max( rhat(m$desc$w_cov) ) # 1.011
-max( loo(m$desc$w_cov, resp = "drs")$diagnostics$pareto_k ) # 0.60
-
-
-# ----------- prognostic models  -----------
-
-# write down the cognitive domains
-doms <- colnames( efa[[4]]$scores )
-
-# model with no covariates
-# set-up the linear model
-f3.drs <- bf(
-  as.formula(
-    paste0(
-      "drs | cens(cens_drs) ~ 1 + ",
-      paste( "time", doms, sep = " * " , collapse = " + " ),
-      " + (1 + time | id)"
-    )
-  )
-)
-
-# set-up priors
-p3 <- c(
-  # fixed effects
-  prior( normal(0.3, .1), class = Intercept ),
-  prior( normal(-.2, .1), class = b, coef = time ),
-  prior( normal(0, .1), class = b, coef = ment_flex ),
-  prior( normal(0, .1), class = b, coef = epis_mem ),
-  prior( normal(0, .1), class = b, coef = visp_wm ),
-  prior( normal(0, .1), class = b, coef = visp_mem ),
-  prior( normal(0, .1), class = b, coef = verb_wm ),
-  prior( normal(0, .1), class = b, coef = anxiety ),
-  prior( normal(0, .1), class = b, coef = time:ment_flex ),
-  prior( normal(0, .1), class = b, coef = time:epis_mem ),
-  prior( normal(0, .1), class = b, coef = time:visp_wm ),
-  prior( normal(0, .1), class = b, coef = time:visp_mem ),
-  prior( normal(0, .1), class = b, coef = time:verb_wm ),
-  prior( normal(0, .1), class = b, coef = time:anxiety ),
-  # random effects
-  prior( normal(0, .1), class = sd, coef = Intercept, group = id ),
-  prior( normal(0, .1), class = sd, coef = time, group = id ),
-  prior( exponential(1), class = sd ),
-  # other distribution parameters
-  prior( exponential(1), class = sigma ),
-  prior( gamma(2, 0.1), class = nu ),
-  # correlation matrices
-  prior( lkj(2), class = cor )
-)
-
-# fit the GLMM
-m$prog$no_cov <- brm(
-  formula = f3.drs, family = student(), prior = p3, data = d3,
-  sample_prior = T, seed = s, chains = ch, iter = it, warmup = wu,
-  control = list( adapt_delta = ad ), file = "models/prognostic.rds"
-)
-
-# add LOO and WAIC criteria
-add_criterion( m$prog$no_cov , criterion = c("loo","waic") )
-
-# save the PSIS-LOO
-l$prog$no_cov <- loo(m$prog$no_cov)
-
-# save the priors for documentation purposes
-pr$prog$no_cov <- prior_summary(m$prog$no_cov)
-
-# some posterior checks
-max( rhat(m$prog$no_cov) ) # 1.004
-max( loo(m$prog$no_cov)$diagnostics$pareto_k ) # 0.55
-
-# model with covariates
-# set-up the linear model
-f4.drs <- bf(
-  as.formula(
-    paste0(
-      "drs | cens(cens_drs) ~ 1 + mi(bdi) + mi(led) + ",
-      paste( "time", doms, sep = " * " , collapse = " + " ),
-      " + (1 + time | id)"
-    )
-  )
-)
-
-# linear models for BDI-II and LEDD remain the same as in m2
-f4.bdi <- f2.bdi
-f4.led <- f2.led
-
-# set-up priors
-p4 <- c(
-  # DRS-2
-  prior( normal(0.3, .1), class = Intercept , resp = drs ),
-  prior( normal(-.2, .1), class = b, coef = time , resp = drs  ),
-  prior( normal(0, .1), class = b, coef = mibdi, resp = drs ),
-  prior( normal(0, .1), class = b, coef = miled, resp = drs ),
-  prior( normal(0, .1), class = b, coef = ment_flex, resp = drs ),
-  prior( normal(0, .1), class = b, coef = epis_mem, resp = drs ),
-  prior( normal(0, .1), class = b, coef = visp_wm, resp = drs ),
-  prior( normal(0, .1), class = b, coef = visp_mem, resp = drs  ),
-  prior( normal(0, .1), class = b, coef = verb_wm, resp = drs ),
-  prior( normal(0, .1), class = b, coef = anxiety, resp = drs ),
-  prior( normal(0, .1), class = b, coef = time:ment_flex, resp = drs ),
-  prior( normal(0, .1), class = b, coef = time:epis_mem, resp = drs ),
-  prior( normal(0, .1), class = b, coef = time:visp_wm, resp = drs ),
-  prior( normal(0, .1), class = b, coef = time:visp_mem, resp = drs  ),
-  prior( normal(0, .1), class = b, coef = time:verb_wm, resp = drs ),
-  prior( normal(0, .1), class = b, coef = time:anxiety, resp = drs ),
-  prior( normal(0, .1), class = sd, coef = Intercept, group = id , resp = drs  ),
-  prior( normal(0, .1), class = sd, coef = time, group = id , resp = drs  ),
-  prior( exponential(1), class = sd , resp = drs ),
-  prior( exponential(1), class = sigma , resp = drs ),
-  prior( gamma(2, 0.1), class = nu , resp = drs ),
-  # BDI-II
-  prior( normal(.6, .5), class = Intercept, resp = bdi ),
-  prior( normal(0, .5), class = b, coef = time, resp = bdi ),
-  prior( normal(0, .5), class = b, coef = sex1, resp = bdi ),
-  prior( normal(0, .5), class = b, coef = miled, resp = bdi ),
-  prior( normal(0, .5), class = sd, coef = Intercept, group = id, resp = bdi ),
-  prior( normal(0, .5), class = sd, coef = time, group = id, resp = bdi ),
-  prior( exponential(1), class = sd, resp = bdi ),
-  prior( exponential(1), class = sigma, resp = bdi ),
-  prior( gamma(2, 0.1), class = nu, resp = bdi ),
-  # LEDD
-  # keeping default for fixed-effect on LEDD
-  prior( normal(0, .5), class = sd, coef = Intercept, group = id, resp = led ),
-  prior( exponential(1), class = sd, resp = led ),
-  prior( exponential(1), class = sigma, resp = led ),
-  prior( gamma(2, 0.1), class = nu, resp = led ),
-  # group-level correlation matrix
-  prior( lkj(2), class = cor )
-)
-
-# fit the "prognostic" model
-m$prog$w_cov <- brm(
-  formula = f4.drs + f4.bdi + f4.led + set_rescor(F),
-  family = student(), prior = p4, data = d3, sample_prior = T,
-  seed = s, chains = ch, iter = it, warmup = wu,
-  control = list( adapt_delta = ad ), file = "models/prognostic_w_cov.rds"
-)
-
-# add LOO and WAIC criteria
-add_criterion( m$prog$w_cov , criterion = c("loo","waic") , resp = "drs" )
-
-# save the PSIS-LOO
-l$prog$w_cov <- loo(m$prog$w_cov, resp = "drs")
-
-# save the priors for documentation purposes
-pr$prog$w_cov <- prior_summary(m$prog$w_cov)
-
-# some posterior checks
-max( rhat(m$prog$w_cov) ) # 1.060
-max( loo(m$prog$w_cov, resp = "drs")$diagnostics$pareto_k ) # 0.46
-
-
-# ----------- joint quality check & model comparisons  -----------
-
-# compare the models via PSIS-LOO
-# for now compare m1 to m3 and m2 to m4 (because the have different number of points for PSIS-LOO)
-# prepare pointwise elpd matrixes
-lpd_point <- lapply(
-  names(l$desc), function(i)
-    cbind(
-      l$desc[[i]]$pointwise[,"elpd_loo"],
-      l$prog[[i]]$pointwise[,"elpd_loo"]
-    )
-)
-
-# create the table
-comp <- lapply(
-  names(l$desc) , function(i)
-    # compare decriptive vs. prognostic models within no covariates/with covariates
-    # cannot compare models with vs within covariates due to missing raw dat in covariates models
-    loo_compare(
-      l$desc[[i]], l$prog[[i]]
-    )[ paste0( c("m$desc$","m$prog$") , i ) , c("elpd_diff","se_diff") ] %>%
-    as.data.frame() %>%
-    # change rownames to something intelligible
-    rownames_to_column( var = "model" ) %>%
-    mutate(
-      model = ifelse(
-        grepl("desc", model), "descriptive", "prognostic"
-      )
-    )
-)
-
-# give them names
-names(lpd_point) <- names(l$desc)
-names(comp) <- names(l$desc)
-
-# add weights
-for ( i in names(comp) ) {
-  # pseudo-BMA weights
-  comp[[i]][,"pseudobma"] <- rbind(
-    pseudobma_weights( lpd_point[[i]], BB = F )[[1]],
-    pseudobma_weights( lpd_point[[i]], BB = F )[[2]]
-  )[,1]
-  # pseudo-BMA+ weights (with Bayesian bootstrap)
-  comp[[i]][,"pseudobma+"] <- rbind(
-    pseudobma_weights( lpd_point[[i]], BB = T )[[1]],
-    pseudobma_weights( lpd_point[[i]], BB = T )[[2]]
-  )[,1]
-  # stacking weights
-  comp[[i]][,"stacking"] <- rbind(
-    stacking_weights( lpd_point[[i]] )[[1]],
-    stacking_weights( lpd_point[[i]] )[[2]]
-  )[,1]
-}
-
-# round the results
-for ( i in names(comp) ) comp[[i]] <- comp[[i]] %>%
-  mutate_if( is.numeric, round, 3 )
-
-# loop through each model to create PSIS-LOO Pareto k plots
-f.s1 <- list()
-for ( i in names(l) ) {
-  for ( j in names(l[[i]]) ) {
-    f.s1[[i]][[j]] <- l[[i]][[j]]$diagnostics$pareto_k %>%
-      as.data.frame() %>%
-      rownames_to_column( "Data point") %>%
-      mutate_if( is.character, as.numeric ) %>%
-      rename( "Pareto shape k" = ".") %>%
-      ggplot( aes(x = `Data point`, y = `Pareto shape k`) ) +
-      geom_hline(
-        yintercept = c(0, .5, .7) ,
-        linetype = c("dotted", "dotdash", "dashed"),
-        color = c( "black", "red", "red" )
-      ) +
-      geom_point( shape = 3, color = rangi2, size = 2, stroke = 1.5 ) +
-      scale_x_continuous(
-        breaks = seq(0,350,50) , labels = seq(0,350,50)
-      ) +
-      scale_y_continuous(
-        limits = c(-.17,.7), breaks = seq(0,.7,.1),
-        labels = sprintf( "%.1f", round( seq(0,.7,.1), 1) )
-      )
-  }
-}
-
-# arrange the plots
-( f.s1$desc$no_cov + f.s1$desc$w_cov ) /
-( f.s1$prog$no_cov + f.s1$prog$w_cov ) + 
-plot_annotation( tag_levels = "A" )
-
-# save the grid as Fig.S1
-ggsave(
-  "figures/Fig.s1 Pareto k diagnostics.png" ,
-  height = 2 * 6.07 , width = 2 * 11.5 , dpi = "retina"
-)
-
-# ----------- visualization of models' posteriors  -----------
-
-# prepare list for posteriors
-post <- list(
-  no_cov = list( desc = list(), prog = list() ),
-  w_cov = list( desc = list(), prog = list() )
-)
-
-# first extract all parameters
-for ( i in names(post) ) {
-  for ( j in names(post[[i]]) ) {
-    post[[i]][[j]]$pars <- m[[j]][[i]] %>%
-      # fixed-effects, variance-covariance components,
-      # other distributional parameters
-      spread_draws(
-        `b.*|sd.*|cor.*|sigma.*|nu.*` , regex = T
-      )
-    # keep only DRS related parameters in w_cov models
-    if ( i == "w_cov" ) post[[i]][[j]]$pars <- post[[i]][[j]]$pars %>%
-        select( contains("drs") )
-  }
-}
-
-# seperate them by categories
-# at the same time, back-transform to DRS-2 scale where appropriate
-# always put it into a single column to make it ready for plotting
-for ( i in names(post) ) {
-  for ( j in names(post[[i]]) ) {
-    # the global Intercept
-    post[[i]][[j]]$intercept <- post[[i]][[j]]$pars %>% select( starts_with("b_") & contains("Intercept") )
-    # other pre-surgery effects
-    post[[i]][[j]]$preop <- post[[i]][[j]]$pars %>% select( starts_with("b_") & !contains("Intercept") & !contains("time") )
-    # time-varying fixed-effects
-    post[[i]][[j]]$time <- post[[i]][[j]]$pars %>% select( starts_with("b_") & contains("time") )
-    # covariates
-    # using a cheat code here, they're both imputed so they start with "bsp" instead of "b_"
-    post[[i]][[j]]$cov <- post[[i]][[j]]$pars %>% select( starts_with("bsp") )
-    # random-effects standard deviations
-    post[[i]][[j]]$sds <- post[[i]][[j]]$pars %>% select( starts_with("sd_") )
-    # random-effects correlations
-    post[[i]][[j]]$cor <- post[[i]][[j]]$pars %>% select( starts_with("cor_") )
-    # residual sigma
-    post[[i]][[j]]$sigma <- post[[i]][[j]]$pars %>% select( contains("sigma") )
-    # residual nu
-    post[[i]][[j]]$nu <- post[[i]][[j]]$pars %>% select( contains("nu") )
-    
-    # after done with splitting, remove the original $pars to spare space
-    post[[i]][[j]]$pars <- NULL
-    
-  }
-}
-
-# back-transform posteriors to DRS-2 scale where appropriate
-# pivot longer to get the same format everywhere ready for plotting
-for ( i in names(post) ) {
-  for ( j in names(post[[i]]) ) {
-    for ( k in names(post[[i]][[j]]) ) {
-      # keep the null list alone and continue on
-      if ( length( post[[i]][[j]][[k]] ) == 0 ) next
-      # otherwise, pivot and back-transform (where appropriate)
-      post[[i]][[j]][[k]] <- post[[i]][[j]][[k]] %>%
-        # pivoting
-        pivot_longer( cols = everything() ) %>%
-        # renaming and back-transforming
-        mutate(
-          # renaming
-          name = case_when(
-            # posteriors from w_cov models
-            i == "w_cov" & k == "cov" ~ sub( "bsp_drs_mi" , "" , name ),
-            i == "w_cov" & k %in% c("intercept","preop","time") ~ sub( "b_drs_" , "" , name ),
-            i == "w_cov" & k == "sds" ~ sub( "sd_id__drs_", "", name),
-            # posteriors from no_cov models
-            i == "no_cov" & k %in% c("intercept","preop","time") ~ sub( "b_" , "" , name),
-            i == "no_cov" & k == "sds" ~ sub( "sd_id__", "", name),
-            # residual parameters across models
-            k == "cor" ~ "cor",
-            k == "sigma" ~ "sigma",
-            k == "nu" ~ "nu"
-          ),
-          # back-transforming
-          value = case_when(
-            k == "intercept" ~ value * scl$SD$drs + scl$M$drs,
-            k %in% c("preop","time","cov","sds") ~ value * scl$SD$drs,
-            k %in% c("cor","sigma","nu") ~ value
-          )
-        )
-    }
-  }
-}
-
-
-
-
-# 2022-05-01 preliminary plotting for github (well, for me of course)
-
-# plotting, basic
-data.frame(
-  par = post$no_cov$desc$intercept$name,
-  desc = post$no_cov$desc$intercept$value,
-  prog = post$no_cov$prog$intercept$value
-) %>% pivot_longer(
-  cols = c("desc","prog"), values_to = "drs-2", names_to = "model"
-) %>%
-  ggplot( aes( x = `drs-2`, fill = model, color = model) ) +
-  geom_density( size = 1 , alpha = .5 ) +
-  scale_color_manual( values = cbPal[2:3]) +
-  scale_fill_manual( values = cbPal[2:3])
-
-# plotting, advanced
-data.frame(
-  par = post$no_cov$prog$time$name,
-  no_cov = post$no_cov$prog$time$value,
-  w_cov = post$w_cov$prog$time$value
-) %>% pivot_longer(
-  cols = c("no_cov","w_cov"), values_to = "drs-2", names_to = "model"
-) %>%
-  ggplot( aes( y = par, x = `drs-2`, fill = model, color = model ) ) +
-  stat_halfeye( geom = "slab", slab_linetype = "solid" , slab_size = 1,  slab_alpha = .5 ) +
-  geom_vline( xintercept = 0 , linetype = "dashed" ) +
-  scale_color_manual( values = cbPal[2:3]) +
-  scale_fill_manual( values = cbPal[2:3])
-
-# an interesting one, looking how much did adding prognostic factors reduce patient-level variability
-data.frame(
-  par = post$no_cov$prog$sds$name,
-  desc = post$no_cov$desc$sds$value,
-  prog = post$no_cov$prog$sds$value
-) %>% pivot_longer(
-  cols = c("desc","prog"), values_to = "DRS-2 (SD)", names_to = "model"
-) %>%
-  ggplot( aes( y = par, x = `DRS-2 (SD)`, fill = model, color = model ) ) +
-  stat_halfeye( geom = "slab", slab_linetype = "solid" , slab_size = 1,  slab_alpha = .6 ) +
-  scale_color_manual( values = cbPal[2:3]) +
-  scale_fill_manual( values = cbPal[2:3])
