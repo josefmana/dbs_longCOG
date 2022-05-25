@@ -1,5 +1,5 @@
 # All analyses reported in the article (Mana et al., in review) ran in R version 4.0.5 (2021-03-31),
-# on x86_64-w64-mingw32/x64 (64-bit) platform under Windows 10 x64 (build 19043).
+# on x86_64-w64-mingw32/x64 (64-bit) platform under Windows 10 x64 (build 22000).
 
 # I used the following versions of packages employed: dplyr_1.0.7, tidyverse_1.3.0, DiagrammeR_1.0.9, DiagrammeRsvg_0.1,
 # rsvg_2.3.1, missMDA_1.18, psych_2.2.3, brms_2.16.3, loo_2.4.1, tidybayes_2.3.1, ggplot2_3.3.3 and patchwork_1.1.1
@@ -41,7 +41,7 @@ theme_set( theme_classic(base_size = 25) )
 cbPal <- c( "#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7" )
 
 # set number of multiple imputations to account for missing pre-surgery data
-imp = 100
+imp = 20
 s = 87542 # seed for reproducibility
 
 # create folders "models", "figures" and "tables" to store results in
@@ -61,7 +61,7 @@ d1 <- d0[ d0$included == 1 , ] # only STN-DBS treated patients with pre- and pos
 d2 <- d1[ d1$ass_type == "pre" , ] # only pre-surgery assessments of included patients
 
 # read a file with mapping variables' names used in the script to variables' names for the manuscript
-var_nms <- read.csv( "data/var_nms.csv" , sep = ";" , row.names = 1 )
+var_nms <- read.csv( "data/var_nms.csv" , sep = ";" , row.names = 1 , encoding = "UTF-8")
 
 
 # ----------- participant inclusion flowchart  -----------
@@ -287,14 +287,14 @@ nb <- estim_ncpPCA( d2[,-1] , ncp.min = 0, ncp.max = 10 , nbsim = imp )
 
 # impute via PCA-based multiple imputation (n = 100 imputations)
 set.seed(s) # set seed for reproducibility
-d2.imp <- MIPCA( d2[ ,- 1] , ncp = nb$ncp )
+d2.imp <- MIPCA( d2[ ,- 1] , ncp = nb$ncp , nboot = imp )
 
 # calculate parallel test for each imputed data set 
 set.seed(s) # set seed for reproducibility
-p.test <- lapply( 1:100 , function(i) fa.parallel( d2.imp$res.MI[[i]] ) )
+p.test <- lapply( 1:imp , function(i) fa.parallel( d2.imp$res.MI[[i]] , plot = F ) )
 
 # look at the results of parallel tests
-table( sapply( 1:100 , function(i) p.test[[i]]$nfact ) )
+table( sapply( 1:imp , function(i) p.test[[i]]$nfact ) )
 
 # fit EFA to each imputed data set with 3:8 factors
 efa <- lapply(
@@ -362,9 +362,9 @@ fat_perc <- list(
     mutate( across( everything() , ~ replace( . , . < .9 , NA) ) )
 )
 
-# calculate the percentages/frequencies
+# calculate the percentages
 for ( i in names(fat_perc) ) fat_perc[[i]] <- sapply(
-  names(fat_perc[[i]]), function(j) sum( complete.cases( fat_perc[[i]][[j]] ) )
+  names(fat_perc[[i]]), function(j) 100 * sum( complete.cases( fat_perc[[i]][[j]] ) ) / imp
 )
 
 # bind the percentages to the FA summary table (fat_sum)
@@ -394,7 +394,13 @@ for ( i in c("TLI","RMSEA_90_CI_upp") ) {
     geom_vline( # add a vertical line depicting good performance heuristics
       linetype = "dashed", size = 1.2, xintercept = case_when( i == "TLI" ~ .9, i == "RMSEA_90_CI_upp" ~ .08 )
     ) +
-    labs( y = "Density", x = case_when( i == "TLI" ~ "TLI", i == "RMSEA_90_CI_upp" ~ "RMSEA (upper 90% CI)" ) )
+    labs( y = "Density", x = case_when( i == "TLI" ~ "TLI", i == "RMSEA_90_CI_upp" ~ "RMSEA (upper 90% CI)" ) ) +
+    scale_x_continuous( limits = case_when( i == "TLI" ~ c(0.6,1.05), i == "RMSEA_90_CI_upp" ~ c(0.03, 0.12) ),
+                        breaks = case_when( i == "TLI" ~ seq(.6,1,.1), i == "RMSEA_90_CI_upp" ~ seq(.04,.12,.02) ),
+                        labels = case_when(
+                          i == "TLI" ~ sprintf( "%.1f", round( seq(.6, 1, .1), 1) ),
+                          i == "RMSEA_90_CI_upp" ~ sprintf( "%.2f", round( seq(.04,.12,.02), 2) )
+                        ))
 }
 
 # arrange Fig S1 for printing
@@ -402,7 +408,8 @@ f.s1$TLI / f.s1$RMSEA_90_CI_upp + plot_layout( guides = "collect" ) + plot_annot
 
 # save as Fig S1
 ggsave(
-  "figures/Fig S1 factor analysis performance indexes.png", height = 1.75 * 6.07, width = 1.75 * 11.5, dpi = "retina"
+  "figures/Fig S1 factor analysis performance indexes.png",
+  height = 1.75 * 6.07, width = 1.75 * 11.5, dpi = "retina"
 )
 
 # one-by-one inspect all six-factor and seven-factor solutions' loading matrices
@@ -453,7 +460,7 @@ for ( i in 1:imp ) {
 
 # prepare an array for loading matrices of each imputed EFA
 loads <- array(
-  # create an empty 25 ( 23 tests + 2 variance accounted) x 7 (factors) x 100 (imputations) array
+  # create an empty 25 ( 23 tests + 2 variance accounted) x 7 (factors) x 20 (imputations) array
   data = NA, dim = c(25, nf, imp),
   dimnames = list( c( rownames(efa[[1]][[nf-2]]$loadings) , "Proportion Var", "Cumulative Var" ), doms, 1:imp )
 )
@@ -467,13 +474,13 @@ for( i in 1:imp ) loads[ , , i ] <- efa[[i]][[nf-2]]$loadings %>%
   ) %>% as.matrix()
 
 
-# write a summary of loadings across all 100 imputed data sets
+# write a summary of loadings across all 20 imputed data sets
 t3 <- matrix(
   data = NA, nrow = nrow(loads[ , , 1]), ncol = ncol(loads[ , , 1]),
   dimnames = list( rownames(loads[ , , 1 ]) , colnames(loads[ , , 1]) )
 ) %>% as.data.frame()
 
-# fill-in averages and SDs across all 100 imputations 
+# fill-in averages and SDs across all 20 imputations 
 for ( i in rownames(t3) ) {
   t3[ i , ] <- paste0(
       sprintf( "%.2f" , round( loads[i, , ] %>% t %>% colMeans , 2 ) ), " (", # mean
@@ -495,7 +502,7 @@ lab <- as_labeller( c( "proc_spd" = "Processing\nspeed",
 
 # create a median factor loading plot as Fig 3
 # start by calculating median loading for each test/factor pairs across imputations
-f3 <- sapply (
+sapply (
   rownames(t3)[ 1:(nrow(t3)-2) ],
   function(i) loads[ i , , ] %>% t %>% apply( . , 2 , median )
 ) %>% as.data.frame %>%
@@ -591,7 +598,7 @@ for( i in doms ) {
 }
 
 # clean environment for space (will need it)
-rm( list = ls()[ !( ls() %in% c( "cbPal", "d1", "d3", "doms", "s", "scl", "var_nms" ) ) ] )
+rm( list = ls()[ !( ls() %in% c( "cbPal", "d1", "d3", "doms", "imp", "s", "scl", "var_nms" ) ) ] )
 gc() # garbage collection to ease RAM a bit if needed
 
 # set rstan options
@@ -640,11 +647,13 @@ p0 <- c(
 )
 
 # fit the model with Student response function
-brm_multiple(
-  formula = f0.drs, family = student(), prior = p0, data = d3,
-  sample_prior = T, seed = s, chains = ch, iter = it, warmup = wu,
-  control = list( adapt_delta = ad ), file = "models/m0_base.rds"
-) # not creating an object to spare RAM
+m <- list(
+  m0_base = brm_multiple(
+    formula = f0.drs, family = student(), prior = p0, data = d3,
+    sample_prior = T, seed = s, chains = ch, iter = it, warmup = wu,
+    control = list( adapt_delta = ad ), file = "models/m0_base.rds"
+  )
+)
 
 
 # ----------- primary model with uncorrelated random-effects  -----------
@@ -660,7 +669,7 @@ f1.drs <- paste0(
 p1 <- p0[ -which(p0$class == "cor"), ]
 
 # fit the model with Student response function
-brm_multiple(
+m$m1_nocov <- brm_multiple(
   formula = f1.drs, family = student(), prior = p1, data = d3,
   sample_prior = T, seed = s, chains = ch, iter = it, warmup = wu,
   control = list( adapt_delta = ad ), file = "models/m1_nocov.rds"
@@ -676,7 +685,7 @@ f2.drs <- f1.drs
 p2 <- NULL
 
 # fit the model with Student response function
-brm_multiple(
+m$m2_flat_priors <- brm_multiple(
   formula = f2.drs, family = student(), prior = p2, data = d3,
   sample_prior = T, seed = s, chains = ch, iter = it, warmup = wu,
   control = list( adapt_delta = ad ), file = "models/m2_flat_priors.rds"
@@ -686,7 +695,7 @@ brm_multiple(
 # ----------- model with covariates  -----------
 
 # set contrast for sex as a factor
-for( i in 1:length(d3) ) contrasts(d3[[i]]$sex) <- -contr.sum(2)/2 # female = -0.5, male = 0.5
+for( i in 1:imp ) contrasts(d3[[i]]$sex) <- -contr.sum(2)/2 # female = -0.5, male = 0.5
 
 # set-up the linear model for outcome
 f3.drs <- paste0(
@@ -741,8 +750,183 @@ p3 <- c(
 )
 
 # fit the model as defined above
-brm_multiple(
+m$m3_wcov <- brm_multiple(
   formula = f3.drs + f3.bdi + f3.led, prior = p3, data = d3,
   sample_prior = F, seed = s, chains = ch, iter = it, warmup = wu, # not saving priors to spare some memory
-  control = list( adapt_delta = ad ), file = "models/m3_wcov.rds"
+  control = list( adapt_delta = .99 ), file = "models/m3_wcov.rds"
+)
+
+# ----------- post-processing: extract MCMC draws  -----------
+
+# extract posteriors from all models
+draws <- list( m0_base = posterior::as_draws_df(m$m0_base) )
+
+# loop through the rest of the models to complete the draws list
+for ( i in names(m)[-1] ) draws[[i]] <- posterior::as_draws_df( m[[i]] )
+
+# save them as rds for sharing
+saveRDS( draws , "models/dbs_longCOG_mcmc_draws.rds" )
+
+
+# ----------- post-processing: compute PSIS-LOO  -----------
+
+# compute PSIS-LOO for each imputed data set for each model
+l <- list()
+
+# loop through each model and data set
+# doesn't work for the m4_wcov model in brms currently (likely because of the online imputation of covariates)
+for ( i in names(m)[-4] ) {
+  for ( j in 1:imp ) l[[i]][[j]] <- loo( m[[i]], newdata = d3[[j]] )
+}
+
+# save all PSIS-LOO as rds
+saveRDS( l, "models/dbs_longCOG_psis-loo.rds" )
+
+
+# ----------- post-processing: prepare posterior predictions  -----------
+
+# prepare posterior predictions for Processing Speed and Episodic Memory for Fig. 4 in a multistep procedure
+# first clear the environment of models we will not need anymore
+m <- m$m1_nocov # using only the primary model to be reported in the main text
+gc()
+
+# write down a list of predictors effect of which we're going to visualize
+prds <- c( "proc_spd" , "epis_mem" )
+
+# prepare a raw data set for visualizations
+d4 <- d1 %>%
+  select( id, time_y , drs_tot ) %>%
+  filter( complete.cases(drs_tot) ) %>%
+  rename( "drs" = "drs_tot" ) %>%
+  # add median of imputed Processing Speed and Episodic Memory
+  mutate(
+    proc_spd = sapply( 1:imp , function(i) d3[[i]]$proc_spd ) %>% apply( . , 1 , median ),
+    epis_mem = sapply( 1:imp , function(i) d3[[i]]$epis_mem ) %>% apply( . , 1 , median )
+  )
+
+# get quantile groups for each patients according to Processing Speed and Episodic Memory
+d5 <- d4[ d4$time_y < 0 , ] %>%
+  mutate(
+    # re-coding such that 1 means the lowermost quantile and 4 means the uppermost quantile
+    proc_spd_quant = -ntile( proc_spd, 4)+5,
+    epis_mem_quant = -ntile( epis_mem, 4)+5
+  )
+
+# add these groups to the longitudinal data set (d4)
+d4 <- d4 %>% left_join( d5 %>% select( id, proc_spd_quant, epis_mem_quant) , by = "id" )
+
+# prepare a prediction dummy data set
+d_seq <- list()
+
+# write down how many predictions (time-points) per predictor group/quantile to calculate
+n_seq = 25
+
+# loop through predictors
+for ( i in prds ) d_seq[[i]] <- expand.grid(
+  as.vector( by( d4[[i]], d4[[ paste0(i, "_quant") ]] , median ) ),
+  seq( from = -2, to = 10, length.out = n_seq )
+) %>% `colnames<-` ( c(i, "time_y") ) %>%
+  # add all variables needed
+  mutate(
+    time = time_y + scl$Md$time,
+    proc_spd = if( i == "proc_spd") proc_spd else 0,
+    epis_mem = if( i == "epis_mem") epis_mem else 0,
+    grp = rep( 1:4, n_seq ), # in the expand.grid above, need to write predictor first, time second, otherwise this is incorrect
+    verb_wm = 0, visp_mem = 0, set_shift = 0, anxiety = 0, visp_wm = 0, id = NA
+  )
+
+# add predictions to d_seq
+for ( i in prds ) d_seq[[i]] <- d_seq[[i]] %>%
+  add_fitted_draws( m , re_formula = NA ) %>%
+  mutate(.value = scl$M$drs + scl$SD$drs * .value) %>%
+  median_hdi(.width = .95)
+
+# prepare variable names for the plot
+nms <- list( proc_spd = "Processing speed" , epis_mem = "Episodic memory" )
+
+
+# ----------- post-processing: drawing the figures  -----------
+
+# first prepare list with posteriors from each model
+# make a list of variable names for all fixed-effects
+pars <- list(
+  intercept = names(draws$m1_nocov)[1], # global intercept
+  base = names(draws$m1_nocov)[3:9], # baseline correlates
+  time = names(draws$m1_nocov)[c(2,10:16)] # time-dependent effects
+)
+
+# prepare posterior lists
+post <- list()
+
+# loop through all models to fill-in posteriors in question
+for ( i in names(draws) ) post[[i]] <- draws[[i]] %>%
+  `colnames<-` ( gsub("_drs","",names(.) ) ) %>% # rename parameters in m3_wcov to appropriate format
+  select( which( names(.) %in% unlist(pars) ) )
+
+# pull all posteriors into a single file
+post <- do.call( rbind.data.frame , post ) %>%
+  # prepare a column with model labels
+  rownames_to_column( var = "Model" ) %>%
+  # pivot such that all parameters are in a single long column
+  pivot_longer(
+    cols = unlist(pars, use.names = F), values_to = "DRS-2", names_to = "Parameter"
+  ) %>%
+  # make final adjustments
+  mutate(
+    # re-code model to a nicer and consistent form (will serve to color density plots)
+    Model = case_when(
+      grepl("m0_base", Model) ~ "Correlated RE",
+      grepl("m1_nocov", Model) ~ "Uncorrelated RE",
+      grepl("m2_flat_priors", Model) ~ "Flat priors",
+      grepl("m3_wcov", Model) ~ "Covariates"
+    ),
+    # add labels for effects grouping (will serve to split facets of the plot)
+    Group = case_when(
+      Parameter %in% pars$intercept ~ "intercept",
+      Parameter %in% pars$base ~ "base",
+      Parameter %in% pars$time ~ "time"
+    ),
+    # back-transform posteriors to raw DRS-2 (or DRS-2 per year) scale
+    `DRS-2` = case_when(
+      Parameter == "b_Intercept" ~ `DRS-2` * scl$SD$drs + scl$M$drs, # intercept
+      Parameter != "b_Intercept" ~ `DRS-2` * scl$SD$drs # slopes
+    )
+  )
+
+# change character columns to ordered factors such that ggplot plots them in a correct order
+# need to reverse the order by rev(.) because ggplot counts from bottom-up on the y-axis
+post$Model <- factor( post$Model , levels = unique(post$Model)  , ordered = T )
+post$Parameter <- factor( post$Parameter , levels = rev( unlist(pars, use.names = F) ) , ordered = T )
+post$Group <- factor( post$Group , levels = rev( unique(post$Group) ) , ordered = T )
+
+# plot it one by one per group
+f.s2 <- list()
+
+# loop through all three parameter groups
+for ( i in rev( levels(post$Group) ) ) f.s2[[i]] <- post[ post$Group == i , ] %>%
+  mutate(
+    title = case_when( i == "intercept" ~ "Global intercept",
+                       i == "base" ~ "Baseline correlates",
+                       i == "time" ~ "Time-dependent effects")
+  ) %>%
+  ggplot( aes(y = Parameter, x = `DRS-2`, fill = Model, color = Model) ) +
+  stat_halfeye( geom = "slab", slab_linetype = "solid" , slab_size = 1,  slab_alpha = .5 ) +
+  geom_vline( xintercept = case_when( i == "intercept" ~ 139, i != "intercept" ~ 0 ), linetype = "dashed" ) +
+  scale_color_manual( values = cbPal[2:5]) +
+  scale_fill_manual( values = cbPal[2:5]) +
+  scale_x_continuous( limits = case_when( i == "intercept" ~ c(138, 143), i != "intercept" ~ c(-3,2) ) ) +
+  scale_y_discrete( name = NULL, labels = rev( var_nms[ pars[[i]] , ] ) ) +
+  facet_wrap( . ~ title) +
+  theme(
+    legend.position = "bottom" , plot.title = element_text(hjust = 0.5) , axis.title.x = element_text(size = 18)
+  )
+
+# put them together
+f.s2$intercept / f.s2$base / f.s2$time  +
+  plot_layout( heights = c(1, 7, 8) , guides = "collect" ) & theme( legend.position = "bottom" )
+
+# save as Fig S2B
+ggsave(
+  "figures/Fig S2B posteriors across-models.png",
+  height = 3 * 8.53, width = 1.75 * 9.05, dpi = "retina"
 )
