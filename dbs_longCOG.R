@@ -845,7 +845,7 @@ for ( i in prds ) d_seq[[i]] <- d_seq[[i]] %>%
 nms <- list( proc_spd = "Processing speed" , epis_mem = "Episodic memory" )
 
 
-# ----------- post-processing: drawing the figures  -----------
+# ----------- post-processing: plotting posterior distributions  -----------
 
 # first prepare list with posteriors from each model
 # make a list of variable names for all fixed-effects
@@ -875,8 +875,8 @@ post <- do.call( rbind.data.frame , post ) %>%
   mutate(
     # re-code model to a nicer and consistent form (will serve to color density plots)
     Model = case_when(
-      grepl("m0_base", Model) ~ "Correlated RE",
-      grepl("m1_nocov", Model) ~ "Uncorrelated RE",
+      grepl("m0_base", Model) ~ "Correlated varying effects",
+      grepl("m1_nocov", Model) ~ "Uncorrelated varying effects",
       grepl("m2_flat_priors", Model) ~ "Flat priors",
       grepl("m3_wcov", Model) ~ "Covariates"
     ),
@@ -900,33 +900,160 @@ post$Parameter <- factor( post$Parameter , levels = rev( unlist(pars, use.names 
 post$Group <- factor( post$Group , levels = rev( unique(post$Group) ) , ordered = T )
 
 # plot it one by one per group
-f.s2 <- list()
+f.s3 <- list()
 
 # loop through all three parameter groups
-for ( i in rev( levels(post$Group) ) ) f.s2[[i]] <- post[ post$Group == i , ] %>%
+for ( i in rev( levels(post$Group) ) ) f.s3[[i]] <- post[ post$Group == i , ] %>%
   mutate(
     title = case_when( i == "intercept" ~ "Global intercept",
                        i == "base" ~ "Baseline correlates",
                        i == "time" ~ "Time-dependent effects")
   ) %>%
-  ggplot( aes(y = Parameter, x = `DRS-2`, fill = Model, color = Model) ) +
-  stat_halfeye( geom = "slab", slab_linetype = "solid" , slab_size = 1,  slab_alpha = .5 ) +
-  geom_vline( xintercept = case_when( i == "intercept" ~ 139, i != "intercept" ~ 0 ), linetype = "dashed" ) +
-  scale_color_manual( values = cbPal[2:5]) +
+  ggplot( aes(y = Parameter, x = `DRS-2`, fill = Model) ) +
+  stat_slab( geom = "slab", size = 1,  alpha = .4 ) +
+  coord_cartesian(
+    ylim = case_when( i == "intercept" ~ c(1.3,1.5), i == "base" ~ c(1.3,7.5), i == "time" ~ c(1.3,8.5) )
+  ) +
+  geom_vline( xintercept = 0, linetype = "dashed" ) +
   scale_fill_manual( values = cbPal[2:5]) +
-  scale_x_continuous( limits = case_when( i == "intercept" ~ c(138, 143), i != "intercept" ~ c(-3,2) ) ) +
+  scale_x_continuous(
+    limits = case_when( i == "intercept" ~ c(138, 143) ),
+    name = case_when( i == "intercept" ~ "" , i == "base" ~ "DRS-2", i == "time" ~ "DRS-2 (points per year)")
+  ) +
   scale_y_discrete( name = NULL, labels = rev( var_nms[ pars[[i]] , ] ) ) +
   facet_wrap( . ~ title) +
   theme(
-    legend.position = "bottom" , plot.title = element_text(hjust = 0.5) , axis.title.x = element_text(size = 18)
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5),
+    axis.title.x = element_text(size = 20),
+    axis.text.y = element_text( vjust = -1.5 ),
+    axis.ticks.y = element_blank()
   )
 
 # put them together
-f.s2$intercept / f.s2$base / f.s2$time  +
-  plot_layout( heights = c(1, 7, 8) , guides = "collect" ) & theme( legend.position = "bottom" )
+( ( f.s3$intercept / f.s3$base + plot_layout( heights = c(1,7) ) ) | f.s3$time )  +
+  plot_layout( guides = "collect" ) & theme( legend.position = "bottom" )
 
-# save as Fig S2B
-ggsave(
-  "figures/Fig S2B posteriors across-models.png",
-  height = 3 * 8.53, width = 1.75 * 9.05, dpi = "retina"
+# save as Fig S3
+ggsave( "figures/Fig S3 posteriors across-models.png", height = 1.5 * 8.53, width = 2 * 9.05, dpi = "retina" )
+
+# Prepare part Fig. 4 (m1_nocov posteriors)
+f4 <- list()
+
+# loop through all three parameter groups
+for ( i in rev( levels(post$Group) ) ) {
+  f4[[i]] <- post[ post$Group == i & post$Model == "Uncorrelated varying effects" , ] %>%
+    mutate(
+      title = case_when( i == "intercept" ~ "Global intercept",
+                         i == "base" ~ "Baseline correlates",
+                         i == "time" ~ "Time-dependent effects")
+    ) %>%
+    ggplot( aes(y = Parameter, x = `DRS-2`, fill = stat(x < 0) ) ) +
+    stat_slab( geom = "slab", size = 1,  alpha = .4 ) +
+    coord_cartesian(
+      ylim = case_when( i == "intercept" ~ c(1.3,1.5), i == "base" ~ c(1.3,7.5), i == "time" ~ c(1.3,8.5) )
+    ) +
+    geom_vline( xintercept = 0, linetype = "dashed" ) +
+    scale_fill_manual( values = cbPal[1:2]) +
+    scale_x_continuous(
+      limits = case_when( i == "intercept" ~ c(138, 143) ),
+      name = case_when( i == "intercept" ~ "" , i == "base" ~ "DRS-2", i == "time" ~ "DRS-2 (points per year)")
+    ) +
+    scale_y_discrete( name = NULL, labels = rev( var_nms[ pars[[i]] , ] ) ) +
+    facet_wrap( . ~ title) +
+    theme(
+      legend.position = "None",
+      plot.title = element_text(hjust = 0.5),
+      axis.title.x = element_text(size = 20),
+      axis.text.y = element_text( vjust = -1.5 ),
+      axis.ticks.y = element_blank()
+    )
+}
+
+# put them together
+( ( f4$intercept / f4$base + plot_layout( heights = c(1,7) ) ) | f4$time )
+
+# save as Fig 4
+ggsave( "figures/Fig 4 model posteriors.png", height = 1.5 * 8.53, width = 2 * 9.05, dpi = "retina" )
+
+# keep only m1_nocov posteriors and add priors of m1_nocov for Fig S2
+samples <- list(
+  # extract priors
+  Prior = draws$m1_nocov %>% select( starts_with("prior_"), -contains("sd"), -prior_nu, -prior_sigma ) %>%
+    `colnames<-` ( gsub("prior_","",names(.) ) ) %>% # rename such that columns are named as in pars
+    rename( "b_Intercept" = "Intercept" ), # rename Intercept manually
+  # extract posteriors
+  Posterior = draws$m1_nocov %>% select( which( names(.) %in% unlist(pars) ) )
 )
+
+# pull all samples from m1_nocov into a single file
+samples <- do.call( rbind.data.frame , samples ) %>%
+  # prepare a column with model labels
+  rownames_to_column( var = "Distribution" ) %>%
+  # pivot such that all parameters are in a single long column
+  pivot_longer(
+    cols = unlist(pars, use.names = F), values_to = "DRS-2", names_to = "Parameter"
+  ) %>%
+  # make final adjustments
+  mutate(
+    # re-code distribution (will serve to color density plots)
+    Distribution = sub( "\\..*", "", Distribution),
+    # add labels for effects grouping (will serve to split facets of the plot)
+    Group = case_when(
+      Parameter %in% pars$intercept ~ "intercept",
+      Parameter %in% pars$base ~ "base",
+      Parameter %in% pars$time ~ "time"
+    ),
+    # back-transform posteriors to raw DRS-2 (or DRS-2 per year) scale
+    `DRS-2` = case_when(
+      Parameter == "b_Intercept" ~ `DRS-2` * scl$SD$drs + scl$M$drs, # intercept
+      Parameter != "b_Intercept" ~ `DRS-2` * scl$SD$drs # slopes
+    )
+  )
+
+# change character columns to ordered factors such that ggplot plots them in a correct order
+samples$Distribution <- factor( samples$Distribution , levels = rev( unique(samples$Distribution) ), ordered = T )
+samples$Parameter <- factor( samples$Parameter , levels = rev( unlist(pars, use.names = F) ) , ordered = T )
+samples$Group <- factor( samples$Group , levels = rev( unique(samples$Group) ) , ordered = T )
+
+# Prepare part Fig. S2 (m1_nocov priors vs posteriors)
+f.s2 <- list()
+
+# loop through all three parameter groups
+for ( i in rev( levels(samples$Group) ) ) {
+  f.s2[[i]] <- samples[ samples$Group == i , ] %>%
+    mutate(
+      title = case_when( i == "intercept" ~ "Global intercept",
+                         i == "base" ~ "Baseline correlates",
+                         i == "time" ~ "Time-dependent effects")
+    ) %>%
+    ggplot( aes(y = Parameter, x = `DRS-2`, color = Distribution ) ) +
+    stat_slab( geom = "slab", linetype = "solid", size = 2, fill = NA,  ) +
+    coord_cartesian(
+      ylim = case_when( i == "intercept" ~ c(1.3,1.5),
+                        i == "base" ~ c(1.3,7.5),
+                        i == "time" ~ c(1.3,8.5) )
+    ) +
+    geom_vline( xintercept = 0, linetype = "dashed" ) +
+    scale_color_manual( values = cbPal[c(6,1)] ) +
+    scale_x_continuous(
+      limits = case_when( i == "intercept" ~ c(135, 143) ),
+      name = case_when( i == "intercept" ~ "" , i == "base" ~ "DRS-2", i == "time" ~ "DRS-2 (points per year)")
+    ) +
+    scale_y_discrete( name = NULL, labels = rev( var_nms[ pars[[i]] , ] ) ) +
+    facet_wrap( . ~ title) +
+    theme(
+      legend.position = "bottom",
+      plot.title = element_text(hjust = 0.5),
+      axis.title.x = element_text(size = 20),
+      axis.text.y = element_text( vjust = -1.5 ),
+      axis.ticks.y = element_blank()
+    )
+}
+
+# put them together
+( ( f.s2$intercept / f.s2$base + plot_layout( heights = c(1,7) ) ) | f.s2$time )  +
+  plot_layout( guides = "collect" ) & theme( legend.position = "bottom" )
+
+# save as Fig S3
+ggsave( "figures/Fig S2 posteriors vs priors.png", height = 1.5 * 8.53, width = 2 * 9.05, dpi = "retina" )
