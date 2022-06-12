@@ -1,0 +1,82 @@
+variable;name
+age_ass_y;Age (years)
+dur_ass_y;Disease duration (years)
+edu_y;Education (years)
+sex;Sex (males)
+sex1;Sex
+age_stim_y;Age at surgery (years)
+dur_stim_y;Disease duration at surgery (years)
+ledd_mg;LEDD
+ledd_pre_mg;LEDD (mg)
+ldopa_resp;Levodopa test (% response)
+mds_updrs_iii_med_on;MDS-UPDRS III (ON medication)
+mds_updrs_iii_med_off;MDS-UPDRS III (OFF medication)
+drs_tot;DRS-2 (range 0-144)
+bdi;BDI-II (range 0-63)
+staix1;STAI-X1 (range 20-80)
+staix2;STAI-X2 (range 20-80)
+tmt_a;TMT-A
+tmt_b;TMT-B
+ds_f;DS-F
+ds_b;DS-B
+lns;LNS
+ss_f;SS-F
+ss_b;SS-B
+tol;TOL
+pst_d;PST-D
+pst_w;PST-W
+pst_c;PST-C
+cowat;COWAT
+cft;CFT
+sim;Sim.
+ravlt_ir;RAVLT-IR
+ravlt_b;RAVLT-B
+ravlt_dr;RAVLT-DR
+ravlt_rec50;RAVLT-Rec50
+ravlt_rec15;RAVLT-Rec15
+fp_ir;FP-IR
+fp_dr;FP-DR
+stai_x1;STAI-X1
+stai_x2;STAI-X2
+bdi2;BDI-II
+current_r_mA;current right (mA, N = ?)
+current_l_mA;current left (mA, N = ?)
+voltage_r_V;voltage right (V, N = ?)
+voltage_l_V;voltage left (V, N = ?)
+duration_r_us;pulse duration right (µs)
+duration_l_us;pulse duration left (µs)
+frequency_r_Hz;frequency right (Hz)
+frequency_l_Hz;frequency left (Hz)
+Proportion Var;Total proportion of variance
+Cumulative Var;Cumulative proportion of variance
+age;Age
+dur;Disease duration
+led;LEDD
+proc_spd;Processing speed
+epis_mem;Episodic verbal memory
+verb_wm;Verbal working memory
+visp_mem;Visuospatial memory
+set_shift;Set shifting
+anxiety;Anxiety
+visp_wm;Spatial working memory
+TLI;TLI
+RMSEA;RMSEA
+RMSEA_90_CI_low;90% CI RMSEA (lower bound)
+RMSEA_90_CI_upp;90% CI RMSEA (upper bound)
+pred;Predictor
+b_Intercept;Intercept
+b_proc_spd;Processing speed
+b_epis_mem;Episodic verbal memory
+b_verb_wm;Verbal working memory
+b_visp_mem;Visuospatial memory
+b_set_shift;Set shifting
+b_anxiety;Anxiety
+b_visp_wm;Spatial working memory
+b_time;Time
+b_time:proc_spd;Processing speed × Time
+b_time:epis_mem;Episodic verbal memory × Time
+b_time:verb_wm;Verbal working memory × Time
+b_time:visp_mem;Visuospatial memory × Time
+b_time:set_shift;Set shifting × Time
+b_time:anxiety;Anxiety × Time
+b_time:visp_wm;Spatial working memory × Time
