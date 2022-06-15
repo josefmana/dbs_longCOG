@@ -2,7 +2,7 @@
 # on aarch64-apple-darwin20 (64-bit) platform under macOS Monterey 12.4.
 
 # I used the following versions of packages employed: dplyr_1.0.9, tidyverse_1.3.1, psych_2.2.5,
-# brms_2.17.0, tidybayes_3.0.2, ggplot2_3.3.6 and patchwork_1.1.1
+# brms_2.17.0, tidybayes_3.0.2, ggplot2_3.3.6 and patchwork_1.1.1.
 
 # set working directory (works only in RStudio)
 setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
@@ -48,9 +48,9 @@ sapply(
 )
 
 # read the raw data set as well as imputed baseline data sets
-d1 <- read.csv( "data/20220508_dbs_longCOG_data.csv" , sep = "," ) %>%
-  # keep only included
-  slice( which(included == 1) )
+d1 <- readRDS("data/long_dat.rds")$d1
+d3 <- readRDS("data/long_dat.rds")$d3
+scl <- readRDS("data/long_dat.rds")$scl
 
 # read a file with mapping variables' names used in the script to variables' names for the manuscript
 var_nms <- read.csv( "data/var_nms.csv" , sep = ";" , row.names = 1 , encoding = "UTF-8")
@@ -172,7 +172,7 @@ ggsave( "figures/Fig S1 factor analysis performance indexes.png", height = 1.75 
 
 # ----------- Tab S2 factor loadings  -----------
 
-# choosed the 7-factor solution
+# the 7-factor solution was chosen
 nf = 7
 
 # list all the domains
@@ -226,6 +226,7 @@ write.table( x = t.s2,
              file = "tables/Tab S2 factor loadings.csv",
              sep = ",", row.names = F)
 
+
 # ----------- Fig 3 factor loadings  -----------
 
 # visualize loadings (i.e.,median loadings across imputations)
@@ -271,78 +272,15 @@ sapply (
 ggsave( "figures/Fig 3 factor loadings.png", height = 1.5*11.8, width = 1.8*10.8, dpi = "retina" )
 
 
-# ----------- longitudinal analysis  -----------
-
-# compute scaling values for DRS-2, BDI-II, LEDD, age and time
-scl <- list(
-  M = list(
-    drs = mean( d1$drs_tot , na.rm = T ), # 136.90
-    bdi = mean( d1$bdi , na.rm = T ), # 10.95
-    led = mean( d1$ledd_mg , na.rm = T ), # 1197.21
-    age = mean( d1$age_ass_y, na.rm = T ) # 59.63
-  ),
-  SD = list(
-    drs = sd( d1$drs_tot , na.rm = T ), # 7.72
-    bdi = sd( d1$bdi , na.rm = T ), # 7.19
-    led = sd( d1$ledd_mg , na.rm = T ), # 687.20
-    age = sd( d1$age_ass_y, na.rm = T ) # 8.27
-  ),
-  # add median time of pre-surgery assessment for GLMMs intercepts
-  Md = list(
-    time = -median( d1[d1$ass_type == "pre", ]$time_y , na.rm = T ) # 0.30
-  )
-)
-
-# merge longitudinal d1 with baseline factor scores (joining by id)
-d3 <- lapply(
-  1:imp,
-  function(i) d1 %>%
-    # first prepare a pre-surgery df with id and factor scores for each patient
-    left_join( cbind.data.frame(id = d1[ d1$ass_type == "pre" , ]$id, efa[[i]][[nf-2]]$scores ) , by = "id" ) %>%
-    filter( complete.cases(drs_tot) ) %>% # get rid of three dummy rows due to more than one stimulation parameter (no DRS-2)
-    # scale all DRS-2, BDI-II, LEDD and time already
-    mutate(
-      time = time_y + scl$Md$time,
-      drs = ( drs_tot - scl$M$drs ) / scl$SD$drs,
-      bdi = ( bdi - scl$M$bdi ) / scl$SD$bdi,
-      led = ( ledd_mg - scl$M$led ) / scl$SD$led,
-      age = ( age_ass_y - scl$M$age ) / scl$SD$age,
-      sex = as.factor( sex ), # for better estimation of BDI in the second (covariate) model
-      cens_drs = ifelse( drs == max(drs, na.rm = T) , "right" , "none" ) # right censoring for DRS == 144
-    ) %>%
-    # keep only variables of interest
-    select(
-      id, time, drs, cens_drs, bdi, led, age, sex, # outcomes, demographics, clinics
-      proc_spd, epis_mem, verb_wm, visp_mem, set_shift, anxiety, visp_wm # pre-surgery cognition
-    )
-)
-
-# loop across all imputations to get means and SDs of the pre-surgery cognitive domains,
-# then transform the pre-surgery cognition in each data set to (pre-surgery) zero mean, unit SD variables
-for( i in doms ) {
-  for ( j in 1:imp ) {
-    # calculate scaling values
-    scl$M[[i]][[j]] <- d3[[j]][[i]] %>% mean( na.rm = T )
-    scl$SD[[i]][[j]] <- d3[[j]][[i]] %>% sd( na.rm = T )
-    # scale in the jth imputed data set
-    d3[[j]][[i]] <- case_when(
-      # all but anxiety measures will be inverse such that parameters
-      # can be interpreted as effect of deficit in said measure
-      i == "anxiety" ~ ( d3[[j]][[i]] - scl$M[[i]][[j]] ) / scl$SD[[i]][[j]],
-      i != "anxiety" ~ -( d3[[j]][[i]] - scl$M[[i]][[j]] ) / scl$SD[[i]][[j]]
-    )
-  }
-}
-
-
 # ----------- prior predictive check  -----------
 
 # including prior predictive check to "post-processing" to keep the "statistical modelling" file clean
 # set-up the linear model (doing PPC for the primary model only, ie, m1_nocov,  the rest should be "centered"
 # around it as they are the same model with added parameters with zero-centered priors)
-f.drs <- paste0(
-  "drs | cens(cens_drs) ~ 1 + ", paste( "time", doms, sep = " * " , collapse = " + " ), " + (1 + time || id)"
-) %>% as.formula %>% bf
+f.drs <- paste0( "drs | cens(cens_drs) ~ 1 + ",
+                 paste( "time", doms, sep = " * " , collapse = " + " ),
+                 " + (1 + time || id)"
+                 ) %>% as.formula %>% bf
 
 # set-up priors
 p <- c(
@@ -411,6 +349,9 @@ ggsave( "figures/Fig S2 prior predictive check.png", dpi = "retina", width = 10.
 
 # ----------- extract MCMC draws -----------
 
+# remove unneeded objects
+rm( list = ls()[ !( ls() %in% c( "cbPal", "d1", "d3", "doms", "imp", "scl", "var_nms" ) ) ] )
+
 # extract posteriors from all models
 draws <- list()
 
@@ -477,7 +418,7 @@ post$Group <- factor( post$Group , levels = rev( unique(post$Group) ) , ordered 
 
 # ----------- Fig 4 posterior primary model posteriors  -----------
 
-# prepare lisr for facets of Fig. 4 (m1_nocov posteriors)
+# prepare list for facets of Fig. 4 (m1_nocov posteriors)
 f4 <- list()
 
 # loop through the three parameter groups
@@ -565,7 +506,7 @@ samples <- list(
   # extract priors
   Prior = draws$m1_nocov %>% select( starts_with("prior_"), -contains("sd"), -prior_nu, -prior_sigma ) %>%
     `colnames<-` ( gsub("prior_","",names(.) ) ) %>% # rename such that columns are named as in pars
-    rename( "b_Intercept" = "Intercept" ), # rename Intercept manually
+    rename( "b_Intercept" = "Intercept" ), # rename the Intercept manually
   # extract posteriors
   Posterior = draws$m1_nocov %>% select( which( names(.) %in% unlist(pars) ) )
 )
@@ -642,6 +583,37 @@ for ( i in rev( levels(samples$Group) ) ) {
 # save as Fig S4
 ggsave( "figures/Fig S4 posteriors vs priors.png", height = 1.5 * 8.53, width = 2 * 9.05, dpi = "retina" )
 
+
+# ----------- Tab S3 summary of posteriors -----------
+
+# prepare a table for m1_nocov (the primary model) posteriors summary
+t.s3 <- data.frame( par = as.character( unlist(pars) ), b = NA, PPI = NA, pd = NA ) %>% column_to_rownames("par")
+
+# fill-in with appropriate estimates from draws$m1_nocov
+for ( i in rownames(t.s3) ) t.s3[i,] <- c(
+  sprintf( "%.2f", round( median(draws$m1_nocov[[i]] * scl$SD$drs + if(i == "b_Intercept") scl$M$drs else 0 ), 2 ) ),
+  paste0( "[", sprintf( "%.2f", round( hdi(draws$m1_nocov[[i]] * scl$SD$drs + if(i == "b_Intercept") scl$M$drs else 0 ), 2 )[,1] ),
+          ",", sprintf( "%.2f", round( hdi(draws$m1_nocov[[i]] * scl$SD$drs + if(i == "b_Intercept") scl$M$drs else 0 ), 2 )[,2] ),
+          "]" ),
+  sprintf( "%.3f", round( sum( draws$m1_nocov[[i]] < 0 ) / nrow( draws$m1_nocov) , 3 ) )
+)
+
+# make last adjustments to the table
+t.s3 <- t.s3 %>%
+  rename( "95% PPI" = "PPI", "Pr(b < 0)" = "pd" ) %>%
+  add_column( Parameter = var_nms[rownames(t.s3), ], .before = "b") %>%
+  add_row( Parameter = "Global intercept", .before = 1 ) %>%
+  add_row( Parameter = "Baseline correlates", .before = 3 ) %>%
+  add_row( Parameter = "Time-dependent effects", .before = 11 )
+
+# save as csv
+write.table( x = t.s3,
+             file = "tables/Tab S3 summary of parameters posteriors.csv",
+             sep = ",", row.names = F)
+
+# remove objects used to summarize posteriors
+rm( list = c( "draws", "f.s4", "f.s5", "f4", "m", "pars", "post", "samples", "t.s3" ) )
+gc()
 
 # ----------- prepare posterior predictions -----------
 
@@ -759,5 +731,87 @@ for( i in prds ) {
 ggsave( "figures/Fig 5 posteriors predictions.png", width = 1.75 * 10.1, height = 1.25 * 11.2, dpi = "retina" )
 
 
-# ----------- Fig 2 posterior predictions per patient -----------
+# ----------- Fig S3 per patient posterior predictions -----------
 
+# simulate values for each patient each half year from 2 years before to 12 years after surgery
+n_seq = 24
+
+# re-format id in d4 to a factor
+d4$id <- factor( d4$id, levels = unique(d4$id) )
+
+# prepare data sets for prediction for each subject in the data set
+d_seq <- expand.grid( seq( from = -2, to = 12, length.out = n_seq ), levels(d4$id) ) %>%
+  `colnames<-` ( c("time_y","id") ) %>%
+  mutate(time = time_y + scl$Md$time,
+         proc_spd = NA, epis_mem = NA, verb_wm = NA, visp_mem = NA, set_shift = NA, anxiety = NA, visp_wm = NA
+         )
+
+# add subjects' median (w.r.t. imputations) cognitive profile
+for ( i in levels(d4$id) ) d_seq[ d_seq$id == i, 4:10 ] <- d4[ d4$time_y < 0 & d4$id == i, colnames(d4) %in% doms ]
+
+# get chunks of subjects to compute predictions for
+# twenty-one chunks by six subjects so that there`s enough memory for each chunk
+chunks <- split( unique(d4$id) , ceiling( seq_along(unique(d4$id)) / 6 ) )
+
+# prepare a list for predictions stratified by subjects chunks
+# calculating prediction of single data points based on fixed-effects, random-effects and remaining distributional (residual) parameters
+preds <- list()
+
+# add predictions to preds
+for ( i in 1:length(chunks) ) preds[[i]] <- d_seq[ d_seq$id %in% chunks[[i]] , ] %>%
+  add_predicted_draws( m, seed = 1) %>%
+  mutate(drs = scl$M$drs + scl$SD$drs * .prediction) %>%
+  median_hdi(.width = .95) %>%
+  mutate(drs.upper = ifelse(drs.upper > 144, 144, drs.upper) ) # manual censoring
+  
+# collapse predictions to a single table
+preds <- do.call( rbind.data.frame , preds )
+
+# re-code id in d4 and preds such that the they are anonymized in the figure
+all( levels(d4$id) == levels(preds$id) ) # TRUE, continue
+levels(d4$id) <- paste0( "S", sprintf( "%.3d" , 1:126) )
+levels(preds$id) <- paste0( "S", sprintf( "%.3d" , 1:126) )
+
+# plot predictions and observed data for each subject separately
+d4 %>%
+  ggplot( aes(x = time_y, y = drs) ) +
+    # add prediction lines and 95% compatibility intervals
+    geom_line( data = preds, size = 2, aes(x = time_y, y = drs, group = id, color = cbPal[7] ) ) +
+    geom_ribbon( data = preds, alpha = .1, aes(x = time_y, y = drs,
+                                               ymin = drs.lower, ymax = drs.upper,
+                                               group = id, fill = cbPal[7] ) ) +
+    # add observed points
+    geom_point( color = "black", size = 4 ) +
+    # finish the plot with the last cosmetic changes
+    facet_wrap( ~id, nrow =  9 ) + # arrange to a 9 x 14 grid
+    labs( x = "Time after surgery (Years)", y = "DRS-2 (0-144 points)") +
+    theme( legend.position = "none" )
+  
+# save as Fig S2
+ggsave( "figures/Fig S2 per-patient posteriors predictions.png",
+        width = 2.5 * 10.1, height = 2 * 11.2, dpi = "retina" )
+
+
+# ----------- summarize PSIS-LOO -----------
+
+# read the file
+l <- readRDS("models/dbs_longCOG_psis-loo.rds")
+
+# compute maximal Pareto-Ks
+t.loo <- data.frame( `pareto-k > 0.5` = rep(NA,imp), `pareto-k > 0.7` = NA, `pareto-k > 1.0` = NA, `max pareto-k` = NA )
+
+# fill-in the table
+for ( i in 1:imp ) t.loo[i,] <- c(
+  sum( l[[i]]$diagnostics$pareto_k > 0.5 ),
+  sum( l[[i]]$diagnostics$pareto_k > 0.7 ),
+  sum( l[[i]]$diagnostics$pareto_k > 1.0 ),
+  max( l[[i]]$diagnostics$pareto_k)
+)
+
+# sum
+table( t.loo$pareto.k...0.5 ) # five cases with Pareto-k > 0.5
+table( t.loo$pareto.k...0.7 )
+table( t.loo$pareto.k...1.0 )
+
+# look at the value of models with Pareto-k > 0.5
+t.loo[ t.loo$pareto.k...0.5 > .5 , ]

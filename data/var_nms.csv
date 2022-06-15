@@ -3,10 +3,8 @@ age_ass_y;Age (years)
 dur_ass_y;Disease duration (years)
 edu_y;Education (years)
 sex;Sex (males)
-sex1;Sex
 age_stim_y;Age at surgery (years)
 dur_stim_y;Disease duration at surgery (years)
-ledd_mg;LEDD
 ledd_pre_mg;LEDD (mg)
 ldopa_resp;Levodopa test (% response)
 mds_updrs_iii_med_on;MDS-UPDRS III (ON medication)
@@ -39,19 +37,6 @@ fp_dr;FP-DR
 stai_x1;STAI-X1
 stai_x2;STAI-X2
 bdi2;BDI-II
-current_r_mA;current right (mA, N = ?)
-current_l_mA;current left (mA, N = ?)
-voltage_r_V;voltage right (V, N = ?)
-voltage_l_V;voltage left (V, N = ?)
-duration_r_us;pulse duration right (µs)
-duration_l_us;pulse duration left (µs)
-frequency_r_Hz;frequency right (Hz)
-frequency_l_Hz;frequency left (Hz)
-Proportion Var;Total proportion of variance
-Cumulative Var;Cumulative proportion of variance
-age;Age
-dur;Disease duration
-led;LEDD
 proc_spd;Processing speed
 epis_mem;Episodic verbal memory
 verb_wm;Verbal working memory
@@ -63,7 +48,6 @@ TLI;TLI
 RMSEA;RMSEA
 RMSEA_90_CI_low;90% CI RMSEA (lower bound)
 RMSEA_90_CI_upp;90% CI RMSEA (upper bound)
-pred;Predictor
 b_Intercept;Intercept
 b_proc_spd;Processing speed
 b_epis_mem;Episodic verbal memory

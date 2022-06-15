@@ -1,7 +1,7 @@
 # All analyses reported in the article (Mana et al., in review) ran in R version 4.2.0 (2022-04-22),
 # on aarch64-apple-darwin20 (64-bit) platform under macOS Monterey 12.4.
 
-# I used the following versions of packages employed: dplyr_1.0.9, missMDA_1.18, psych_2.2.5, brms_2.17.0
+# I used the following versions of packages employed: dplyr_1.0.9, missMDA_1.18, psych_2.2.5, brms_2.17.0.
 
 # set working directory (works only in RStudio)
 setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
@@ -26,17 +26,13 @@ sapply(
     }
 )
 
-# set number of multiple imputations to account for missing pre-surgery data
-imp = 100
+# set some values for later
+imp = 100 # number of multiple imputations to account for missing pre-surgery data
 s = 87542 # seed for reproducibility
 
 # create folders "models", "figures" and "tables" to store results in
 # prints TRUE and creates the folder if it was not present, prints NULL if the folder was already present.
-sapply(
-  c("models", "figures", "tables"), # folders to be created
-  function(i)
-    if( !dir.exists(i) ) dir.create(i)
-)
+sapply( c("models", "figures", "tables"), function(i) if( !dir.exists(i) ) dir.create(i) )
 
 # Note that although I set a seed for all models, the results are only exactly
 # reproducible on the same operating system with the same C++ compiler and version.
@@ -76,20 +72,15 @@ p.test <- lapply( 1:imp , function(i) fa.parallel( d2.imp$res.MI[[i]] , plot = F
 table( sapply( 1:imp , function(i) p.test[[i]]$nfact ) )
 
 # fit EFA to each imputed data set with 3:8 factors
-efa <- lapply(
-  # loop through all 100 data sets
-  1:imp, function(i)
-    lapply(
-      # loop through three to eight latent factors for each imputation
-      3:8, function(j)
-        fa(
-          d2.imp$res.MI[[i]], # one-by-one use each imputed data set
-          nfactors = j, # fit 3-8 factor solutions
-          rotate = "varimax", # rotate varimax to enforce orthogonality and for interpretation purposes
-          scores = "regression" # compute regression scores for each patient
-        )
-    )
-)
+# loop through all 100 data sets and  three to eight latent factors for each imputation
+efa <- lapply( 1:imp, function(i)
+  lapply( 3:8, function(j) fa( d2.imp$res.MI[[i]], # one-by-one use each imputed data 
+                               nfactors = j, # fit 3-8 factor solutions
+                               rotate = "varimax", # rotate varimax to enforce orthogonality and for interpretation purposes
+                               scores = "regression" # compute regression scores for each patient
+                               )
+          )
+  )
 
 # one-by-one inspect all six-factor and seven-factor solutions' loading matrices
 # create a convenience function so that I don't go crazy immediately
@@ -115,15 +106,14 @@ doms_sum["nms", , ] <- doms_sum["nms", , ] %>%
   t %>% as.data.frame %>% mutate( across( everything() , ~ gsub( "-" , "" , . ) ) ) %>% t
 
 # list all the domains
-doms <- c(
-  "proc_spd", # loaded on primarily by PST, the first factor in 82% data sets
-  "epis_mem", # loaded on primarily by RAVLT, the second factor in 79% data sets
-  "verb_wm", # loaded on primarily by DS, the third factor in 62% data sets
-  "visp_mem", # loaded on primarily by FP, the fourth factor in 45% data sets
-  "set_shift", # loaded on primarily by TMT and RAVLT-B, the fifth factor in 28% data sets
-  "anxiety", # loaded on primarily by STAI, the sixth factor in 60% data sets
-  "visp_wm" # loaded on primarily by SS, the seventh factor in 49% data sets
-)
+doms <- c("proc_spd", # loaded on primarily by PST, the first factor in 82% data sets
+          "epis_mem", # loaded on primarily by RAVLT, the second factor in 79% data sets
+          "verb_wm", # loaded on primarily by DS, the third factor in 62% data sets
+          "visp_mem", # loaded on primarily by FP, the fourth factor in 45% data sets
+          "set_shift", # loaded on primarily by TMT and RAVLT-B, the fifth factor in 28% data sets
+          "anxiety", # loaded on primarily by STAI, the sixth factor in 60% data sets
+          "visp_wm" # loaded on primarily by SS, the seventh factor in 49% data sets
+          )
 
 # switch signs where appropriate in EFA loadings and scores, and rename and sort columns
 for ( i in 1:imp ) {
@@ -144,48 +134,41 @@ saveRDS( object = efa, file = "models/efa.rds" )
 # ----------- pre-processing for longitudinal analyses  -----------
 
 # before merging compute scaling values for DRS-2, BDI-II, LEDD, age and time
-scl <- list(
-  M = list(
-    drs = mean( d1$drs_tot , na.rm = T ), # 136.90
-    bdi = mean( d1$bdi , na.rm = T ), # 10.95
-    led = mean( d1$ledd_mg , na.rm = T ), # 1197.21
-    age = mean( d1$age_ass_y, na.rm = T ) # 59.63
-  ),
-  SD = list(
-    drs = sd( d1$drs_tot , na.rm = T ), # 7.72
-    bdi = sd( d1$bdi , na.rm = T ), # 7.19
-    led = sd( d1$ledd_mg , na.rm = T ), # 687.20
-    age = sd( d1$age_ass_y, na.rm = T ) # 8.27
-  ),
-  # add median time of pre-surgery assessment for GLMMs intercepts
-  Md = list(
-    time = -median( d1[d1$ass_type == "pre", ]$time_y , na.rm = T ) # 0.30
-  )
-)
+scl <- list( M = list( drs = mean( d1$drs_tot , na.rm = T ), # 136.90
+                       bdi = mean( d1$bdi , na.rm = T ), # 10.95
+                       led = mean( d1$ledd_mg , na.rm = T ), # 1197.21
+                       age = mean( d1$age_ass_y, na.rm = T ) # 59.63
+                       ),
+             SD = list( drs = sd( d1$drs_tot , na.rm = T ), # 7.72
+                        bdi = sd( d1$bdi , na.rm = T ), # 7.19
+                        led = sd( d1$ledd_mg , na.rm = T ), # 687.20
+                        age = sd( d1$age_ass_y, na.rm = T ) # 8.27
+                        ),
+             # add median time of pre-surgery assessment for GLMMs intercepts s
+             Md = list(
+               time = -median( d1[d1$ass_type == "pre", ]$time_y , na.rm = T ) # 0.30
+               )
+             )
 
 # merge longitudinal d1 with baseline factor scores (joining by id)
-d3 <- lapply(
-  1:imp,
-  function(i) d1 %>%
-    # first prepare a pre-surgery df with id and factor scores for each patient
-    left_join( cbind.data.frame(id = d2$id, efa[[i]][[nf-2]]$scores ) , by = "id" ) %>%
-    filter( complete.cases(drs_tot) ) %>% # get rid of three dummy rows due to more than one stimulation parameter (no DRS-2)
-    # scale all DRS-2, BDI-II, LEDD and time already
-    mutate(
-      time = time_y + scl$Md$time,
-      drs = ( drs_tot - scl$M$drs ) / scl$SD$drs,
-      bdi = ( bdi - scl$M$bdi ) / scl$SD$bdi,
-      led = ( ledd_mg - scl$M$led ) / scl$SD$led,
-      age = ( age_ass_y - scl$M$age ) / scl$SD$age,
-      sex = as.factor( sex ), # for better estimation of BDI in the second (covariate) model
-      cens_drs = ifelse( drs == max(drs, na.rm = T) , "right" , "none" ) # right censoring for DRS == 144
-    ) %>%
-    # keep only variables of interest
-    select(
-      id, time, drs, cens_drs, bdi, led, age, sex, # outcomes, demographics, clinics
-      proc_spd, epis_mem, verb_wm, visp_mem, set_shift, anxiety, visp_wm # pre-surgery cognition
-    )
-)
+d3 <- lapply( 1:imp, function(i) d1 %>%
+                # first prepare a pre-surgery df with id and factor scores for each patient
+                left_join( cbind.data.frame(id = d2$id, efa[[i]][[nf-2]]$scores ) , by = "id" ) %>%
+                filter( complete.cases(drs_tot) ) %>% # get rid of three dummy rows due to more than one stimulation parameter (no DRS-2)
+                # scale all DRS-2, BDI-II, LEDD and time already
+                mutate( time = time_y + scl$Md$time,
+                        drs = ( drs_tot - scl$M$drs ) / scl$SD$drs,
+                        bdi = ( bdi - scl$M$bdi ) / scl$SD$bdi,
+                        led = ( ledd_mg - scl$M$led ) / scl$SD$led,
+                        age = ( age_ass_y - scl$M$age ) / scl$SD$age,
+                        sex = as.factor( sex ), # for better estimation of BDI in the second (covariate) model
+                        cens_drs = ifelse( drs == max(drs, na.rm = T) , "right" , "none" ) # right censoring for DRS == 144
+                        ) %>%
+                # keep only variables of interest
+                select( id, time, drs, cens_drs, bdi, led, age, sex, # outcomes, demographics, clinics
+                        proc_spd, epis_mem, verb_wm, visp_mem, set_shift, anxiety, visp_wm # pre-surgery cognition
+                        )
+              )
 
 # loop across all imputations to get means and SDs of the pre-surgery cognitive domains,
 # then transform the pre-surgery cognition in each data set to (pre-surgery) zero mean, unit SD variables
@@ -211,15 +194,16 @@ it = 2000 # iterations per chain
 wu = 500 # warm-up iterations, to be discarded
 ad = .95 # adapt_delta parameter
 
+# save the data and scaling values for post-processing
+saveRDS( list(d1 = d1, d3 = d3, scl = scl), "data/long_dat.rds" )
 
 # ----------- base model with correlated random-effects  -----------
 
 # set-up the linear model
-f0.drs <- paste0(
-  "drs | cens(cens_drs) ~ 1 + ", # outcome and intercept
-  paste( "time", doms, sep = " * " , collapse = " + " ), # population-level effects/fixed-effects
-  " + (1 + time | id)"  # varying-effects (patient-level)/random-effects
-) %>% as.formula %>% bf
+f0.drs <- paste0( "drs | cens(cens_drs) ~ 1 + ", # outcome and intercept
+                  paste( "time", doms, sep = " * " , collapse = " + " ), # population-level effects/fixed-effects
+                  " + (1 + time | id)"  # varying-effects (patient-level)/random-effects
+                  ) %>% as.formula %>% bf
 
 # set-up priors
 p0 <- c(
@@ -301,11 +285,10 @@ m$m2_flat_priors <- brm_multiple(
 for( i in 1:imp ) contrasts(d3[[i]]$sex) <- -contr.sum(2)/2 # female = -0.5, male = 0.5
 
 # set-up the linear model for outcome
-f3.drs <- paste0(
-  "drs | cens(cens_drs) ~ 1 + age + mi(bdi) + mi(led) + ", # outcome and intercept
-  paste( "time", doms, sep = " * " , collapse = " + " ), # population-level effects/fixed-effects
-  " + (1 + time || id)"  # varying-effects (patient-level)/random-effects
-) %>% as.formula %>% bf + student()
+f3.drs <- paste0( "drs | cens(cens_drs) ~ 1 + age + mi(bdi) + mi(led) + ", # outcome and intercept
+                  paste( "time", doms, sep = " * " , collapse = " + " ), # population-level effects/fixed-effects
+                  " + (1 + time || id)"  # varying-effects (patient-level)/random-effects
+                  ) %>% as.formula %>% bf + student()
 
 # set-up linear models for covariates with missing values
 f3.bdi <- bf( bdi | mi() ~ 1 + time + sex + age + mi(led) + (1 + time || id) ) + gaussian()

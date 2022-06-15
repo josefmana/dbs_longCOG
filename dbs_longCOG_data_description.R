@@ -2,7 +2,7 @@
 # on aarch64-apple-darwin20 (64-bit) platform under macOS Monterey 12.4.
 
 # I used the following versions of packages employed: dplyr_1.0.9, DiagrammeR_1.0.9, DiagrammeRsvg_0.1,
-# rsvg_2.3.1, missMDA_1.18, ggplot2_3.3.6 and patchwork_1.1.1
+# rsvg_2.3.1, missMDA_1.18, ggplot2_3.3.6 and patchwork_1.1.1.
 
 # set working directory (works only in RStudio)
 setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
@@ -10,6 +10,7 @@ setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
 # list required packages into a character object
 pkgs <- c(
   "dplyr", # for objects manipulation
+  "tidyverse", # for rownames_to_column
   "DiagrammeR", # for flowcharts
   "DiagrammeRsvg", # for saving plots created in DiagrammeR
   "rsvg", # for saving plots created in DiagrammeR
@@ -19,15 +20,7 @@ pkgs <- c(
 
 # load required packages
 # prints NULL if a package is already installed
-sapply(
-  pkgs, # packages to be loaded/installed
-  function(i)
-    if ( !require( i , character.only = T ) ){
-      # it's important to have the 'character.only = T' command here
-      install.packages(i)
-      library(i)
-    }
-)
+sapply( c("models", "figures", "tables"), function(i) if( !dir.exists(i) ) dir.create(i) )
 
 # set ggplot theme
 theme_set( theme_classic(base_size = 25) )
@@ -146,37 +139,20 @@ f2 <- list()
 f2$hist <- d1[ complete.cases(d1$drs_tot) , ] %>% 
   ggplot( aes(x = time_y) ) +
   stat_bin( binwidth = .5, position = position_nudge(x = -.5*.5) ) + # creates bars
-  stat_bin(
-    binwidth = .5, geom = "text", aes(label = ..count..), vjust = -1.0,
-    position = position_nudge(x = -.5*.5), size = 6
-  ) + # add numbers
-  labs(
-    x = "Time from STN-DBS surgery (years)",
-    y = "Number of Assessments"
-  ) +
-  scale_y_continuous(
-    expand = c(0, 0), limits = c(0, 69),
-    breaks = seq(0, 60, 10), labels = seq(0, 60, 10)
-  ) +
-  scale_x_continuous(
-    limits = c(-2, 12), breaks = seq(-2, 12, 1), labels = seq(-2, 12, 1)
-  )
+  stat_bin( binwidth = .5, geom = "text", aes(label = ..count..), vjust = -1.0,
+            position = position_nudge(x = -.5*.5), size = 6 ) + # add numbers
+  labs( x = "Time from STN-DBS surgery (years)", y = "Number of Assessments" ) +
+  scale_y_continuous( expand = c(0, 0), limits = c(0, 69), breaks = seq(0, 60, 10), labels = seq(0, 60, 10) ) +
+  scale_x_continuous( limits = c(-2, 12), breaks = seq(-2, 12, 1), labels = seq(-2, 12, 1) )
 
 # prepare a bin plot showing distribution of the number of assessments per patient (Fig 2B)
 f2$bin <- table( d1[ complete.cases(d1$drs_tot) , ]$id ) %>%
   as.data.frame() %>%
   ggplot( aes(x = Freq) ) +
   geom_bar( width = .25 ) +
-  geom_text(
-    stat = "count",
-    aes(label = ..count..),
-    vjust = -1.0, size = 6
-  ) +
+  geom_text( stat = "count", aes(label = ..count..), vjust = -1.0, size = 6 ) +
   scale_y_continuous( expand = c(0, 0), limits = c(0, 65) ) +
-  labs(
-    x = "Number of Assessments per Patient",
-    y = "Number of Patients"
-  )
+  labs( x = "Number of Assessments per Patient", y = "Number of Patients" )
 
 # arrange Fig 2A and Fig 2B for printing
 f2$hist / f2$bin + plot_annotation( tag_levels = "A" )
@@ -191,29 +167,15 @@ ggsave( "figures/Fig 2 distribution of assessments.png" , height = 2.5 * 6.12 , 
 pars <- names(d1)[which(names(d1)=="current_r_mA"):which(names(d1)=="frequency_l_Hz")]
 
 # prepare a data frame to be filled-in with stimulation parameters' summary
-t1 <- data.frame(
-  Md = rep( NA , length(pars) ), `Min-Max` = NA, M = NA, SD = NA, row.names = pars
-)
+t1 <- data.frame( Md = rep( NA , length(pars) ), `Min-Max` = NA, M = NA, SD = NA, row.names = pars )
 
 # fill-in statistics of all stimulation parameters
 for ( i in pars ) {
-  # median, rounded to hundredths
-  t1[ i , "Md" ] <- sprintf(
-    "%.2f" , round( median( d1[[i]], na.rm = T ) , digits = 2 )
-  )
-  # min-max, rounded to decimals
-  t1[ i , "Min.Max" ] <- paste0(
-    sprintf( "%.1f" , round( min( d1[[i]], na.rm = T ) , digits = 1 ) ), "-",
-    sprintf( "%.1f" , round( max( d1[[i]], na.rm = T ) , digits = 1 ) )
-  )
-  # mean, rounded to hundredths
-  t1[ i , "M" ] <- sprintf(
-    "%.2f" , round( mean( d1[[i]], na.rm = T ) , digits = 2 )
-  )
-  # SD, rounded to hundredths
-  t1[ i , "SD" ] <- sprintf(
-    "%.2f" , round( sd( d1[[i]], na.rm = T ) , digits = 2 )
-  )
+  t1[ i , "Md" ] <- sprintf( "%.2f" , round( median( d1[[i]], na.rm = T ) , digits = 2 ) ) # median, rounded to hundredths
+  t1[ i , "Min.Max" ] <- paste0( sprintf( "%.1f" , round( min( d1[[i]], na.rm = T ) , digits = 1 ) ), "-",
+                                 sprintf( "%.1f" , round( max( d1[[i]], na.rm = T ) , digits = 1 ) ) ) # min-max, rounded to decimals
+  t1[ i , "M" ] <- sprintf( "%.2f" , round( mean( d1[[i]], na.rm = T ) , digits = 2 ) ) # mean, rounded to hundredths
+  t1[ i , "SD" ] <- sprintf( "%.2f" , round( sd( d1[[i]], na.rm = T ) , digits = 2 ) ) # SD, rounded to hundredths
 }
 
 # add empty rows and change names such that the table is publication-ready
@@ -223,16 +185,13 @@ t1 <- t1 %>%
   add_row( .before = 7 ) %>% # duration
   add_row( .before = 10 ) %>% # frequency
   # add a column with names
-  add_column(
-    Parameter = c("Current mode (N = ??, mA)", "right", "left",
-                  "Voltage mode (N = ??, V)", "right", "left",
-                  "Pulse duration (µs)", "right", "left",
-                  "Frequency (Hz)", "right", "left"),
-    .before = 1
-  )
+  mutate( Parameter = c("Current mode (N = 67, mA)", "right", "left",
+                        "Voltage mode (N = 59, V)", "right", "left",
+                        "Pulse duration (µs)", "right", "left",
+                        "Frequency (Hz)", "right", "left"), .before = 1 )
 
 # save as csv for import to word editor 
-write.table( x = t1, file = "tables/Tab 1 stimulation parameters.csv", sep = ",", row.names = F, na = "" )
+write.table( t1, file = "tables/Tab 1 stimulation parameters.csv", sep = ",", row.names = F, na = "" )
 
 
 # ----------- Tab 2 baseline characteristic  -----------
@@ -241,49 +200,24 @@ write.table( x = t1, file = "tables/Tab 1 stimulation parameters.csv", sep = ","
 vars <- names(d2)[which(names(d2)=="age_stim_y"):which(names(d2)=="fp_dr")]
 
 # prepare a data frame to be filled-in with baseline characteristics
-t2 <- data.frame(
-  N = rep( NA, length(vars) ), Md = NA, `Min-Max` = NA, M = NA, SD = NA, row.names = vars
-)
+t2 <- data.frame( N = rep( NA, length(vars) ), Md = NA, `Min-Max` = NA, M = NA, SD = NA, row.names = vars )
 
 # fill-in statistics of all variables but sex (which is nominal)
 for ( i in vars[-3] ) {
-  # number of data points
-  t2[ i , "N" ] <- sum( !is.na(d2[[i]]) )
-  # median, rounded to integers
-  t2[ i , "Md" ] <- sprintf(
-    "%.0f" , round( median(d2[[i]], na.rm = T ) , digits = 0 )
-  )
-  # min-max, rounded to integers
-  t2[ i , "Min.Max" ] <- paste0(
-    sprintf( "%.0f" , round( min(d2[[i]], na.rm = T ) , digits = 0 ) ), "-",
-    sprintf( "%.0f" , round( max(d2[[i]], na.rm = T ) , digits = 0 ) )
-  )
-  # mean, rounded to hundredths
-  t2[ i , "M" ] <- sprintf(
-    "%.2f" , round( mean(d2[[i]], na.rm = T ) , digits = 2 )
-  )
-  # SD, rounded to hundredths
-  t2[ i , "SD" ] <- sprintf(
-    "%.2f" , round( sd(d2[[i]], na.rm = T ) , digits = 2 )
-  )
+  t2[ i , "N" ] <- sum( !is.na(d2[[i]]) ) # number of data points
+  t2[ i , "Md" ] <- sprintf( "%.0f" , round( median(d2[[i]], na.rm = T ) , digits = 0 ) ) # median, rounded to integers
+  t2[ i , "Min.Max" ] <- paste0( sprintf( "%.0f" , round( min(d2[[i]], na.rm = T ) , digits = 0 ) ), "-",
+                                 sprintf( "%.0f" , round( max(d2[[i]], na.rm = T ) , digits = 0 ) ) ) # min-max, rounded to integers
+  t2[ i , "M" ] <- sprintf( "%.2f" , round( mean(d2[[i]], na.rm = T ) , digits = 2 ) ) # mean, rounded to hundredths
+  t2[ i , "SD" ] <- sprintf( "%.2f" , round( sd(d2[[i]], na.rm = T ) , digits = 2 ) ) # SD, rounded to hundredths
 }
 
 # add frequency of males to the table sex row
 t2[ "sex" , c("N","Min.Max")] <- c(
-  # number of entries
-  sum( !is.na(d2$sex) ),
+  sum( !is.na(d2$sex) ), # number of entries
   # add frequency (percentage) to Min.Max
-  paste0(
-    # frequency
-    table(d2$sex)["male"], " (",
-    # percentage, rounded to integers
-    sprintf(
-      "%.0f" , round(
-        100 * ( table(d2$sex)[ "male" ] / sum( table(d2$sex) ) ), 0
-      )
-    ), " %)"
-  )
-)
+  paste0( table(d2$sex)["male"], " (", # frequency
+          sprintf( "%.0f" , round( 100 * ( table(d2$sex)[ "male" ] / sum( table(d2$sex) ) ), 0 ) ), " %)" ) ) # percentage, rounded to integers
 
 # prepare row names by making them a column and the changing names to a publication-ready format
 t2 <- t2 %>% rownames_to_column( var = "Characteristic" )
