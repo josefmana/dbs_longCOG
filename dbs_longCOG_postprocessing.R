@@ -55,6 +55,16 @@ scl <- readRDS("data/long_dat.rds")$scl
 # read a file with mapping variables' names used in the script to variables' names for the manuscript
 var_nms <- read.csv( "data/var_nms.csv" , sep = ";" , row.names = 1 , encoding = "UTF-8")
 
+# list all the domains
+doms <- c(
+  "proc_spd", # loaded on primarily by PST, the first factor in 82% data sets
+  "epis_mem", # loaded on primarily by RAVLT, the second factor in 79% data sets
+  "verb_wm", # loaded on primarily by DS, the third factor in 62% data sets
+  "visp_mem", # loaded on primarily by FP, the fourth factor in 45% data sets
+  "set_shift", # loaded on primarily by TMT and RAVLT-B, the fifth factor in 28% data sets
+  "anxiety", # loaded on primarily by STAI, the sixth factor in 60% data sets
+  "visp_wm" # loaded on primarily by SS, the seventh factor in 49% data sets
+)
 
 # ----------- baseline cognitive profile post-processing  -----------
 
@@ -174,17 +184,6 @@ ggsave( "figures/Fig S1 factor analysis performance indexes.png", height = 1.75 
 
 # the 7-factor solution was chosen
 nf = 7
-
-# list all the domains
-doms <- c(
-  "proc_spd", # loaded on primarily by PST, the first factor in 82% data sets
-  "epis_mem", # loaded on primarily by RAVLT, the second factor in 79% data sets
-  "verb_wm", # loaded on primarily by DS, the third factor in 62% data sets
-  "visp_mem", # loaded on primarily by FP, the fourth factor in 45% data sets
-  "set_shift", # loaded on primarily by TMT and RAVLT-B, the fifth factor in 28% data sets
-  "anxiety", # loaded on primarily by STAI, the sixth factor in 60% data sets
-  "visp_wm" # loaded on primarily by SS, the seventh factor in 49% data sets
-)
 
 # prepare an array for loading matrices of each imputed EFA
 loads <- array(
@@ -315,6 +314,9 @@ m <- brm_multiple(
   seed = 87542, chains = 4, iter = 200, warmup = 100, file = "models/m1_prior_prediction.rds"
 )
 
+# save the stan code for sharing
+write.table( x = stancode(m) , file = "models/m1_prior_prediction.txt")
+
 # prepare data at which PPC will be evaluated
 d_seq <- expand.grid( time_y = c(-2,12), id = d1$id, proc_spd = 0, epis_mem = 0, verb_wm = 0,
                       visp_mem = 0, set_shift = 0, anxiety = 0, visp_wm = 0) %>%
@@ -411,7 +413,7 @@ post <- do.call( rbind.data.frame , post ) %>%
 
 # change character columns to ordered factors such that ggplot draws them in correct order
 # need to reverse the order by rev(.) because ggplot counts from bottom on the y-axis
-post$Model <- factor( post$Model , levels = unique(post$Model)  , ordered = T )
+post$Model <- factor( post$Model , levels = unique(post$Model)[c(2,1,3,4)]  , ordered = T )
 post$Parameter <- factor( post$Parameter , levels = rev( unlist(pars, use.names = F) ) , ordered = T )
 post$Group <- factor( post$Group , levels = rev( unique(post$Group) ) , ordered = T )
 
@@ -476,7 +478,7 @@ for ( i in rev( levels(post$Group) ) ) f.s5[[i]] <- post[ post$Group == i , ] %>
     ylim = case_when( i == "intercept" ~ c(1.3,1.5), i == "base" ~ c(1.3,7.5), i == "time" ~ c(1.3,8.5) )
   ) +
   geom_vline( xintercept = 0, linetype = "dashed" ) +
-  scale_fill_manual( values = cbPal[2:5]) +
+  scale_fill_manual( values = cbPal[c(7,8,6,4)]) +
   scale_x_continuous(
     limits = case_when( i == "intercept" ~ c(138, 143) ),
     name = case_when( i == "intercept" ~ "" , i == "base" ~ "DRS-2", i == "time" ~ "DRS-2 (points per year)")
@@ -815,3 +817,84 @@ table( t.loo$pareto.k...1.0 )
 
 # look at the value of models with Pareto-k > 0.5
 t.loo[ t.loo$pareto.k...0.5 > .5 , ]
+
+
+# ----------- linear vs non-linear fit -----------
+
+# set rstan options
+options( mc.cores = parallel::detectCores() ) # use all parallel CPU cores
+ch = 4 # number of chains
+it = 2000 # iterations per chain
+wu = 500 # warm-up iterations, to be discarded
+ad = .99 # adapt_delta parameter
+s = 87543 # seed for reproducibility
+
+# set-up the linear model (doing PPC for the primary model only, ie, m1_nocov,  the rest should be "centered"
+# around it as they are the same model with added parameters with zero-centered priors)
+f4.drs <- list( linear = bf( drs | cens(cens_drs) ~ time + (1 + time || id) ),
+               spline = bf( drs | cens(cens_drs) ~ t2(time) + (1 + time || id) )
+)
+
+# set-up priors (using brms default non-informative to allow for information from data to prevail)
+p4 <- NULL
+
+# fit the models
+m4 <- list()
+for ( i in names(f4.drs) ) m4[[i]] <- brm(
+  formula = f4.drs[[i]], family = student(), prior = p4, data = d3[[69]], # using only drs and time, so imputed datasets in d3 are equivalent to scaled d1
+  seed = s, iter = it, warmup = wu, chains = ch, control = list( adapt_delta = ad ),
+  file = paste0( getwd(), "/models/m4_time_only_", i, ".rds")
+)
+
+# find the largest Rhat to get idea about convergence
+sapply( names(m4), function(i) max( rhat(m4[[i]]) ) )
+
+# save the stan code for sharing
+for ( i in names(m4) ) write.table( x = stancode(m4[[i]]),
+                                    file = paste0(getwd(), "/models/m4_", i, "_stancode.txt")
+)
+
+# add PSIS-LOO to both model for influential variables check and model comparisons
+for ( i in names(m4) ) m4[[i]] <- add_criterion( m4[[i]] , criterion = c("loo","waic") )
+
+# plot pareto-ks
+par( mfrow = c(1,2) ) # plot them next to each other
+for ( i in names(m4) ) plot( loo(m4[[i]]) )
+par( mfrow = c(1,1) ) # return graphic options to default
+
+# compare the models via PSIS-LOO
+loo( m4$linear, m4$spline, moment_match = T )
+
+
+# ----------- Fig S6 linear vs non-linear fit -----------
+
+# prepare data to be predicted
+d_seq <- data.frame( time_y = seq(-2,12,length.out = 50), id = NA ) %>%
+  mutate( time = time_y + scl$Md$time )
+
+# add predictions of expectation (epreds, based on fixed-effects only) from both linear and non-linear models
+preds <- lapply( names(m4) , function(i)
+  d_seq %>%
+    add_epred_draws( m4[[i]], re_formula = NA ) %>%
+    mutate( .epred = .epred * scl$SD$drs + scl$M$drs ) %>%
+    median_hdi( .width = .95 ) %>%
+    add_column( Model = factor( ifelse(i == "linear", "Linear", "Spline"), levels = c("Spline","Linear"), ordered = T ) )
+  )
+
+# collapse the linear and spline predictions for plotting purposes to a single file
+preds <- do.call( rbind.data.frame, preds )
+
+# plot linear and spline fits over each other
+preds %>%
+  ggplot( aes(x = time_y, y = .epred, ymin = .lower, ymax = .upper, color = Model, fill = Model) ) +
+    geom_ribbon( alpha = .2 , color = NA ) +
+    geom_line( size = 2.5 , alpha = .75 ) +
+    scale_y_continuous(name = "DRS-2", limits = c(120,145), breaks = seq(120,150,10), labels = seq(120,150,10) ) +
+    scale_x_continuous(name = "Time from surgery (years)", limits = c(-2,12), breaks = seq(-2,12,2), labels = seq(-2,12,2) ) +
+    scale_color_manual( values = cbPal[c(3,2)] ) +
+    scale_fill_manual( values = cbPal[c(3,2)] ) +
+    theme( legend.position = c(0.11,0.13) )
+
+# save as Fig S6
+ggsave( "figures/Fig S6 linear vs non-linear fit.png",
+        width = 1.25 * 10.1, height = 1.25 * 5.39, dpi = "retina" )
