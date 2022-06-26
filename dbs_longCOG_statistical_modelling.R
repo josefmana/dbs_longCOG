@@ -236,9 +236,9 @@ p0 <- c(
 # fit the model with Student response function
 m <- list(
   m0_base = brm_multiple(
-    formula = f0.drs, family = student(), prior = p0, data = d3,
-    sample_prior = T, seed = s, chains = ch, iter = it, warmup = wu,
-    control = list( adapt_delta = ad ), file = "models/m0_base.rds"
+    formula = f0.drs, family = student(), prior = p0, data = d3, sample_prior = T,
+    seed = s, chains = ch, iter = it, warmup = wu, control = list( adapt_delta = ad ),
+    file = "models/m0_base.rds", save_model = "models/m0_base.stan"
   )
 )
 
@@ -257,9 +257,9 @@ p1 <- p0[ -which(p0$class == "cor"), ]
 
 # fit the model with Student response function
 m$m1_nocov <- brm_multiple(
-  formula = f1.drs, family = student(), prior = p1, data = d3,
-  sample_prior = T, seed = s, chains = ch, iter = it, warmup = wu,
-  control = list( adapt_delta = ad ), file = "models/m1_nocov.rds"
+  formula = f1.drs, family = student(), prior = p1, data = d3, sample_prior = T,
+  seed = s, chains = ch, iter = it, warmup = wu, control = list( adapt_delta = ad ),
+  file = "models/m1_nocov.rds", save_model = "models/m1_nocov.stan"
 )
 
 
@@ -273,9 +273,9 @@ p2 <- NULL
 
 # fit the model with Student response function
 m$m2_flat_priors <- brm_multiple(
-  formula = f2.drs, family = student(), prior = p2, data = d3,
-  sample_prior = T, seed = s, chains = ch, iter = it, warmup = wu,
-  control = list( adapt_delta = ad ), file = "models/m2_flat_priors.rds"
+  formula = f2.drs, family = student(), prior = p2, data = d3, sample_prior = T,
+  seed = s, chains = ch, iter = it, warmup = wu, control = list( adapt_delta = ad ),
+  file = "models/m2_flat_priors.rds", save_model = "models/m2_falt_priors.stan"
 )
 
 
@@ -337,19 +337,10 @@ p3 <- c(
 
 # fit the model as defined above
 m$m3_wcov <- brm_multiple(
-  formula = f3.drs + f3.bdi + f3.led, prior = p3, data = d3,
-  sample_prior = F, seed = s, chains = ch, iter = it, warmup = wu, # not saving priors to spare some memory (and because I don`t need them for this model)
-  control = list( adapt_delta = .99 ), file = "models/m3_wcov.rds"
+  formula = f3.drs + f3.bdi + f3.led, prior = p3, data = d3, sample_prior = F, # not saving priors to spare some memory (and because I don`t need them for this model
+  seed = s, chains = ch, iter = it, warmup = wu, control = list( adapt_delta = .99 ),
+  file = "models/m3_wcov.rds", save_model = "models/m3_wcov.stan"
 )
-
-
-# ----------- extract stan code -----------
-
-# for each model extract raw stan code and save it for sharing
-for ( i in names(m) ) write.table( x = stancode(m[[i]]),
-                                   file = paste0(getwd(), "/models/", i, ".stan")
-                                   )
-
 
 # ----------- soft model checking -----------
 

@@ -311,11 +311,9 @@ p <- c(
 # fit the model sampling only from the prior
 m <- brm_multiple(
   formula = f.drs, family = student(), prior = p, data = d3, sample_prior = "only",
-  seed = 87542, chains = 4, iter = 200, warmup = 100, file = "models/m1_prior_prediction.rds"
+  seed = 87542, chains = 4, iter = 200, warmup = 100, control = list( adapt_delta = .95 ), 
+  file = "models/m1_prior_prediction.rds", save_model = "models/m1_prior_prediction.stan"
 )
-
-# save the stan code for sharing
-write.table( x = stancode(m) , file = "models/m1_prior_prediction.stan")
 
 # prepare data at which PPC will be evaluated
 d_seq <- expand.grid( time_y = c(-2,12), id = d1$id, proc_spd = 0, epis_mem = 0, verb_wm = 0,
@@ -843,16 +841,12 @@ m4 <- list()
 for ( i in names(f4.drs) ) m4[[i]] <- brm(
   formula = f4.drs[[i]], family = student(), prior = p4, data = d3[[69]], # using only drs and time, so imputed datasets in d3 are equivalent to scaled d1
   seed = s, iter = it, warmup = wu, chains = ch, control = list( adapt_delta = ad ),
-  file = paste0( getwd(), "/models/m4_time_only_", i, ".rds")
+  file = paste0( getwd(), "/models/m4_time_only_", i, ".rds"),
+  save_model = paste0( getwd(), "/models/m4_time_only_", i, ".stan")
 )
 
 # find the largest Rhat to get idea about convergence
 sapply( names(m4), function(i) max( rhat(m4[[i]]) ) )
-
-# save the stan code for sharing
-for ( i in names(m4) ) write.table( x = stancode(m4[[i]]),
-                                    file = paste0(getwd(), "/models/m4_", i, ".stan")
-)
 
 # add PSIS-LOO to both model for influential variables check and model comparisons
 for ( i in names(m4) ) m4[[i]] <- add_criterion( m4[[i]] , criterion = c("loo","waic") )
