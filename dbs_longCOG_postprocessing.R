@@ -315,7 +315,7 @@ m <- brm_multiple(
 )
 
 # save the stan code for sharing
-write.table( x = stancode(m) , file = "models/m1_prior_prediction.txt")
+write.table( x = stancode(m) , file = "models/m1_prior_prediction.stan")
 
 # prepare data at which PPC will be evaluated
 d_seq <- expand.grid( time_y = c(-2,12), id = d1$id, proc_spd = 0, epis_mem = 0, verb_wm = 0,
@@ -851,7 +851,7 @@ sapply( names(m4), function(i) max( rhat(m4[[i]]) ) )
 
 # save the stan code for sharing
 for ( i in names(m4) ) write.table( x = stancode(m4[[i]]),
-                                    file = paste0(getwd(), "/models/m4_", i, "_stancode.txt")
+                                    file = paste0(getwd(), "/models/m4_", i, ".stan")
 )
 
 # add PSIS-LOO to both model for influential variables check and model comparisons

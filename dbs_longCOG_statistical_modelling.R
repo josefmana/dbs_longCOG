@@ -347,7 +347,7 @@ m$m3_wcov <- brm_multiple(
 
 # for each model extract raw stan code and save it for sharing
 for ( i in names(m) ) write.table( x = stancode(m[[i]]),
-                                   file = paste0(getwd(), "/models/", i, "_stancode.txt")
+                                   file = paste0(getwd(), "/models/", i, ".stan")
                                    )
 
 
