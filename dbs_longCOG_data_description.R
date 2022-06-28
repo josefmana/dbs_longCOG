@@ -20,6 +20,18 @@ pkgs <- c(
 
 # load required packages
 # prints NULL if a package is already installed
+sapply(
+  pkgs, # packages to be loaded/installed
+  function(i)
+    if ( !require( i , character.only = T ) ){
+      # it's important to have the 'character.only = T' command here
+      install.packages(i)
+      library(i)
+    }
+)
+
+# create folders "models", "figures" and "tables" to store results in
+# prints TRUE and creates the folder if it was not present, prints NULL if the folder was already present.
 sapply( c("models", "figures", "tables"), function(i) if( !dir.exists(i) ) dir.create(i) )
 
 # set ggplot theme
@@ -161,69 +173,61 @@ f2$hist / f2$bin + plot_annotation( tag_levels = "A" )
 ggsave( "figures/Fig 2 distribution of assessments.png" , height = 2.5 * 6.12 , width = 1.5 * 11.6 , dpi = "retina" )
 
 
-# ----------- Tab 1 stimulation parameters  -----------
+# ----------- Tab 1 sample characteristics  -----------
 
-# list all stimulation parameters
+# list all baseline charactetistics and stimulation parameters
+vars <- names(d2)[which(names(d2)=="age_stim_y"):which(names(d2)=="fp_dr")]
 pars <- names(d1)[which(names(d1)=="current_r_mA"):which(names(d1)=="frequency_l_Hz")]
 
-# prepare a data frame to be filled-in with stimulation parameters' summary
-t1 <- data.frame( Md = rep( NA , length(pars) ), `Min-Max` = NA, M = NA, SD = NA, row.names = pars )
+# prepare a data frame to be filled-in with baseline characteristics (and stimulation parameters next)
+t1 <- list(
+  base = data.frame( N = rep( NA, length(vars) ), Md = NA, `Min-Max` = NA, M = NA, SD = NA, row.names = vars ),
+  stim = data.frame( N = rep( NA, length(pars) ), Md = NA, `Min-Max` = NA, M = NA, SD = NA, row.names = pars )
+)
 
-# fill-in statistics of all stimulation parameters
-for ( i in pars ) {
-  t1[ i , "Md" ] <- sprintf( "%.2f" , round( median( d1[[i]], na.rm = T ) , digits = 2 ) ) # median, rounded to hundredths
-  t1[ i , "Min.Max" ] <- paste0( sprintf( "%.1f" , round( min( d1[[i]], na.rm = T ) , digits = 1 ) ), "-",
-                                 sprintf( "%.1f" , round( max( d1[[i]], na.rm = T ) , digits = 1 ) ) ) # min-max, rounded to decimals
-  t1[ i , "M" ] <- sprintf( "%.2f" , round( mean( d1[[i]], na.rm = T ) , digits = 2 ) ) # mean, rounded to hundredths
-  t1[ i , "SD" ] <- sprintf( "%.2f" , round( sd( d1[[i]], na.rm = T ) , digits = 2 ) ) # SD, rounded to hundredths
-}
-
-# add empty rows and change names such that the table is publication-ready
-t1 <- t1 %>%
-  add_row( .before = 1 ) %>% # current
-  add_row( .before = 4 ) %>% # voltage
-  add_row( .before = 7 ) %>% # duration
-  add_row( .before = 10 ) %>% # frequency
-  # add a column with names
-  mutate( Parameter = c("Current mode (N = 67, mA)", "right", "left",
-                        "Voltage mode (N = 59, V)", "right", "left",
-                        "Pulse duration (µs)", "right", "left",
-                        "Frequency (Hz)", "right", "left"), .before = 1 )
-
-# save as csv for import to word editor 
-write.table( t1, file = "tables/Tab 1 stimulation parameters.csv", sep = ",", row.names = F, na = "" )
-
-
-# ----------- Tab 2 baseline characteristic  -----------
-
-# list all variables that will be included in Tab 2
-vars <- names(d2)[which(names(d2)=="age_stim_y"):which(names(d2)=="fp_dr")]
-
-# prepare a data frame to be filled-in with baseline characteristics
-t2 <- data.frame( N = rep( NA, length(vars) ), Md = NA, `Min-Max` = NA, M = NA, SD = NA, row.names = vars )
-
-# fill-in statistics of all variables but sex (which is nominal)
+# fill-in statistics of all baseline variables but sex (which is nominal)
 for ( i in vars[-3] ) {
-  t2[ i , "N" ] <- sum( !is.na(d2[[i]]) ) # number of data points
-  t2[ i , "Md" ] <- sprintf( "%.0f" , round( median(d2[[i]], na.rm = T ) , digits = 0 ) ) # median, rounded to integers
-  t2[ i , "Min.Max" ] <- paste0( sprintf( "%.0f" , round( min(d2[[i]], na.rm = T ) , digits = 0 ) ), "-",
-                                 sprintf( "%.0f" , round( max(d2[[i]], na.rm = T ) , digits = 0 ) ) ) # min-max, rounded to integers
-  t2[ i , "M" ] <- sprintf( "%.2f" , round( mean(d2[[i]], na.rm = T ) , digits = 2 ) ) # mean, rounded to hundredths
-  t2[ i , "SD" ] <- sprintf( "%.2f" , round( sd(d2[[i]], na.rm = T ) , digits = 2 ) ) # SD, rounded to hundredths
+  t1$base[ i , "N" ] <- sum( !is.na(d2[[i]]) ) # number of data points
+  t1$base[ i , "Md" ] <- sprintf( "%.0f" , round( median(d2[[i]], na.rm = T ) , digits = 0 ) ) # median, rounded to integers
+  t1$base[ i , "Min.Max" ] <- paste0( sprintf( "%.0f" , round( min(d2[[i]], na.rm = T ) , digits = 0 ) ), "-",
+                                      sprintf( "%.0f" , round( max(d2[[i]], na.rm = T ) , digits = 0 ) ) ) # min-max, rounded to integers
+  t1$base[ i , "M" ] <- sprintf( "%.2f" , round( mean(d2[[i]], na.rm = T ) , digits = 2 ) ) # mean, rounded to hundredths
+  t1$base[ i , "SD" ] <- sprintf( "%.2f" , round( sd(d2[[i]], na.rm = T ) , digits = 2 ) ) # SD, rounded to hundredths
 }
 
 # add frequency of males to the table sex row
-t2[ "sex" , c("N","Min.Max")] <- c(
+t1$base[ "sex" , c("N","Min.Max")] <- c(
   sum( !is.na(d2$sex) ), # number of entries
   # add frequency (percentage) to Min.Max
   paste0( table(d2$sex)["male"], " (", # frequency
           sprintf( "%.0f" , round( 100 * ( table(d2$sex)[ "male" ] / sum( table(d2$sex) ) ), 0 ) ), " %)" ) ) # percentage, rounded to integers
 
+# fill-in statistics of stimulation parameters (all columns but N which I will fill-in by hand because
+# the data are longitudinal and the N column is supposed to represent number of patients, not events)
+for ( i in pars ) {
+  t1$stim[ i , "Md" ] <- sprintf( "%.1f" , round( median( d1[[i]], na.rm = T ) , digits = 1 ) ) # median, rounded to hundredths
+  t1$stim[ i , "Min.Max" ] <- paste0( sprintf( "%.1f" , round( min( d1[[i]], na.rm = T ) , digits = 1 ) ), "-",
+                                      sprintf( "%.1f" , round( max( d1[[i]], na.rm = T ) , digits = 1 ) ) ) # min-max, rounded to decimals
+  t1$stim[ i , "M" ] <- sprintf( "%.2f" , round( mean( d1[[i]], na.rm = T ) , digits = 2 ) ) # mean, rounded to hundredths
+  t1$stim[ i , "SD" ] <- sprintf( "%.2f" , round( sd( d1[[i]], na.rm = T ) , digits = 2 ) ) # SD, rounded to hundredths
+}
+
+# fill-in number of patients in each row of stimulation parameters table
+t1$stim$N <- c( rep(67,2) , rep(59,2) , rep(nrow(d2),4) )
+
 # prepare row names by making them a column and the changing names to a publication-ready format
-t2 <- t2 %>% rownames_to_column( var = "Characteristic" )
+for ( i in names(t1) ) t1[[i]] <- t1[[i]] %>% rownames_to_column( var = "Characteristic" )
 
-# loop through all variables in Tab 2 and change their names accordingly
-for ( i in 1:nrow(t2) ) t2[i, "Characteristic"] <- var_nms[ t2[i,]$Characteristic, ]
+# merge baseline characteristics and stimulation parameters to a single table
+t1 <- do.call( rbind.data.frame, t1 )
 
-# save as csv for import to word editor 
-write.table( x = t2, file = "tables/Tab 2 baseline characteristics.csv", sep = ",", row.names = F, na = "" )
+# loop through all variables in Tab 1 and change their names accordingly
+for ( i in 1:nrow(t1) ) t1[i, "Characteristic"] <- paste0( "\t", var_nms[ t1[i,]$Characteristic, ] )
+
+# add header before each subsection of Tab 1
+t1 <- t1 %>%
+  add_row( Characteristic = "Baseline characteristics" , .before = 1 ) %>%
+  add_row( Characteristic = "Stimulation parameters" , .before = length(vars)+2 )
+
+# save as csv for import to word editor
+write.table( t1, file = "tables/Tab 1 sample characteristics.csv", sep = ",", row.names = F, na = "" )

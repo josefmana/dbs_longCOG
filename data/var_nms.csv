@@ -34,6 +34,14 @@ ravlt_rec50;RAVLT-Rec50
 ravlt_rec15;RAVLT-Rec15
 fp_ir;FP-IR
 fp_dr;FP-DR
+current_r_mA;Current right (mA)
+current_l_mA;Current left (mA)
+voltage_r_V;Voltage right (V)
+voltage_l_V;Voltage left (V)
+duration_r_us;Pulse duration right (µs)
+duration_l_us;Pulse duration left (µs)
+frequency_r_Hz;Frequency right (Hz)
+frequency_l_Hz;Frequency left (Hz)
 stai_x1;STAI-X1
 stai_x2;STAI-X2
 bdi2;BDI-II

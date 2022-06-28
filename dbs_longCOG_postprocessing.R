@@ -271,7 +271,7 @@ sapply (
 ggsave( "figures/Fig 3 factor loadings.png", height = 1.5*11.8, width = 1.8*10.8, dpi = "retina" )
 
 
-# ----------- prior predictive check  -----------
+# ----------- Fig S2 prior predictive check  -----------
 
 # including prior predictive check to "post-processing" to keep the "statistical modelling" file clean
 # set-up the linear model (doing PPC for the primary model only, ie, m1_nocov,  the rest should be "centered"
@@ -601,15 +601,13 @@ for ( i in rownames(t.s3) ) t.s3[i,] <- c(
 # make last adjustments to the table
 t.s3 <- t.s3 %>%
   rename( "95% PPI" = "PPI", "Pr(b < 0)" = "pd" ) %>%
-  add_column( Parameter = var_nms[rownames(t.s3), ], .before = "b") %>%
+  add_column( Parameter = paste0( "\t", var_nms[rownames(t.s3), ] ), .before = "b") %>%
   add_row( Parameter = "Global intercept", .before = 1 ) %>%
   add_row( Parameter = "Baseline correlates", .before = 3 ) %>%
   add_row( Parameter = "Time-dependent effects", .before = 11 )
 
 # save as csv
-write.table( x = t.s3,
-             file = "tables/Tab S3 summary of parameters posteriors.csv",
-             sep = ",", row.names = F)
+write.table( t.s3, file = "tables/Tab S3 summary of parameters posteriors.csv", sep = ",", row.names = F, na = "")
 
 # remove objects used to summarize posteriors
 rm( list = c( "draws", "f.s4", "f.s5", "f4", "m", "pars", "post", "samples", "t.s3" ) )
