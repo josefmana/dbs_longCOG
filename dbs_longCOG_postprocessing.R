@@ -87,15 +87,14 @@ fat <- array(
 for ( i in 1:imp ) {
   for ( j in 1:length(efa[[i]]) ) {
     fat[ j , , i ] <- c(
-      round( efa[[i]][[j]]$TLI , 3 ), # Tucker-Lewis index, > 0.9 is considered good
-      round( efa[[i]][[j]]$RMSEA[1], 3 ), # root-mean square error of approximation, < 0.08 is considered good
-      round( efa[[i]][[j]]$RMSEA[2], 3 ), # 90% CI RMSEA, lower boundary
-      round( efa[[i]][[j]]$RMSEA[3], 3 ), # 90% CI RMSEA, upper boundary (ideally should be < 0.08)
-      round(efa[[i]][[j]]$Vaccounted["Cumulative Var",j+2], 3) # total variance "accounted for" by all included factors
+      efa[[i]][[j]]$TLI, # Tucker-Lewis index, > 0.9 is considered good
+      efa[[i]][[j]]$RMSEA[1], # root-mean square error of approximation, < 0.08 is considered good
+      efa[[i]][[j]]$RMSEA[2], # 90% CI RMSEA, lower boundary
+      efa[[i]][[j]]$RMSEA[3], # 90% CI RMSEA, upper boundary (ideally should be < 0.08)
+      max( efa[[i]][[j]]$Vaccounted["Cumulative Var",] ) # total variance "accounted for" by all included factors (i.e., the highest one from "Cumulative Var")
     )
   }
 }
-
 
 # ----------- Tab S1 summary of performance index of factor analyses  -----------
 
@@ -137,12 +136,10 @@ t.s1 <- t.s1 %>% left_join(
 )
 
 # change column names that are not fancy enough
-colnames(t.s1)[4:5] <- c( "RMSEA 90% CI RMSEA (upper bound)", "Total variance accounted")
+colnames(t.s1)[4:5] <- c( "RMSEA 90% CI (upper bound)", "Total variance accounted")
 
 # save as csv
-write.table( x = t.s1,
-             file = "tables/Tab S1 factor analysis performance indexes.csv",
-             sep = ",", row.names = F)
+write.table( t.s1, file = "tables/Tab S1 factor analysis performance indexes.csv", sep = ",", row.names = F, quote = F)
 
 
 # ----------- Fig S1 factor analyses performance indexes  -----------
@@ -174,10 +171,11 @@ for ( i in c("TLI","RMSEA_90_CI_upp") ) {
 }
 
 # arrange Fig S1 for printing
-f.s1$TLI / f.s1$RMSEA_90_CI_upp + plot_layout( guides = "collect" ) + plot_annotation( tag_levels = "A" )
+f.s1$TLI / f.s1$RMSEA_90_CI_upp + plot_layout( guides = "collect" ) +
+  plot_annotation( tag_levels = "a" ) + theme( plot.tag = element_text(face = "bold") )
 
 # save as Fig S1
-ggsave( "figures/Fig S1 factor analysis performance indexes.png", height = 1.75 * 6.07, width = 1.75 * 11.5, dpi = "retina" )
+ggsave( "figures/Fig S1 factor analysis performance indexes.png", height = 1.25 * 6.07, width = 1.25 * 11.5, dpi = "retina" )
 
 
 # ----------- Tab S2 factor loadings  -----------
@@ -217,13 +215,12 @@ for ( i in rownames(t.s2) ) {
 # make rownames to a column
 t.s2 <- t.s2 %>% rownames_to_column( var = "Test" )
 
-# rename tests such that they are publication-ready
+# rename tests (rows) and factors (columns) such that they are publication-ready
 for ( i in 1:(nrow(t.s2)-2) ) t.s2[i,"Test"] <- var_nms[ t.s2[i,]$Test,  ]
+for ( i in 2:ncol(t.s2) ) colnames(t.s2)[i] <- var_nms[ colnames(t.s2)[i],  ]
 
 # save as csv
-write.table( x = t.s2,
-             file = "tables/Tab S2 factor loadings.csv",
-             sep = ",", row.names = F)
+write.table( t.s2, file = "tables/Tab S2 factor loadings.csv", sep = ",", row.names = F, quote = F )
 
 
 # ----------- Fig 3 factor loadings  -----------
@@ -232,11 +229,11 @@ write.table( x = t.s2,
 # prepare labels for the factors
 lab <- as_labeller( c( "proc_spd" = "Processing\nspeed",
                        "epis_mem" = "Episodic\nmemory",
-                       "verb_wm" = "Verbal\nworking memory",
+                       "verb_wm" = "Verbal\nworking\nmemory",
                        "visp_mem" = "Visuospatial\nmemory",
-                       "set_shift" = "Set shifting",
+                       "set_shift" = "Set\nshifting",
                        "anxiety" = "Anxiety",
-                       "visp_wm" = "Spatial\nworking memory")
+                       "visp_wm" = "Spatial\nworking\nmemory")
 )
 
 # create a median factor loading plot as Fig 3
@@ -260,7 +257,7 @@ sapply (
   scale_fill_gradient2( # define the fill color gradient: orange = positive, blue = negative
     name = "Loading", high = cbPal[2], mid = "white", low = cbPal[6], midpoint = 0, guide = "none"
   ) +
-  scale_x_discrete( name = "Test" , labels = rev( var_nms[ rownames( loadings(efa[[1]][[nf-2]]) ) , ] )  ) +
+  scale_x_discrete( name = "" , labels = rev( var_nms[ rownames( loadings(efa[[1]][[nf-2]]) ) , ] )  ) +
   scale_y_continuous(
     name = "Loading Strength", limits = c(-0.05,1.05),
     labels = sprintf( "%.1f" , round( seq(0, 1, .4) , 2 ) ), breaks = seq(0, 1, .4) 
@@ -268,7 +265,7 @@ sapply (
   theme( panel.grid.major = element_line() ) # add grid lines for easier orientation
 
 # save as Fig 3
-ggsave( "figures/Fig 3 factor loadings.png", height = 1.5*11.8, width = 1.8*10.8, dpi = "retina" )
+ggsave( "figures/Fig 3 factor loadings.png", height = 1*11.8, width = 1.4*10.8, dpi = "retina" )
 
 
 # ----------- Fig S2 prior predictive check  -----------
@@ -276,10 +273,8 @@ ggsave( "figures/Fig 3 factor loadings.png", height = 1.5*11.8, width = 1.8*10.8
 # including prior predictive check to "post-processing" to keep the "statistical modelling" file clean
 # set-up the linear model (doing PPC for the primary model only, ie, m1_nocov,  the rest should be "centered"
 # around it as they are the same model with added parameters with zero-centered priors)
-f.drs <- paste0( "drs | cens(cens_drs) ~ 1 + ",
-                 paste( "time", doms, sep = " * " , collapse = " + " ),
-                 " + (1 + time || id)"
-                 ) %>% as.formula %>% bf
+f.drs <- paste0( "drs | cens(cens_drs) ~ 1 + ", paste( "time", doms, sep = " * " , collapse = " + " ),
+                 " + (1 + time || id)" ) %>% as.formula %>% bf
 
 # set-up priors
 p <- c(
@@ -322,7 +317,7 @@ d_seq <- expand.grid( time_y = c(-2,12), id = d1$id, proc_spd = 0, epis_mem = 0,
   add_epred_draws(m) # add predicted mean response (DRS-2) 
 
 # randomly choose which prior draws to visualize
-set.seed(1)
+set.seed(87542)
 it <- sample( 1:max( unique( d_seq$.draw ) ), size = 25, replace = F)
 
 # plot twenty-five PPCs to a 5x5 grid
@@ -355,7 +350,7 @@ rm( list = ls()[ !( ls() %in% c( "cbPal", "d1", "d3", "doms", "imp", "scl", "var
 # extract posteriors from all models
 draws <- list()
 
-# loop through the rest of the models to complete the draws list
+# loop through the models to fill-in the draws list
 for ( i in c("m0_base","m1_nocov","m2_flat_priors","m3_wcov") ) {
   m <- readRDS( paste0(getwd(), "/models/", i, ".rds") )
   draws[[i]] <- posterior::as_draws_df(m)
@@ -455,7 +450,7 @@ for ( i in rev( levels(post$Group) ) ) {
 ( ( f4$intercept / f4$base + plot_layout( heights = c(1,7) ) ) | f4$time )
 
 # save as Fig 4
-ggsave( "figures/Fig 4 model posteriors.png", height = 1.5 * 8.53, width = 2 * 9.05, dpi = "retina" )
+ggsave( "figures/Fig 4 model posteriors.png", height = 1.3 * 8.53, width = 1.6 * 9.05, dpi = "retina" )
 
 
 # ----------- Fig S5 posterior comparison across models  -----------
@@ -496,7 +491,7 @@ for ( i in rev( levels(post$Group) ) ) f.s5[[i]] <- post[ post$Group == i , ] %>
   plot_layout( guides = "collect" ) & theme( legend.position = "bottom" )
 
 # save as Fig S5
-ggsave( "figures/Fig S5 posteriors across models.png", height = 1.5 * 8.53, width = 2 * 9.05, dpi = "retina" )
+ggsave( "figures/Fig S5 posteriors across models.png", height = 1.3 * 8.53, width = 1.6 * 9.05, dpi = "retina" )
 
 
 # ----------- Fig S4 prior vs posterior comparison in the primary model  -----------
@@ -581,7 +576,7 @@ for ( i in rev( levels(samples$Group) ) ) {
   plot_layout( guides = "collect" ) & theme( legend.position = "bottom" )
 
 # save as Fig S4
-ggsave( "figures/Fig S4 posteriors vs priors.png", height = 1.5 * 8.53, width = 2 * 9.05, dpi = "retina" )
+ggsave( "figures/Fig S4 posteriors vs priors.png", height = 1.25 * 8.53, width = 1.5 * 9.05, dpi = "retina" )
 
 
 # ----------- Tab S3 summary of posteriors -----------
@@ -598,6 +593,9 @@ for ( i in rownames(t.s3) ) t.s3[i,] <- c(
   sprintf( "%.3f", round( sum( draws$m1_nocov[[i]] < 0 ) / nrow( draws$m1_nocov) , 3 ) )
 )
 
+# change some of the var_nms to a more appropriate format for Tab S3
+var_nms[ rownames(t.s3)[2:8], ] <- paste0( var_nms[sub( "b_", "", rownames(t.s3)[2:8] ),], " (", var_nms[ rownames(t.s3)[2:8], ], ")" )
+
 # make last adjustments to the table
 t.s3 <- t.s3 %>%
   rename( "95% PPI" = "PPI", "Pr(b < 0)" = "pd" ) %>%
@@ -607,7 +605,7 @@ t.s3 <- t.s3 %>%
   add_row( Parameter = "Time-dependent effects", .before = 11 )
 
 # save as csv
-write.table( t.s3, file = "tables/Tab S3 summary of parameters posteriors.csv", sep = ",", row.names = F, na = "")
+write.table( t.s3, file = "tables/Tab S3 summary of parameters posteriors.csv", sep = ";", row.names = F, na = "", quote = F )
 
 # remove objects used to summarize posteriors
 rm( list = c( "draws", "f.s4", "f.s5", "f4", "m", "pars", "post", "samples", "t.s3" ) )
@@ -807,12 +805,12 @@ for ( i in 1:imp ) t.loo[i,] <- c(
 )
 
 # sum
-table( t.loo$pareto.k...0.5 ) # five cases with Pareto-k > 0.5
+table( t.loo$pareto.k...0.5 ) # one case with Pareto-k > 0.5
 table( t.loo$pareto.k...0.7 )
 table( t.loo$pareto.k...1.0 )
 
 # look at the value of models with Pareto-k > 0.5
-t.loo[ t.loo$pareto.k...0.5 > .5 , ]
+t.loo[ t.loo$pareto.k...0.5 > .5 , ] # model no. 54, max(pareto-k) == 0.53
 
 
 # ----------- linear vs non-linear fit -----------
@@ -828,7 +826,7 @@ s = 87543 # seed for reproducibility
 # set-up the linear model (doing PPC for the primary model only, ie, m1_nocov,  the rest should be "centered"
 # around it as they are the same model with added parameters with zero-centered priors)
 f4.drs <- list( linear = bf( drs | cens(cens_drs) ~ time + (1 + time || id) ),
-               spline = bf( drs | cens(cens_drs) ~ t2(time) + (1 + time || id) )
+                spline = bf( drs | cens(cens_drs) ~ t2(time) + (1 + time || id) )
 )
 
 # set-up priors (using brms default non-informative to allow for information from data to prevail)

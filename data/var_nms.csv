@@ -46,7 +46,7 @@ stai_x1;STAI-X1
 stai_x2;STAI-X2
 bdi2;BDI-II
 proc_spd;Processing speed
-epis_mem;Episodic verbal memory
+epis_mem;Episodic memory
 verb_wm;Verbal working memory
 visp_mem;Visuospatial memory
 set_shift;Set shifting
@@ -57,18 +57,18 @@ RMSEA;RMSEA
 RMSEA_90_CI_low;90% CI RMSEA (lower bound)
 RMSEA_90_CI_upp;90% CI RMSEA (upper bound)
 b_Intercept;Intercept
-b_proc_spd;Processing speed
-b_epis_mem;Episodic verbal memory
-b_verb_wm;Verbal working memory
-b_visp_mem;Visuospatial memory
-b_set_shift;Set shifting
-b_anxiety;Anxiety
-b_visp_wm;Spatial working memory
+b_proc_spd;PS
+b_epis_mem;EM
+b_verb_wm;VWM
+b_visp_mem;VM
+b_set_shift;SS
+b_anxiety;An.
+b_visp_wm;SWM
 b_time;Time
-b_time:proc_spd;Processing speed × Time
-b_time:epis_mem;Episodic verbal memory × Time
-b_time:verb_wm;Verbal working memory × Time
-b_time:visp_mem;Visuospatial memory × Time
-b_time:set_shift;Set shifting × Time
-b_time:anxiety;Anxiety × Time
-b_time:visp_wm;Spatial working memory × Time
+b_time:proc_spd;PS × Time
+b_time:epis_mem;EM × Time
+b_time:verb_wm;VWM × Time
+b_time:visp_mem;VM × Time
+b_time:set_shift;SS × Time
+b_time:anxiety;An. × Time
+b_time:visp_wm;SWM × Time

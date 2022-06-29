@@ -167,10 +167,10 @@ f2$bin <- table( d1[ complete.cases(d1$drs_tot) , ]$id ) %>%
   labs( x = "Number of Assessments per Patient", y = "Number of Patients" )
 
 # arrange Fig 2A and Fig 2B for printing
-f2$hist / f2$bin + plot_annotation( tag_levels = "A" )
+f2$hist / f2$bin + plot_annotation( tag_levels = "a" ) + theme( plot.tag = element_text(face = "bold") )
 
 # save as Fig 2
-ggsave( "figures/Fig 2 distribution of assessments.png" , height = 2.5 * 6.12 , width = 1.5 * 11.6 , dpi = "retina" )
+ggsave( "figures/Fig 2 distribution of assessments.png" , height = 1.83 * 6.12 , width = 1 * 11.6 , dpi = "retina" )
 
 
 # ----------- Tab 1 sample characteristics  -----------
@@ -230,4 +230,4 @@ t1 <- t1 %>%
   add_row( Characteristic = "Stimulation parameters" , .before = length(vars)+2 )
 
 # save as csv for import to word editor
-write.table( t1, file = "tables/Tab 1 sample characteristics.csv", sep = ",", row.names = F, na = "" )
+write.table( t1, file = "tables/Tab 1 sample characteristics.csv", sep = ",", row.names = F, na = "", quote = F )
