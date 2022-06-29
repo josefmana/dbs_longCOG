@@ -268,7 +268,7 @@ sapply (
 ggsave( "figures/Fig 3 factor loadings.png", height = 1*11.8, width = 1.4*10.8, dpi = "retina" )
 
 
-# ----------- Fig S2 prior predictive check  -----------
+# ----------- Fig S3 prior predictive check  -----------
 
 # including prior predictive check to "post-processing" to keep the "statistical modelling" file clean
 # set-up the linear model (doing PPC for the primary model only, ie, m1_nocov,  the rest should be "centered"
@@ -339,7 +339,7 @@ d_seq %>%
            )
 
 # save the ensuing plot as Fig S2
-ggsave( "figures/Fig S2 prior predictive check.png", dpi = "retina", width = 10.1, height = 11.2 )
+ggsave( "figures/Fig S3 prior predictive check.png", dpi = "retina", width = 10.1, height = 11.2 )
 
 
 # ----------- extract MCMC draws -----------
@@ -727,7 +727,7 @@ for( i in prds ) {
 ggsave( "figures/Fig 5 posteriors predictions.png", width = 1.75 * 10.1, height = 1.25 * 11.2, dpi = "retina" )
 
 
-# ----------- Fig S3 per patient posterior predictions -----------
+# ----------- Fig S2 per patient posterior predictions -----------
 
 # simulate values for each patient each half year from 2 years before to 12 years after surgery
 n_seq = 24
