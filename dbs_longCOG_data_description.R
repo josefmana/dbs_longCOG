@@ -141,14 +141,14 @@ grViz(f1) %>%
   rsvg_png("figures/Fig 1 inclusion-exclusion flowchart.png")
 
 
-# ----------- Fig 2 distribution of assessments  -----------
+# ----------- Fig S1 distribution of assessments  -----------
 
-# prepare a histogram of the distribution of assessments across time (Fig 2A)
-f2 <- list()
+# prepare a histogram of the distribution of assessments across time (Fig S1a)
+f.s1 <- list()
 
 # need to use the complete.cases command because three patients have duplicated rows
 # due to more than one stimulation parameter
-f2$hist <- d1[ complete.cases(d1$drs_tot) , ] %>% 
+f.s1$hist <- d1[ complete.cases(d1$drs_tot) , ] %>% 
   ggplot( aes(x = time_y) ) +
   stat_bin( binwidth = .5, position = position_nudge(x = -.5*.5) ) + # creates bars
   stat_bin( binwidth = .5, geom = "text", aes(label = ..count..), vjust = -1.0,
@@ -157,8 +157,8 @@ f2$hist <- d1[ complete.cases(d1$drs_tot) , ] %>%
   scale_y_continuous( expand = c(0, 0), limits = c(0, 69), breaks = seq(0, 60, 10), labels = seq(0, 60, 10) ) +
   scale_x_continuous( limits = c(-2, 12), breaks = seq(-2, 12, 1), labels = seq(-2, 12, 1) )
 
-# prepare a bin plot showing distribution of the number of assessments per patient (Fig 2B)
-f2$bin <- table( d1[ complete.cases(d1$drs_tot) , ]$id ) %>%
+# prepare a bin plot showing distribution of the number of assessments per patient (Fig S1b)
+f.s1$bin <- table( d1[ complete.cases(d1$drs_tot) , ]$id ) %>%
   as.data.frame() %>%
   ggplot( aes(x = Freq) ) +
   geom_bar( width = .25 ) +
@@ -166,16 +166,16 @@ f2$bin <- table( d1[ complete.cases(d1$drs_tot) , ]$id ) %>%
   scale_y_continuous( expand = c(0, 0), limits = c(0, 65) ) +
   labs( x = "Number of Assessments per Patient", y = "Number of Patients" )
 
-# arrange Fig 2A and Fig 2B for printing
-f2$hist / f2$bin + plot_annotation( tag_levels = "a" ) + theme( plot.tag = element_text(face = "bold") )
+# arrange for printing
+f.s1$hist / f.s1$bin + plot_annotation( tag_levels = "a" ) + theme( plot.tag = element_text(face = "bold") )
 
-# save as Fig 2
-ggsave( "figures/Fig 2 distribution of assessments.png" , height = 1.83 * 6.12 , width = 1 * 11.6 , dpi = "retina" )
+# save as Fig S1
+ggsave( "figures/Fig S1 distribution of assessments.png" , height = 1.83 * 6.12 , width = 1 * 11.6 , dpi = "retina" )
 
 
 # ----------- Tab 1 sample characteristics  -----------
 
-# list all baseline charactetistics and stimulation parameters
+# list all baseline characteristics and stimulation parameters
 vars <- names(d2)[which(names(d2)=="age_stim_y"):which(names(d2)=="fp_dr")]
 pars <- names(d1)[which(names(d1)=="current_r_mA"):which(names(d1)=="frequency_l_Hz")]
 
@@ -231,3 +231,18 @@ t1 <- t1 %>%
 
 # save as csv for import to word editor
 write.table( t1, file = "tables/Tab 1 sample characteristics.csv", sep = ",", row.names = F, na = "", quote = F )
+
+
+# ----------- descriptives for in-text reporting -----------
+
+# duration of follow-up
+mean( d1[ complete.cases(d1$drs_tot) & d1$ass_type != "pre", ]$time_y ) # 3.54
+sd( d1[ complete.cases(d1$drs_tot) & d1$ass_type != "pre", ]$time_y ) # 2.32
+median( d1[ complete.cases(d1$drs_tot) & d1$ass_type != "pre", ]$time_y ) # 3.07
+min( d1[ complete.cases(d1$drs_tot) & d1$ass_type != "pre", ]$time_y ) # 0.72
+max( d1[ complete.cases(d1$drs_tot) & d1$ass_type != "pre", ]$time_y ) # 11.38
+
+# number of assessments per patient
+median( table(d1[ complete.cases(d1$drs_tot) , ]$id) ) # 3
+min( table(d1[ complete.cases(d1$drs_tot) , ]$id) ) # 2
+max( table(d1[ complete.cases(d1$drs_tot) , ]$id) ) # 6
