@@ -588,7 +588,7 @@ t.s3 <- data.frame( par = as.character( unlist(pars) ), b = NA, PPI = NA, pd = N
 for ( i in rownames(t.s3) ) t.s3[i,] <- c(
   sprintf( "%.2f", round( median(draws$m1_nocov[[i]] * scl$SD$drs + if(i == "b_Intercept") scl$M$drs else 0 ), 2 ) ),
   paste0( "[", sprintf( "%.2f", round( hdi(draws$m1_nocov[[i]] * scl$SD$drs + if(i == "b_Intercept") scl$M$drs else 0 ), 2 )[,1] ),
-          ",", sprintf( "%.2f", round( hdi(draws$m1_nocov[[i]] * scl$SD$drs + if(i == "b_Intercept") scl$M$drs else 0 ), 2 )[,2] ),
+          ", ", sprintf( "%.2f", round( hdi(draws$m1_nocov[[i]] * scl$SD$drs + if(i == "b_Intercept") scl$M$drs else 0 ), 2 )[,2] ),
           "]" ),
   sprintf( "%.3f", round( sum( draws$m1_nocov[[i]] < 0 ) / nrow( draws$m1_nocov) , 3 ) )
 )
