@@ -167,7 +167,7 @@ f.s1$bin <- table( d1[ complete.cases(d1$drs_tot) , ]$id ) %>%
   labs( x = "Number of Assessments per Patient", y = "Number of Patients" )
 
 # arrange for printing
-f.s1$hist / f.s1$bin + plot_annotation( tag_levels = "a" ) + theme( plot.tag = element_text(face = "bold") )
+f.s1$hist / f.s1$bin + plot_annotation( tag_levels = "a" ) & theme( plot.tag = element_text(face = "bold") )
 
 # save as Fig S1
 ggsave( "figures/Fig S1 distribution of assessments.png" , height = 1.83 * 6.12 , width = 1 * 11.6 , dpi = "retina" )

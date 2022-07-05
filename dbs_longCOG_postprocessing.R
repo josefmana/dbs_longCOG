@@ -172,7 +172,7 @@ for ( i in c("TLI","RMSEA_90_CI_upp") ) {
 
 # arrange Fig S2 for printing
 f.s2$TLI / f.s2$RMSEA_90_CI_upp + plot_layout( guides = "collect" ) +
-  plot_annotation( tag_levels = "a" ) + theme( plot.tag = element_text(face = "bold") )
+  plot_annotation( tag_levels = "a" ) & theme( plot.tag = element_text(face = "bold") )
 
 # save as Fig S2
 ggsave( "figures/Fig S2 factor analysis performance indexes.png", height = 1.25 * 6.07, width = 1.25 * 11.5, dpi = "retina" )
@@ -727,7 +727,7 @@ for( i in prds ) {
 }
 
 # arrange Fig 4 subplots for saving
-( f4$proc_spd / f4$epis_mem ) + plot_annotation( tag_levels = "a" ) + theme( plot.tag = element_text(face = "bold") )
+( f4$proc_spd / f4$epis_mem ) + plot_annotation( tag_levels = "a" ) & theme( plot.tag = element_text(face = "bold") )
 
 # save as Fig 4
 ggsave( "figures/Fig 4 posteriors predictions.png", width = 1.75 * 10.1, height = 1.25 * 11.2, dpi = "retina" )
