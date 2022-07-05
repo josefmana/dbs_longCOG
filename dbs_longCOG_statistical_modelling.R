@@ -48,11 +48,11 @@ d2 <- d1[ d1$ass_type == "pre" , ] # only pre-surgery assessments of included pa
 # for EFA keep only id and cognitive tests in d2
 d2 <- d2[ , c( 2, which(names(d2) == "tmt_a"):which(names(d2) == "fp_dr"), which(names(d2) %in% paste0("staix",1:2)) ) ]
 
-# change staix1 and staix2 names such that they get correct label in post-processing
-d2 <- d2 %>% rename( "stai_x1" = "staix1" , "stai_x2" = "staix2" ) 
+# change names such that they get correct label in post-processing
+colnames(d2)[-1] <- paste0( "b_", colnames(d2)[-1] )
 
 # log-transform reaction times before the analysis
-for ( i in c( paste0("tmt_", c("a","b")), paste0("pst_", c("d","w","c")) ) ) d2[[i]] <- log( d2[[i]] )
+for ( i in c( paste0("b_tmt_", c("a","b")), paste0("b_pst_", c("d","w","c")) ) ) d2[[i]] <- log( d2[[i]] )
 
 # normalize (center and scale) all test scores before analysis
 for ( i in colnames(d2)[-1] ) d2[,i] <- as.vector( scale(d2[,i], center = T, scale = T) )
@@ -355,7 +355,7 @@ rm( list = ls()[ !( ls() %in% c( "d3", "imp", "m" ) ) ] )
 gc()
 
 # compute PSIS-LOO for each imputation in the primary model
-# first read loo if there is already something compited
+# first read loo if there is already something computed
 if ( file.exists("models/dbs_longCOG_psis-loo.rds") ) l <- readRDS( "models/dbs_longCOG_psis-loo.rds" )
 
 # if no PSIS-LOO was already computed, start from a scratch
