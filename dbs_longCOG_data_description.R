@@ -1,8 +1,8 @@
 # All analyses reported in the article (Mana et al., in review) ran in R version 4.2.0 (2022-04-22),
 # on aarch64-apple-darwin20 (64-bit) platform under macOS Monterey 12.4.
 
-# I used the following versions of packages employed: dplyr_1.0.9, DiagrammeR_1.0.9, DiagrammeRsvg_0.1,
-# rsvg_2.3.1, missMDA_1.18, ggplot2_3.3.6 and patchwork_1.1.1.
+# I used the following versions of packages employed: dplyr_1.0.9, tidyverse_1.3.1, DiagrammeR_1.0.9,
+# DiagrammeRsvg_0.1, rsvg_2.3.1, ggplot2_3.3.6 and patchwork_1.1.1.
 
 # set working directory (works only in RStudio)
 setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
@@ -138,7 +138,7 @@ f1 <- " digraph {
 grViz(f1) %>%
   export_svg %>%
   charToRaw %>%
-  rsvg_png("figures/Fig 1 inclusion-exclusion flowchart.png")
+  rsvg_pdf("figures/Fig 1 inclusion-exclusion flowchart.pdf")
 
 
 # ----------- Fig S1 distribution of assessments  -----------
@@ -170,7 +170,7 @@ f.s1$bin <- table( d1[ complete.cases(d1$drs_tot) , ]$id ) %>%
 f.s1$hist / f.s1$bin + plot_annotation( tag_levels = "a" ) & theme( plot.tag = element_text(face = "bold") )
 
 # save as Fig S1
-ggsave( "figures/Fig S1 distribution of assessments.png" , height = 1.83 * 6.12 , width = 1 * 11.6 , dpi = "retina" )
+ggsave( "figures/Fig S1 distribution of assessments.jpg" , height = 1.83 * 6.12 , width = 1 * 11.6 , dpi = "retina" )
 
 
 # ----------- Tab 1 sample characteristics  -----------

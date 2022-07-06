@@ -175,7 +175,7 @@ f.s2$TLI / f.s2$RMSEA_90_CI_upp + plot_layout( guides = "collect" ) +
   plot_annotation( tag_levels = "a" ) & theme( plot.tag = element_text(face = "bold") )
 
 # save as Fig S2
-ggsave( "figures/Fig S2 factor analysis performance indexes.png", height = 1.25 * 6.07, width = 1.25 * 11.5, dpi = "retina" )
+ggsave( "figures/Fig S2 factor analysis performance indexes.jpg", height = 1.25 * 6.07, width = 1.25 * 11.5, dpi = "retina" )
 
 
 # ----------- Tab S2 factor loadings  -----------
@@ -265,7 +265,7 @@ sapply (
   theme( panel.grid.major = element_line() ) # add grid lines for easier orientation
 
 # save as Fig 2
-ggsave( "figures/Fig 2 factor loadings.png", height = 1*11.8, width = 1.4*10.8, dpi = "retina" )
+ggsave( "figures/Fig 2 factor loadings.jpg", height = 1*11.8, width = 1.4*10.8, dpi = "retina" )
 
 
 # ----------- Fig S4 prior predictive check  -----------
@@ -339,7 +339,7 @@ d_seq %>%
            )
 
 # save the ensuing plot as Fig S4
-ggsave( "figures/Fig S4 prior predictive check.png", dpi = "retina", width = 10.1, height = 11.2 )
+ggsave( "figures/Fig S4 prior predictive check.jpg", dpi = "retina", width = 10.1, height = 11.2 )
 
 
 # ----------- extract MCMC draws -----------
@@ -450,7 +450,7 @@ for ( i in rev( levels(post$Group) ) ) {
 ( ( f3$intercept / f3$base + plot_layout( heights = c(1,7) ) ) | f3$time )
 
 # save as Fig 3
-ggsave( "figures/Fig 3 model posteriors.png", height = 1.3 * 8.53, width = 1.6 * 9.05, dpi = "retina" )
+ggsave( "figures/Fig 3 model posteriors.jpg", height = 1.3 * 8.53, width = 1.6 * 9.05, dpi = "retina" )
 
 
 # ----------- Fig S6 posterior comparison across models  -----------
@@ -491,7 +491,7 @@ for ( i in rev( levels(post$Group) ) ) f.s6[[i]] <- post[ post$Group == i , ] %>
   plot_layout( guides = "collect" ) & theme( legend.position = "bottom" )
 
 # save as Fig S6
-ggsave( "figures/Fig S6 posteriors across models.png", height = 1.3 * 8.53, width = 1.6 * 9.05, dpi = "retina" )
+ggsave( "figures/Fig S6 posteriors across models.jpg", height = 1.3 * 8.53, width = 1.6 * 9.05, dpi = "retina" )
 
 
 # ----------- Fig S5 prior vs posterior comparison in the primary model  -----------
@@ -576,7 +576,7 @@ for ( i in rev( levels(samples$Group) ) ) {
   plot_layout( guides = "collect" ) & theme( legend.position = "bottom" )
 
 # save as Fig S5
-ggsave( "figures/Fig S5 posteriors vs priors.png", height = 1.25 * 8.53, width = 1.5 * 9.05, dpi = "retina" )
+ggsave( "figures/Fig S5 posteriors vs priors.jpg", height = 1.25 * 8.53, width = 1.5 * 9.05, dpi = "retina" )
 
 
 # ----------- Tab S3 summary of posteriors -----------
@@ -730,7 +730,7 @@ for( i in prds ) {
 ( f4$proc_spd / f4$epis_mem ) + plot_annotation( tag_levels = "a" ) & theme( plot.tag = element_text(face = "bold") )
 
 # save as Fig 4
-ggsave( "figures/Fig 4 posteriors predictions.png", width = 1.75 * 10.1, height = 1.25 * 11.2, dpi = "retina" )
+ggsave( "figures/Fig 4 posteriors predictions.jpg", width = 1.75 * 10.1, height = 1.25 * 11.2, dpi = "retina" )
 
 
 # ----------- Tab 2 posterior predictions -----------
@@ -785,6 +785,7 @@ t2 <- do.call( cbind.data.frame , d_seq ) %>%
 # save the table as csv
 write.table( t2, file = "tables/Tab 2 posterior predictions.csv", sep = ";", row.names = F, na = "", quote = F )
 
+
 # ----------- Fig S3 per patient posterior predictions -----------
 
 # simulate values for each patient each half year from 2 years before to 12 years after surgery
@@ -817,7 +818,7 @@ for ( i in 1:length(chunks) ) preds[[i]] <- d_seq[ d_seq$id %in% chunks[[i]] , ]
   mutate(drs = scl$M$drs + scl$SD$drs * .prediction) %>%
   median_hdi(.width = .95) %>%
   mutate(drs.upper = ifelse(drs.upper > 144, 144, drs.upper) ) # manual censoring
-  
+
 # collapse predictions to a single table
 preds <- do.call( rbind.data.frame , preds )
 
@@ -840,9 +841,9 @@ d4 %>%
     facet_wrap( ~id, nrow =  9 ) + # arrange to a 9 x 14 grid
     labs( x = "Time after surgery (Years)", y = "DRS-2 (0-144 points)") +
     theme( legend.position = "none" )
-  
+
 # save as Fig S3
-ggsave( "figures/Fig S3 per-patient posteriors predictions.png", width = 2.5 * 10.1, height = 2 * 11.2, dpi = "retina" )
+ggsave( "figures/Fig S3 per-patient posteriors predictions.jpg", width = 2.5 * 10.1, height = 2 * 11.2, dpi = "retina" )
 
 
 # ----------- summarize PSIS-LOO -----------
@@ -943,4 +944,4 @@ preds %>%
     theme( legend.position = c(0.11,0.13) )
 
 # save as Fig 5
-ggsave( "figures/Fig 5 linear vs non-linear fit.png", width = 1.25 * 10.1, height = 1.25 * 5.39, dpi = "retina" )
+ggsave( "figures/Fig 5 linear vs non-linear fit.jpg", width = 1.25 * 10.1, height = 1.25 * 5.39, dpi = "retina" )
