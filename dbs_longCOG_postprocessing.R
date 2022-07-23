@@ -175,10 +175,10 @@ f.s2$TLI / f.s2$RMSEA_90_CI_upp + plot_layout( guides = "collect" ) +
   plot_annotation( tag_levels = "a" ) & theme( plot.tag = element_text(face = "bold") )
 
 # save as Fig S2
-ggsave( "figures/Fig S2 factor analysis performance indexes.jpg", height = 1.25 * 6.07, width = 1.25 * 11.5, dpi = "retina" )
+ggsave( "figures/Fig S2 factor analysis performance indexes.jpg", height = 1.25 * 6.07, width = 1.25 * 11.5, dpi = 300 )
 
 
-# ----------- Tab S2 factor loadings  -----------
+# ----------- Tab 2 factor loadings  -----------
 
 # the 7-factor solution was chosen
 nf = 7
@@ -199,73 +199,28 @@ for( i in 1:imp ) loads[ , , i ] <- efa[[i]][[nf-2]]$loadings %>%
   ) %>% as.matrix()
 
 # write a summary of loadings across all imputed data sets
-t.s2 <- matrix(
+t2 <- matrix(
   data = NA, nrow = nrow(loads[ , , 1]), ncol = ncol(loads[ , , 1]),
   dimnames = list( rownames(loads[ , , 1 ]) , colnames(loads[ , , 1]) )
 ) %>% as.data.frame()
 
 # fill-in averages and SDs across all imputations 
-for ( i in rownames(t.s2) ) {
-  t.s2[ i , ] <- paste0(
+for ( i in rownames(t2) ) {
+  t2[ i , ] <- paste0(
     sprintf( "%.2f" , round( loads[i, , ] %>% t %>% colMeans , 2 ) ), " (", # mean
     sprintf( "%.2f" , round( loads[i, , ] %>% t %>% apply( . , 2 , sd ), 2) ), ")" # SD
   )
 }
 
 # make rownames to a column
-t.s2 <- t.s2 %>% rownames_to_column( var = "Test" )
+t2 <- t2 %>% rownames_to_column( var = "Test" )
 
 # rename tests (rows) and factors (columns) such that they are publication-ready
-for ( i in 1:(nrow(t.s2)-2) ) t.s2[i,"Test"] <- var_nms[ t.s2[i,]$Test,  ]
-for ( i in 2:ncol(t.s2) ) colnames(t.s2)[i] <- var_nms[ colnames(t.s2)[i],  ]
+for ( i in 1:(nrow(t2)-2) ) t2[i,"Test"] <- var_nms[ t2[i,]$Test,  ]
+for ( i in 2:ncol(t2) ) colnames(t2)[i] <- var_nms[ colnames(t2)[i],  ]
 
 # save as csv
-write.table( t.s2, file = "tables/Tab S2 factor loadings.csv", sep = ",", row.names = F, quote = F )
-
-
-# ----------- Fig 2 factor loadings  -----------
-
-# visualize loadings (i.e.,median loadings across imputations)
-# prepare labels for the factors
-lab <- as_labeller( c( "proc_spd" = "Processing\nspeed",
-                       "epis_mem" = "Episodic\nmemory",
-                       "verb_wm" = "Verbal\nworking\nmemory",
-                       "visp_mem" = "Visuospatial\nmemory",
-                       "set_shift" = "Set\nshifting",
-                       "anxiety" = "Anxiety",
-                       "visp_wm" = "Spatial\nworking\nmemory")
-)
-
-# create a median factor loading plot as Fig 2
-# start by calculating median loading for each test/factor pairs across imputations
-sapply (
-  rownames( loadings(efa[[1]][[nf-2]]) ),
-  function(i) loads[ i , , ] %>% t %>% apply( . , 2 , median )
-) %>% as.data.frame %>%
-  # change to an appropriate format
-  mutate( f.order = 1:nf ) %>% # prepare an order variable to sort tests on y-axis
-  rownames_to_column( var = "Factor" )  %>% # make factors from row names to explicit variables
-  pivot_longer( # change to a long format
-    rownames( loadings(efa[[1]][[nf-2]]) ) , values_to = "Loading" , names_to = "Test"
-  ) %>%
-  mutate( t.order = rep(1:(nrow(t.s2)-2), nf ) ) %>% # prepare an order variable to sort factors
-  # plot it
-  ggplot( aes( x = reorder(Test, -t.order) , y = abs(Loading) , fill = Loading) ) +
-  facet_wrap( ~ reorder(Factor, f.order) , nrow = 1 , labeller = lab ) + # place the factors to separate facets
-  geom_bar( stat = "identity" ) + # create the bars
-  coord_flip() + # flip axes so that tests are on the y-axis and loadings on x-axis
-  scale_fill_gradient2( # define the fill color gradient: orange = positive, blue = negative
-    name = "Loading", high = cbPal[2], mid = "white", low = cbPal[6], midpoint = 0, guide = "none"
-  ) +
-  scale_x_discrete( name = "" , labels = rev( var_nms[ rownames( loadings(efa[[1]][[nf-2]]) ) , ] )  ) +
-  scale_y_continuous(
-    name = "Loading Strength", limits = c(-0.05,1.05),
-    labels = sprintf( "%.1f" , round( seq(0, 1, .4) , 2 ) ), breaks = seq(0, 1, .4) 
-  ) +
-  theme( panel.grid.major = element_line() ) # add grid lines for easier orientation
-
-# save as Fig 2
-ggsave( "figures/Fig 2 factor loadings.jpg", height = 1*11.8, width = 1.4*10.8, dpi = "retina" )
+write.table( t2, file = "tables/Tab 2 factor loadings.csv", sep = ",", row.names = F, quote = F )
 
 
 # ----------- Fig S4 prior predictive check  -----------
@@ -339,7 +294,7 @@ d_seq %>%
            )
 
 # save the ensuing plot as Fig S4
-ggsave( "figures/Fig S4 prior predictive check.jpg", dpi = "retina", width = 10.1, height = 11.2 )
+ggsave( "figures/Fig S4 prior predictive check.jpg", dpi = 600, width = 10.1, height = 11.2 )
 
 
 # ----------- extract MCMC draws -----------
@@ -411,14 +366,14 @@ post$Parameter <- factor( post$Parameter , levels = rev( unlist(pars, use.names 
 post$Group <- factor( post$Group , levels = rev( unique(post$Group) ) , ordered = T )
 
 
-# ----------- Fig 3 posterior primary model posteriors  -----------
+# ----------- Fig 2 posterior primary model posteriors  -----------
 
-# prepare list for facets of Fig. 3 (m1_nocov posteriors)
-f3 <- list()
+# prepare list for facets of Fig. 2 (m1_nocov posteriors)
+f2 <- list()
 
 # loop through the three parameter groups
 for ( i in rev( levels(post$Group) ) ) {
-  f3[[i]] <- post[ post$Group == i & post$Model == "Uncorrelated varying effects" , ] %>%
+  f2[[i]] <- post[ post$Group == i & post$Model == "Uncorrelated varying effects" , ] %>%
     mutate(
       title = case_when( i == "intercept" ~ "Global intercept",
                          i == "base" ~ "Baseline correlates",
@@ -447,10 +402,10 @@ for ( i in rev( levels(post$Group) ) ) {
 }
 
 # put them together
-( ( f3$intercept / f3$base + plot_layout( heights = c(1,7) ) ) | f3$time )
+( ( f2$intercept / f2$base + plot_layout( heights = c(1,7) ) ) | f2$time )
 
-# save as Fig 3
-ggsave( "figures/Fig 3 model posteriors.jpg", height = 1.3 * 8.53, width = 1.6 * 9.05, dpi = "retina" )
+# save as Fig 2
+ggsave( "figures/Fig 2 model posteriors.jpg", height = 1.3 * 8.53, width = 1.6 * 9.05, dpi = 300 )
 
 
 # ----------- Fig S6 posterior comparison across models  -----------
@@ -491,7 +446,7 @@ for ( i in rev( levels(post$Group) ) ) f.s6[[i]] <- post[ post$Group == i , ] %>
   plot_layout( guides = "collect" ) & theme( legend.position = "bottom" )
 
 # save as Fig S6
-ggsave( "figures/Fig S6 posteriors across models.jpg", height = 1.3 * 8.53, width = 1.6 * 9.05, dpi = "retina" )
+ggsave( "figures/Fig S6 posteriors across models.jpg", height = 1.3 * 8.53, width = 1.6 * 9.05, dpi = 300 )
 
 
 # ----------- Fig S5 prior vs posterior comparison in the primary model  -----------
@@ -576,16 +531,16 @@ for ( i in rev( levels(samples$Group) ) ) {
   plot_layout( guides = "collect" ) & theme( legend.position = "bottom" )
 
 # save as Fig S5
-ggsave( "figures/Fig S5 posteriors vs priors.jpg", height = 1.25 * 8.53, width = 1.5 * 9.05, dpi = "retina" )
+ggsave( "figures/Fig S5 posteriors vs priors.jpg", height = 1.25 * 8.53, width = 1.5 * 9.05, dpi = 300 )
 
 
-# ----------- Tab S3 summary of posteriors -----------
+# ----------- Tab S2 summary of posteriors -----------
 
 # prepare a table for m1_nocov (the primary model) posteriors summary
-t.s3 <- data.frame( par = as.character( unlist(pars) ), b = NA, PPI = NA, pd = NA ) %>% column_to_rownames("par")
+t.s2 <- data.frame( par = as.character( unlist(pars) ), b = NA, PPI = NA, pd = NA ) %>% column_to_rownames("par")
 
 # fill-in with appropriate estimates from draws$m1_nocov
-for ( i in rownames(t.s3) ) t.s3[i,] <- c(
+for ( i in rownames(t.s2) ) t.s2[i,] <- c(
   sprintf( "%.2f", round( median(draws$m1_nocov[[i]] * scl$SD$drs + if(i == "b_Intercept") scl$M$drs else 0 ), 2 ) ),
   paste0( "[", sprintf( "%.2f", round( hdi(draws$m1_nocov[[i]] * scl$SD$drs + if(i == "b_Intercept") scl$M$drs else 0 ), 2 )[,1] ),
           ", ", sprintf( "%.2f", round( hdi(draws$m1_nocov[[i]] * scl$SD$drs + if(i == "b_Intercept") scl$M$drs else 0 ), 2 )[,2] ),
@@ -593,22 +548,22 @@ for ( i in rownames(t.s3) ) t.s3[i,] <- c(
   sprintf( "%.3f", round( sum( draws$m1_nocov[[i]] < 0 ) / nrow( draws$m1_nocov) , 3 ) )
 )
 
-# change some of the var_nms to a more appropriate format for Tab S3
-var_nms[ rownames(t.s3)[2:8], ] <- paste0( var_nms[sub( "b_", "", rownames(t.s3)[2:8] ),], " (", var_nms[ rownames(t.s3)[2:8], ], ")" )
+# change some of the var_nms to a more appropriate format for Tab S2
+var_nms[ rownames(t.s2)[2:8], ] <- paste0( var_nms[sub( "b_", "", rownames(t.s2)[2:8] ),], " (", var_nms[ rownames(t.s2)[2:8], ], ")" )
 
 # make last adjustments to the table
-t.s3 <- t.s3 %>%
+t.s2 <- t.s2 %>%
   rename( "95% PPI" = "PPI", "Pr(b < 0)" = "pd" ) %>%
-  add_column( Parameter = paste0( "\t", var_nms[rownames(t.s3), ] ), .before = "b") %>%
+  add_column( Parameter = paste0( "\t", var_nms[rownames(t.s2), ] ), .before = "b") %>%
   add_row( Parameter = "Global intercept", .before = 1 ) %>%
   add_row( Parameter = "Baseline correlates", .before = 3 ) %>%
   add_row( Parameter = "Time-dependent effects", .before = 11 )
 
 # save as csv
-write.table( t.s3, file = "tables/Tab S3 summary of parameters posteriors.csv", sep = ";", row.names = F, na = "", quote = F )
+write.table( t.s2, file = "tables/Tab S2 summary of parameters posteriors.csv", sep = ";", row.names = F, na = "", quote = F )
 
 # remove objects used to summarize posteriors
-rm( list = c( "draws", "f.s5", "f.s6", "f3", "m", "pars", "post", "samples", "t.s3" ) )
+rm( list = c( "draws", "f.s5", "f.s6", "f2", "m", "pars", "post", "samples", "t.s2" ) )
 gc()
 
 # ----------- prepare posterior predictions -----------
@@ -654,7 +609,7 @@ d5 <- d4[ d4$time_y < 0 , ] %>%
 d4 <- d4 %>% left_join( d5 %>% select( id, contains("_pent") ) , by = "id" )
 
 
-# ----------- Fig 4 posterior predictions -----------
+# ----------- Fig 3 posterior predictions -----------
 
 # prepare a prediction dummy data set
 d_seq <- list(
@@ -692,12 +647,12 @@ for ( i in names(d_seq) ) {
 # prepare variable names for the plot
 nms <- list( proc_spd = "Processing speed" , epis_mem = "Episodic memory" )
 
-# prepare Fig 4
-f4 <- list()
+# prepare Fig 3
+f3 <- list()
 
 # fill-in plots for Processing speed and Episodic memory
 for( i in prds ) {
-  f4[[i]] <- d4[ , c( "time_y","id","drs") ] %>%
+  f3[[i]] <- d4[ , c( "time_y","id","drs") ] %>%
     mutate( grp = d4[ , paste0(i, "_pent") ] ) %>%
     ggplot( aes(x = time_y, y = drs, group = id) ) +
       geom_hline( yintercept = 139, linetype = "dotted", size = 1.5, alpha = 1 ) +
@@ -726,14 +681,14 @@ for( i in prds ) {
       theme( legend.position = "none", plot.title = element_text(hjust = .5) )
 }
 
-# arrange Fig 4 subplots for saving
-( f4$proc_spd / f4$epis_mem ) + plot_annotation( tag_levels = "a" ) & theme( plot.tag = element_text(face = "bold") )
+# arrange Fig 3 subplots for saving
+( f3$proc_spd / f3$epis_mem ) + plot_annotation( tag_levels = "a" ) & theme( plot.tag = element_text(face = "bold") )
 
-# save as Fig 4
-ggsave( "figures/Fig 4 posteriors predictions.jpg", width = 1.75 * 10.1, height = 1.25 * 11.2, dpi = "retina" )
+# save as Fig 3
+ggsave( "figures/Fig 3 posterior predictions.jpg", width = 1.75 * 10.1, height = 1.25 * 11.2, dpi = 300 )
 
 
-# ----------- Tab 2 posterior predictions -----------
+# ----------- Tab 3 posterior predictions -----------
 
 # prediction dummy data set for a new patient's expectation prediction stratified by different levels of
 # each of pre-surgery cognitive profile components
@@ -777,13 +732,13 @@ for ( i in doms ) d_seq[[i]] <- d_seq[[i]] %>%
   ) %>% select( `Md [95% PPI]` )
   
 # put it all together into a single table
-t2 <- do.call( cbind.data.frame , d_seq ) %>%
+t3 <- do.call( cbind.data.frame , d_seq ) %>%
   `colnames<-` ( var_nms[ doms , ] ) %>%
   `rownames<-` ( paste0( c("1st","2nd","3rd","4th","5th") , " pentile") ) %>%
   rownames_to_column( var = "stratum" )
 
 # save the table as csv
-write.table( t2, file = "tables/Tab 2 posterior predictions.csv", sep = ";", row.names = F, na = "", quote = F )
+write.table( t3, file = "tables/Tab 3 posterior predictions.csv", sep = ";", row.names = F, na = "", quote = F )
 
 
 # ----------- Fig S3 per patient posterior predictions -----------
@@ -843,7 +798,7 @@ d4 %>%
     theme( legend.position = "none" )
 
 # save as Fig S3
-ggsave( "figures/Fig S3 per-patient posteriors predictions.jpg", width = 2.5 * 10.1, height = 2 * 11.2, dpi = "retina" )
+ggsave( "figures/Fig S3 per-patient posteriors predictions.jpg", width = 2.5 * 10.1, height = 2 * 11.2, dpi = 300 )
 
 
 # ----------- summarize PSIS-LOO -----------
@@ -914,7 +869,7 @@ par( mfrow = c(1,1) ) # return graphic options to default
 loo( m4$linear, m4$spline, moment_match = T )
 
 
-# ----------- Fig 5 linear vs non-linear fit -----------
+# ----------- Fig 4 linear vs non-linear fit -----------
 
 # prepare data to be predicted
 d_seq <- data.frame( time_y = seq(-2,12,length.out = 50), id = NA ) %>%
@@ -943,5 +898,5 @@ preds %>%
     scale_fill_manual( values = cbPal[c(3,2)] ) +
     theme( legend.position = c(0.11,0.13) )
 
-# save as Fig 5
-ggsave( "figures/Fig 5 linear vs non-linear fit.jpg", width = 1.25 * 10.1, height = 1.25 * 5.39, dpi = "retina" )
+# save as Fig 4
+ggsave( "figures/Fig 4 linear vs non-linear fit.jpg", width = 1.25 * 10.1, height = 1.25 * 5.39, dpi = 300 )
