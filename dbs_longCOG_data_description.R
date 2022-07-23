@@ -170,7 +170,7 @@ f.s1$bin <- table( d1[ complete.cases(d1$drs_tot) , ]$id ) %>%
 f.s1$hist / f.s1$bin + plot_annotation( tag_levels = "a" ) & theme( plot.tag = element_text(face = "bold") )
 
 # save as Fig S1
-ggsave( "figures/Fig S1 distribution of assessments.jpg" , height = 1.83 * 6.12 , width = 1 * 11.6 , dpi = "retina" )
+ggsave( "figures/Fig S1 distribution of assessments.jpg" , height = 1.83 * 6.12 , width = 1 * 11.6 , dpi = 600 )
 
 
 # ----------- Tab 1 sample characteristics  -----------
