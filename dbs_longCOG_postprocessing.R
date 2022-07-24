@@ -793,12 +793,12 @@ d4 %>%
     # add observed points
     geom_point( color = "black", size = 4 ) +
     # finish the plot with the last cosmetic changes
-    facet_wrap( ~id, nrow =  9 ) + # arrange to a 9 x 14 grid
+    facet_wrap( ~id, nrow =  14 ) + # arrange to a 14 x 9 grid
     labs( x = "Time after surgery (Years)", y = "DRS-2 (0-144 points)") +
     theme( legend.position = "none" )
 
 # save as Fig S3
-ggsave( "figures/Fig S3 per-patient posteriors predictions.jpg", width = 2.5 * 10.1, height = 2 * 11.2, dpi = 300 )
+ggsave( "figures/Fig S3 per-patient posterior predictions.jpg", width = 2 * 10.1, height = 6 * 5.39, dpi = 300 )
 
 
 # ----------- summarize PSIS-LOO -----------
