@@ -1,5 +1,5 @@
 # All analyses reported in the article (Mana et al., in review) ran in R version 4.2.0 (2022-04-22),
-# on aarch64-apple-darwin20 (64-bit) platform under macOS Monterey 12.4.
+# on aarch64-apple-darwin20 (64-bit) platform under macOS Monterey 12.6.
 
 # I used the following versions of packages employed: dplyr_1.0.9, tidyverse_1.3.1, DiagrammeR_1.0.9,
 # DiagrammeRsvg_0.1, rsvg_2.3.1, ggplot2_3.3.6 and patchwork_1.1.1.
@@ -9,8 +9,8 @@ setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
 
 # list required packages into a character object
 pkgs <- c(
-  "dplyr", # for objects manipulation
-  "tidyverse", # for rownames_to_column
+  "dplyr", # for data wrangling
+  "tidyverse", # for data wrangling
   "DiagrammeR", # for flowcharts
   "DiagrammeRsvg", # for saving plots created in DiagrammeR
   "rsvg", # for saving plots created in DiagrammeR
@@ -18,17 +18,11 @@ pkgs <- c(
   "patchwork" # for ggplots manipulations
 )
 
-# load required packages
-# prints NULL if a package is already installed
-sapply(
-  pkgs, # packages to be loaded/installed
-  function(i)
-    if ( !require( i , character.only = T ) ){
-      # it's important to have the 'character.only = T' command here
-      install.packages(i)
-      library(i)
-    }
-)
+# load or install each of the packages as needed
+for ( i in pkgs ) {
+  if ( i %in% rownames( installed.packages() ) == F ) install.packages(i) # install if it ain't installed yet
+  if ( i %in% names( sessionInfo()$otherPkgs ) == F ) library( i , character.only = T ) # load if it ain't loaded yet
+}
 
 # create folders "models", "figures" and "tables" to store results in
 # prints TRUE and creates the folder if it was not present, prints NULL if the folder was already present.

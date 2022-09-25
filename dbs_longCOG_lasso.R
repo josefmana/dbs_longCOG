@@ -37,13 +37,14 @@ d1 <- d0[ d0$included == 1 , ] # only STN-DBS treated patients with pre- and pos
 d2 <- d1[ d1$ass_type == "pre" , ] # only pre-surgery assessments of included patients
 
 
-# ----------- pre-surgery cognitive profile  -----------
+# ---- pre-surgery cognitive profile  ----
 
 # for EFA keep only id and cognitive tests in d2
 d2 <- d2[ , c( 2, which(names(d2) == "tmt_a"):which(names(d2) == "fp_dr"), which(names(d2) %in% paste0("staix",1:2)) ) ]
 
 # change names such that they get correct label in post-processing
 colnames(d2)[-1] <- paste0( "b_", colnames(d2)[-1] )
+tests <- colnames(d2)[-1]
 
 # log-transform reaction times before the analysis
 for ( i in c( paste0("b_tmt_", c("a","b")), paste0("b_pst_", c("d","w","c")) ) ) d2[[i]] <- log( d2[[i]] )
@@ -72,9 +73,9 @@ efa <- lapply( 1:imp, function(i)
                                nfactors = j, # fit 3-8 factor solutions
                                rotate = "varimax", # rotate varimax to enforce orthogonality and for interpretation purposes
                                scores = "regression" # compute regression scores for each patient
-                               )
-          )
   )
+  )
+)
 
 # one-by-one inspect all six-factor and seven-factor solutions' loading matrices
 # create a convenience function so that I don't go crazy immediately
@@ -107,7 +108,7 @@ doms <- c("proc_spd", # loaded on primarily by PST, the first factor in 82% data
           "set_shift", # loaded on primarily by TMT and RAVLT-B, the fifth factor in 28% data sets
           "anxiety", # loaded on primarily by STAI, the sixth factor in 60% data sets
           "visp_wm" # loaded on primarily by SS, the seventh factor in 49% data sets
-          )
+)
 
 # switch signs where appropriate in EFA loadings and scores, and rename and sort columns
 for ( i in 1:imp ) {
@@ -125,7 +126,7 @@ for ( i in 1:imp ) {
 saveRDS( object = efa, file = "models/efa.rds" )
 
 
-# ----------- pre-processing for longitudinal analyses  -----------
+# ---- pre-processing for longitudinal analyses  ----
 
 # before merging compute scaling values for DRS-2, BDI-II, LEDD, age and time
 scl <- list( M = list( drs = mean( d1$drs_tot , na.rm = T ), # 136.90
@@ -157,20 +158,23 @@ d3 <- lapply( 1:imp, function(i) d1 %>%
                         age = ( age_ass_y - scl$M$age ) / scl$SD$age,
                         sex = as.factor( sex ), # for better estimation of BDI in the second (covariate) model
                         cens_drs = ifelse( drs == max(drs, na.rm = T) , "right" , "none" ) # right censoring for DRS == 144
-                        ) %>%
+                ) %>%
                 # keep only variables of interest
                 select( id, time, drs, cens_drs, bdi, led, age, sex, # outcomes, demographics, clinics
                         proc_spd, epis_mem, verb_wm, visp_mem, set_shift, anxiety, visp_wm # pre-surgery cognition
-                        )
+                ) %>%
+                # add raw test scores for model comparisons
+                left_join( cbind.data.frame( id = d2$id, d2.imp$res.MI[[i]] ), by = "id" )
               )
 
-# loop across all imputations to get means and SDs of the pre-surgery cognitive domains,
+# loop across all imputations to get means and SDs of the pre-surgery cognitive domains and tests,
 # then transform the pre-surgery cognition in each data set to (pre-surgery) zero mean, unit SD variables
 for ( i in 1:imp ) {
+  # start with pre-processing the cognitive domains
   for ( j in doms ) {
     # calculate scaling values
-    scl$M[[j]][[i]] <- d3[[i]][[j]] %>% mean()
-    scl$SD[[j]][[i]] <- d3[[i]][[j]] %>% sd()
+    scl$M[[j]][[i]] <- efa[[i]][[nf-2]]$scores[,j] %>% mean()
+    scl$SD[[j]][[i]] <- efa[[i]][[nf-2]]$scores[,j] %>% sd()
     # scale in the jth imputed data set
     d3[[i]][[j]] <- case_when(
       # all but anxiety measures will be inverse such that parameters
@@ -179,6 +183,18 @@ for ( i in 1:imp ) {
       j != "anxiety" ~ ( scl$M[[j]][[i]] - d3[[i]][[j]] ) / scl$SD[[j]][[i]]
     )
   }
+  # next pre-process single cognitive tests
+  for ( j in tests ) {
+    # calculate scaling values
+    scl$M[[j]][[i]] <- d2.imp$res.MI[[i]][,j] %>% mean()
+    scl$SD[[j]][[i]] <- d2.imp$res.MI[[i]][,j] %>% sd()
+    # scale in the jth imputed data set
+    if ( j %in% c( paste0("b_tmt_",c("a","b")), paste0("b_pst_",c("d","w","c")), paste0("b_staix",1:2) ) ) {
+      # all but reaction speed and anxiety measures will be inversed such that parameters
+      # can be interpreted as effect of deficit in said measure
+      d3[[i]][[j]] <- ( d3[[i]][[j]] - scl$M[[j]][[i]] ) / scl$SD[[j]][[i]]
+    } else d3[[i]][[j]] <- ( scl$M[[j]][[i]] - d3[[i]][[j]] ) / scl$SD[[j]][[i]]
+  }
 }
 
 # set rstan options
@@ -186,189 +202,75 @@ options( mc.cores = parallel::detectCores() ) # use all parallel CPU cores
 ch = 4 # number of chains
 it = 2000 # iterations per chain
 wu = 500 # warm-up iterations, to be discarded
-ad = .95 # adapt_delta parameter
+ad = .99 # adapt_delta parameter
 
 # save the data and scaling values for post-processing
 saveRDS( list(d1 = d1, d3 = d3, scl = scl), "data/long_dat.rds" )
 
 
-# ----------- base model with correlated random-effects  -----------
+# ---- models set-up ---- 
 
-# set-up the linear model
-f0.drs <- paste0( "drs | cens(cens_drs) ~ 1 + ", # outcome and intercept
-                  paste( "time", doms, sep = " * " , collapse = " + " ), # population-level effects/fixed-effects
-                  " + (1 + time | id)"  # varying-effects (patient-level)/random-effects
-                  ) %>% as.formula %>% bf
-
-# set-up priors
-p0 <- c(
-  # fixed effects
-  prior( normal(0.3, .1), class = Intercept ),
-  prior( normal(-.2, .1), class = b, coef = time ),
-  prior( normal(0, .1), class = b, coef = proc_spd ),
-  prior( normal(0, .1), class = b, coef = epis_mem ),
-  prior( normal(0, .1), class = b, coef = verb_wm ),
-  prior( normal(0, .1), class = b, coef = visp_mem ),
-  prior( normal(0, .1), class = b, coef = set_shift ),
-  prior( normal(0, .1), class = b, coef = anxiety ),
-  prior( normal(0, .1), class = b, coef = visp_wm ),
-  prior( normal(0, .1), class = b, coef = time:proc_spd ),
-  prior( normal(0, .1), class = b, coef = time:epis_mem ),
-  prior( normal(0, .1), class = b, coef = time:verb_wm ),
-  prior( normal(0, .1), class = b, coef = time:visp_mem ),
-  prior( normal(0, .1), class = b, coef = time:set_shift ),
-  prior( normal(0, .1), class = b, coef = time:anxiety ),
-  prior( normal(0, .1), class = b, coef = time:visp_wm ),
-  # random effects
-  prior( normal(0, .1), class = sd, coef = Intercept, group = id ),
-  prior( normal(0, .1), class = sd, coef = time, group = id ),
-  prior( lkj(2), class = cor ),
-  # other distributional parameters
-  prior( exponential(1), class = sigma ),
-  prior( gamma(2, 0.1), class = nu )
+# set-up the linear models
+f <- list(
+  m1_lasso_doms = paste0( "drs | cens(cens_drs) ~ 1 + ", paste("time", doms, sep = " * ", collapse = " + "), " + (1 + time || id)" ) %>% as.formula() %>% bf(),
+  m2_lasso_tests = paste0( "drs | cens(cens_drs) ~ 1 + ", paste("time", tests, sep = " * ", collapse = " + "), " + (1 + time || id)" ) %>% as.formula() %>% bf(),
+  m3_flat_doms = paste0( "drs | cens(cens_drs) ~ 1 + ", paste("time", doms, sep = " * ", collapse = " + "), " + (1 + time || id)" ) %>% as.formula() %>% bf()
 )
 
-# fit the model with Student response function
-m <- list(
-  m0_base = brm_multiple(
-    formula = f0.drs, family = student(), prior = p0, data = d3, sample_prior = T,
-    seed = s, chains = ch, iter = it, warmup = wu, control = list( adapt_delta = ad ),
-    file = "models/m0_base.rds", save_model = "models/m0_base.stan"
+# set-up priors for the model m1 (cognitive domains lasso)
+p <- list(
+  m1_lasso_doms = c(
+    # fixed effects
+    prior( normal(0.3, .1), class = Intercept ),
+    prior( lasso(1), class = b ),
+    # random effects
+    prior( normal(0, .1), class = sd, coef = Intercept, group = id ),
+    prior( normal(0, .1), class = sd, coef = time, group = id ),
+    # other distributional parameters
+    prior( exponential(1), class = sigma ),
+    prior( gamma(2, 0.1), class = nu )
+    )
   )
-)
+
+# add priors for models m2 (cognitive tests lasso) and m3 (congnitive domains flat priors)
+p$m2_lasso_tests <- p$m1_doms # the cognitive tests lasso model have identical priors to m1
+p$m3_flat_doms <- NULL # default priors for the cognitive domains flat model
 
 
-# ----------- primary model with uncorrelated random-effects  -----------
+# ---- primary models fitting ----
 
-# set-up the linear model
-f1.drs <- paste0(
-  "drs | cens(cens_drs) ~ 1 + ", # outcome and intercept
-  paste( "time", doms, sep = " * " , collapse = " + " ), # population-level effects/fixed-effects
-  " + (1 + time || id)"  # varying-effects (patient-level)/random-effects
-) %>% as.formula %>% bf
+# prepare a list for single models
+m <- list()
 
-# set-up priors
-p1 <- p0[ -which(p0$class == "cor"), ]
+# conduct model fitting
+for ( i in names(f) ) m[[i]] <- brm_multiple( formula = f[[i]], family = student(), prior = p[[i]],
+                                              data = d3, sample_prior = T, seed = s, chains = ch,
+                                              iter = it, warmup = wu, control = list( adapt_delta = ad ),
+                                              file = paste0( "models/",i,".rds" ),
+                                              save_model = paste0("models/",i,".stan")
+                                              )
 
-# fit the model with Student response function
-m$m1_nocov <- brm_multiple(
-  formula = f1.drs, family = student(), prior = p1, data = d3, sample_prior = T,
-  seed = s, chains = ch, iter = it, warmup = wu, control = list( adapt_delta = ad ),
-  file = "models/m1_nocov.rds", save_model = "models/m1_nocov.stan"
-)
-
-
-# ----------- sensitivity check with flat priors  -----------
-
-# the same linear model as for m1
-f2.drs <- f1.drs
-
-# will be using brms default priors
-p2 <- NULL
-
-# fit the model with Student response function
-m$m2_flat_priors <- brm_multiple(
-  formula = f2.drs, family = student(), prior = p2, data = d3, sample_prior = T,
-  seed = s, chains = ch, iter = it, warmup = wu, control = list( adapt_delta = ad ),
-  file = "models/m2_flat_priors.rds", save_model = "models/m2_flat_priors.stan"
-)
-
-
-# ----------- model with covariates  -----------
-
-# set contrast for sex as a factor
-for( i in 1:imp ) contrasts(d3[[i]]$sex) <- -contr.sum(2)/2 # female = -0.5, male = 0.5
-
-# set-up the linear model for outcome
-f3.drs <- paste0( "drs | cens(cens_drs) ~ 1 + age + mi(bdi) + mi(led) + ", # outcome and intercept
-                  paste( "time", doms, sep = " * " , collapse = " + " ), # population-level effects/fixed-effects
-                  " + (1 + time || id)"  # varying-effects (patient-level)/random-effects
-                  ) %>% as.formula %>% bf + student()
-
-# set-up linear models for covariates with missing values
-f3.bdi <- bf( bdi | mi() ~ 1 + time + sex + age + mi(led) + (1 + time || id) ) + gaussian()
-f3.led <- bf( led | mi() ~ t2(time) + (1 | id) ) + gaussian()
-
-# set-up priors
-p3 <- c(
-  # DRS-2
-  prior( normal(0.3, .1), class = Intercept, resp = drs ),
-  prior( normal(-.2, .1), class = b, coef = time, resp = drs ),
-  prior( normal(0, .1), class = b, coef = age, resp = drs ),
-  prior( normal(0, .1), class = b, coef = mibdi, resp = drs ),
-  prior( normal(0, .1), class = b, coef = miled, resp = drs ),
-  prior( normal(0, .1), class = b, coef = proc_spd, resp = drs ),
-  prior( normal(0, .1), class = b, coef = epis_mem, resp = drs ),
-  prior( normal(0, .1), class = b, coef = verb_wm, resp = drs ),
-  prior( normal(0, .1), class = b, coef = visp_mem, resp = drs ),
-  prior( normal(0, .1), class = b, coef = set_shift, resp = drs ),
-  prior( normal(0, .1), class = b, coef = anxiety, resp = drs ),
-  prior( normal(0, .1), class = b, coef = visp_wm, resp = drs ),
-  prior( normal(0, .1), class = b, coef = time:proc_spd, resp = drs ),
-  prior( normal(0, .1), class = b, coef = time:epis_mem, resp = drs ),
-  prior( normal(0, .1), class = b, coef = time:verb_wm, resp = drs ),
-  prior( normal(0, .1), class = b, coef = time:visp_mem, resp = drs ),
-  prior( normal(0, .1), class = b, coef = time:set_shift, resp = drs ),
-  prior( normal(0, .1), class = b, coef = time:anxiety, resp = drs ),
-  prior( normal(0, .1), class = b, coef = time:visp_wm, resp = drs ),
-  prior( normal(0, .1), class = sd, coef = Intercept, group = id, resp = drs ),
-  prior( normal(0, .1), class = sd, coef = time, group = id, resp = drs ),
-  prior( exponential(1), class = sigma, resp = drs ),
-  prior( gamma(2, 0.1), class = nu, resp = drs ),
-  # BDI-II
-  prior( normal(.6, .5), class = Intercept, resp = bdi ),
-  prior( normal(0, .5), class = b, coef = time, resp = bdi ),
-  prior( normal(0, .5), class = b, coef = sex1, resp = bdi ),
-  prior( normal(0, .5), class = b, coef = miled, resp = bdi ),
-  prior( normal(0, .5), class = sd, coef = Intercept, group = id, resp = bdi ),
-  prior( normal(0, .5), class = sd, coef = time, group = id, resp = bdi ),
-  prior( exponential(1), class = sigma, resp = bdi ),
-  # LEDD
-  prior( normal(0, 100), class = Intercept, resp = led ),
-  prior( normal(0, 100), class = b, coef = t2time_1, resp = led ),
-  prior( normal(0, .5), class = sd, coef = Intercept, group = id, resp = led ),
-  prior( exponential(1), class = sigma, resp = led )
-)
-
-# fit the model as defined above
-m$m3_wcov <- brm_multiple(
-  formula = f3.drs + f3.bdi + f3.led, prior = p3, data = d3, sample_prior = F, # not saving priors to spare some memory (and because I don`t need them for this model
-  seed = s, chains = ch, iter = it, warmup = wu, control = list( adapt_delta = .99 ),
-  file = "models/m3_wcov.rds", save_model = "models/m3_wcov.stan"
-)
 
 # ----------- soft model checking -----------
 
 # print the highest Rhat to get an idea whether chains converged
 sapply( names(m) , function(i) max(m[[i]]$rhats ) )
 
-# keep only the primary model for next calculations to spare time
-m <- m$m1_nocov
 
-# clean environment to spare RAM
+# ---- PSIS-LOO for model model comparisons ----
+
+# clean the environment
 rm( list = ls()[ !( ls() %in% c( "d3", "imp", "m" ) ) ] )
+m$m3_flat_doms <- NULL
 gc()
 
-# compute PSIS-LOO for each imputation in the primary model
-# first read loo if there is already something computed
-if ( file.exists("models/dbs_longCOG_psis-loo.rds") ) l <- readRDS( "models/dbs_longCOG_psis-loo.rds" )
+# prepare a list for PSIS-LOO estimates
+l <- list()
 
-# if no PSIS-LOO was already computed, start from a scratch
-if (!exists("l") ) {
-  l <- list()
-  for ( i in 1:imp ) {
-    l[[i]] <- loo( m , newdata = d3[[i]], pointwise = T )
-    saveRDS( l, "models/dbs_longCOG_psis-loo.rds" ) # save after each iteration
-    print(i) # print the number of the last data set with PSIS-LOO
-  }
-  # otherwise continue from the next data set after the last one with already computed PSIS-LOO
-} else {
-  for ( i in 1:(imp-1) ) {
-    i = length(l)
-    if ( i < imp ) {
-      l[[i+1]] <- loo( m , newdata = d3[[i+1]], pointwise = T )
-      saveRDS( l, "models/dbs_longCOG_psis-loo.rds" )
-      print(i+1) # print the number of the last data set with PSIS-LOO
-    }
+# fill the l list with PSIS-LOO of m1 and m2 (which are to be compared)
+for ( i in names(m)[1:2] ) {
+  for ( j in 1:imp ) {
+    l[[i]][[j]] <- loo( m[[i]], newdata = d3[[j]])
+    saveRDS( l, "models/lasso_psis_loo.rds" ) # save after each iteration to keep it safe
   }
 }
