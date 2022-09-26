@@ -293,17 +293,18 @@ t_comp <- sapply(
           ci_upp = elpd_dif + 1.96 * se_dif,
           sig_dif = ifelse( ci_low > 0 | ci_upp < 0, "*", "" ),
           winner = ifelse( elpd_dif < 0, "domains", "tests" )
-          ) %>%
-  mutate_if( is.numeric, ~ round(.,2) %>% sprintf("%.2f",.) )
-
-# save the table
-write.table( t_comp, file = "temp/tab1_model_comparisons.csv", sep = ",", row.names = F )
-
-
-# ---- posterior estimands visualization ----
+          )
 
 # prepare a folder for results (temporary)
 if( !dir.exists("temp") ) dir.create("temp")
+
+# save the table
+write.table( t_comp %>% mutate_if( is.numeric, ~ round(.,2) %>% sprintf("%.2f",.) ),
+             file = "temp/tab1_model_comparisons.csv", sep = ",", row.names = F
+            )
+
+
+# ---- posterior estimands visualization ----
 
 # extract posterior draws from both models
 post <- list()
@@ -339,7 +340,7 @@ for ( i in names(t_post) ) f_post[[i]] <- t_post[[i]] %>%
   coord_flip()
 
 # arrange the plots
-( f_post$m1_lasso_doms | f_post$m2_lasso_tests ) + plot_annotation( tag_levels = "a" )
+( f_post$m1_lasso_doms | f_post$m2_lasso_tests )
 
 # save it
 ggsave( "temp/fig1_prediction_terms.jpg" , dpi = 300, width = 1.3*10.1, height = 1.3*6.54 )
