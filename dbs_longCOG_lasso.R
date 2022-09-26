@@ -8,10 +8,14 @@ setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
 
 # list required packages into a character object
 pkgs <- c(
-  "dplyr", # for objects manipulation
+  "dplyr", # for data wrangling
+  "tidyverse", # for more data wrangling
   "missMDA", # for imputation
   "psych", # for EFA
-  "brms" # for Bayesian model fitting / interface with Stan
+  "brms", # for Bayesian model fitting / interface with Stan
+  "tidybayes", # for posterior manipulation
+  "ggplot2", # for plotting
+  "patchwork" # for ggplots manipulation
 )
 
 # load or install each of the packages as needed
@@ -58,13 +62,6 @@ nb <- estim_ncpPCA( d2[,-1] , ncp.min = 0, ncp.max = 10 , nbsim = imp )
 # impute via PCA-based multiple imputation (n = 100 imputations)
 set.seed(s) # set seed for reproducibility
 d2.imp <- MIPCA( d2[ ,- 1] , ncp = nb$ncp , nboot = imp )
-
-# calculate parallel test for each imputed data set 
-p.test <- lapply( 1:imp , function(i) fa.parallel( d2.imp$res.MI[[i]] , plot = F ) )
-
-# look at the results of parallel tests
-# note, does not replicate even with a seed set
-table( sapply( 1:imp , function(i) p.test[[i]]$nfact ) )
 
 # fit EFA to each imputed data set with 3:8 factors
 # loop through all 100 data sets and  three to eight latent factors for each imputation
@@ -173,8 +170,8 @@ for ( i in 1:imp ) {
   # start with pre-processing the cognitive domains
   for ( j in doms ) {
     # calculate scaling values
-    scl$M[[j]][[i]] <- efa[[i]][[nf-2]]$scores[,j] %>% mean()
-    scl$SD[[j]][[i]] <- efa[[i]][[nf-2]]$scores[,j] %>% sd()
+    scl$M[[j]][[i]] <-d3[[i]][[j]] %>% mean()
+    scl$SD[[j]][[i]] <- d3[[i]][[j]] %>% sd()
     # scale in the jth imputed data set
     d3[[i]][[j]] <- case_when(
       # all but anxiety measures will be inverse such that parameters
@@ -186,8 +183,8 @@ for ( i in 1:imp ) {
   # next pre-process single cognitive tests
   for ( j in tests ) {
     # calculate scaling values
-    scl$M[[j]][[i]] <- d2.imp$res.MI[[i]][,j] %>% mean()
-    scl$SD[[j]][[i]] <- d2.imp$res.MI[[i]][,j] %>% sd()
+    scl$M[[j]][[i]] <- d3[[i]][[j]] %>% mean()
+    scl$SD[[j]][[i]] <- d3[[i]][[j]] %>% sd()
     # scale in the jth imputed data set
     if ( j %in% c( paste0("b_tmt_",c("a","b")), paste0("b_pst_",c("d","w","c")), paste0("b_staix",1:2) ) ) {
       # all but reaction speed and anxiety measures will be inversed such that parameters
@@ -202,7 +199,7 @@ options( mc.cores = parallel::detectCores() ) # use all parallel CPU cores
 ch = 4 # number of chains
 it = 2000 # iterations per chain
 wu = 500 # warm-up iterations, to be discarded
-ad = .99 # adapt_delta parameter
+ad = .95 # adapt_delta parameter
 
 # save the data and scaling values for post-processing
 saveRDS( list(d1 = d1, d3 = d3, scl = scl), "data/long_dat.rds" )
@@ -233,7 +230,7 @@ p <- list(
   )
 
 # add priors for models m2 (cognitive tests lasso) and m3 (congnitive domains flat priors)
-p$m2_lasso_tests <- p$m1_doms # the cognitive tests lasso model have identical priors to m1
+p$m2_lasso_tests <- p$m1_lasso_doms # the cognitive tests lasso model have identical priors to m1
 p$m3_flat_doms <- NULL # default priors for the cognitive domains flat model
 
 
@@ -246,6 +243,7 @@ m <- list()
 for ( i in names(f) ) m[[i]] <- brm_multiple( formula = f[[i]], family = student(), prior = p[[i]],
                                               data = d3, sample_prior = T, seed = s, chains = ch,
                                               iter = it, warmup = wu, control = list( adapt_delta = ad ),
+                                              save_pars = save_pars( all = T ),
                                               file = paste0( "models/",i,".rds" ),
                                               save_model = paste0("models/",i,".stan")
                                               )
@@ -271,6 +269,77 @@ l <- list()
 for ( i in names(m)[1:2] ) {
   for ( j in 1:imp ) {
     l[[i]][[j]] <- loo( m[[i]], newdata = d3[[j]])
-    saveRDS( l, "models/lasso_psis_loo.rds" ) # save after each iteration to keep it safe
+    saveRDS( l, "models/horseshoe_psis_loo.rds" ) # save after each iteration to keep it safe
   }
 }
+
+# compute loo comparisons
+l_comp <- lapply( 1:imp, function(i) loo_compare( l$m1_lasso_doms[[i]], l$m2_lasso_tests[[i]] ) )
+
+# prepare table for loo comparisons
+t_comp <- sapply(
+  1:imp, function(i)
+    cbind(
+      # negative = m1_lasso_doms wins, positive = m2_lasso_tests wins
+      if ( l$m1_lasso_doms[[i]]$estimates[1,1] == l_comp[[i]][,"elpd_loo"][1] ) l_comp[[i]][2,"elpd_diff"] else -l_comp[[i]][2,"elpd_diff"],
+      l_comp[[i]][2,"se_diff"]
+    )
+) %>%
+  t() %>%
+  as.data.frame() %>%
+  `colnames<-`( c("elpd_dif","se_dif") ) %>%
+  rownames_to_column( "dataset" ) %>%
+  mutate( ci_low = elpd_dif - 1.96 * se_dif,
+          ci_upp = elpd_dif + 1.96 * se_dif,
+          sig_dif = ifelse( ci_low > 0 | ci_upp < 0, "*", "" ),
+          winner = ifelse( elpd_dif < 0, "domains", "tests" )
+          ) %>%
+  mutate_if( is.numeric, ~ round(.,2) %>% sprintf("%.2f",.) )
+
+# save the table
+write.table( t_comp, file = "temp/tab1_model_comparisons.csv", sep = ",", row.names = F )
+
+
+# ---- posterior estimands visualization ----
+
+# prepare a folder for results (temporary)
+if( !dir.exists("temp") ) dir.create("temp")
+
+# extract posterior draws from both models
+post <- list()
+for ( i in names(m) ) post[[i]] <- m[[i]] %>%
+  spread_draws( `.*time:.*` , regex = T ) %>%
+  select( starts_with("b_") )
+
+# prepare tables for medians and HDIs
+t_post <- list()
+for ( i in names(m) ) t_post[[i]] <- rbind( apply( post[[i]], 2, median ),
+                                            apply( post[[i]], 2, hdi, .95 )
+                                            ) %>%
+  t() %>% as.data.frame() %>%
+  `colnames<-`( c("median","ppi_low","ppi_upp") ) %>%
+  rownames_to_column( var = "term" )
+
+# add order to each table
+for ( i in names(t_post) ) t_post[[i]] <- t_post[[i]][ order(t_post[[i]]$median,decreasing=T), ] %>%
+  mutate( order = 1:nrow(.) )
+
+# set ggplot theme
+theme_set( theme_classic(base_size = 18) )
+
+# plot them
+f_post <- list()
+for ( i in names(t_post) ) f_post[[i]] <- t_post[[i]] %>%
+  ggplot( aes( x = reorder(term, order), y = median, ymin = ppi_low, ymax = ppi_upp) ) +
+  geom_pointrange( shape = 21, size = 3, fatten = 1 , fill = "black", color = "grey" ) +
+  geom_hline( yintercept = 0, size = 2/3, color = "red" ) +
+  labs( title = paste0("Prediction by cognitive ",
+                       case_when( i == "m1_lasso_doms" ~ "domains", i == "m2_lasso_tests" ~ "tests") ),
+        x = NULL, y = "Effect size (standardized)") +
+  coord_flip()
+
+# arrange the plots
+( f_post$m1_lasso_doms | f_post$m2_lasso_tests ) + plot_annotation( tag_levels = "a" )
+
+# save it
+ggsave( "temp/fig1_prediction_terms.jpg" , dpi = 300, width = 1.3*10.1, height = 1.3*6.54 )
