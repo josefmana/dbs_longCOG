@@ -170,8 +170,8 @@ for ( i in 1:imp ) {
   # start with pre-processing the cognitive domains
   for ( j in doms ) {
     # calculate scaling values
-    scl$M[[j]][[i]] <-d3[[i]][[j]] %>% mean()
-    scl$SD[[j]][[i]] <- d3[[i]][[j]] %>% sd()
+    scl$M[[j]][[i]] <- efa[[i]][[nf-2]]$scores[,j] %>% mean()
+    scl$SD[[j]][[i]] <- efa[[i]][[nf-2]]$scores[,j] %>% sd()
     # scale in the jth imputed data set
     d3[[i]][[j]] <- case_when(
       # all but anxiety measures will be inverse such that parameters
@@ -183,8 +183,8 @@ for ( i in 1:imp ) {
   # next pre-process single cognitive tests
   for ( j in tests ) {
     # calculate scaling values
-    scl$M[[j]][[i]] <- d3[[i]][[j]] %>% mean()
-    scl$SD[[j]][[i]] <- d3[[i]][[j]] %>% sd()
+    scl$M[[j]][[i]] <- d2.imp$res.MI[[i]][,j] %>% mean()
+    scl$SD[[j]][[i]] <- d2.imp$res.MI[[i]][,j] %>% sd()
     # scale in the jth imputed data set
     if ( j %in% c( paste0("b_tmt_",c("a","b")), paste0("b_pst_",c("d","w","c")), paste0("b_staix",1:2) ) ) {
       # all but reaction speed and anxiety measures will be inversed such that parameters
@@ -199,7 +199,7 @@ options( mc.cores = parallel::detectCores() ) # use all parallel CPU cores
 ch = 4 # number of chains
 it = 2000 # iterations per chain
 wu = 500 # warm-up iterations, to be discarded
-ad = .95 # adapt_delta parameter
+ad = .99 # adapt_delta parameter
 
 # save the data and scaling values for post-processing
 saveRDS( list(d1 = d1, d3 = d3, scl = scl), "data/long_dat.rds" )
@@ -210,8 +210,7 @@ saveRDS( list(d1 = d1, d3 = d3, scl = scl), "data/long_dat.rds" )
 # set-up the linear models
 f <- list(
   m1_lasso_doms = paste0( "drs | cens(cens_drs) ~ 1 + ", paste("time", doms, sep = " * ", collapse = " + "), " + (1 + time || id)" ) %>% as.formula() %>% bf(),
-  m2_lasso_tests = paste0( "drs | cens(cens_drs) ~ 1 + ", paste("time", tests, sep = " * ", collapse = " + "), " + (1 + time || id)" ) %>% as.formula() %>% bf(),
-  m3_flat_doms = paste0( "drs | cens(cens_drs) ~ 1 + ", paste("time", doms, sep = " * ", collapse = " + "), " + (1 + time || id)" ) %>% as.formula() %>% bf()
+  m2_lasso_tests = paste0( "drs | cens(cens_drs) ~ 1 + ", paste("time", tests, sep = " * ", collapse = " + "), " + (1 + time || id)" ) %>% as.formula() %>% bf()
 )
 
 # set-up priors for the model m1 (cognitive domains lasso)
@@ -231,7 +230,6 @@ p <- list(
 
 # add priors for models m2 (cognitive tests lasso) and m3 (congnitive domains flat priors)
 p$m2_lasso_tests <- p$m1_lasso_doms # the cognitive tests lasso model have identical priors to m1
-p$m3_flat_doms <- NULL # default priors for the cognitive domains flat model
 
 
 # ---- primary models fitting ----
@@ -243,7 +241,6 @@ m <- list()
 for ( i in names(f) ) m[[i]] <- brm_multiple( formula = f[[i]], family = student(), prior = p[[i]],
                                               data = d3, sample_prior = T, seed = s, chains = ch,
                                               iter = it, warmup = wu, control = list( adapt_delta = ad ),
-                                              save_pars = save_pars( all = T ),
                                               file = paste0( "models/",i,".rds" ),
                                               save_model = paste0("models/",i,".stan")
                                               )
@@ -252,24 +249,40 @@ for ( i in names(f) ) m[[i]] <- brm_multiple( formula = f[[i]], family = student
 # ----------- soft model checking -----------
 
 # print the highest Rhat to get an idea whether chains converged
-sapply( names(m) , function(i) max(m[[i]]$rhats ) )
+sapply( names(m) , function(i) max(m[[i]]$rhats, na.rm = T ) )
 
 
 # ---- PSIS-LOO for model model comparisons ----
 
 # clean the environment
 rm( list = ls()[ !( ls() %in% c( "d3", "imp", "m" ) ) ] )
-m$m3_flat_doms <- NULL
 gc()
 
-# prepare a list for PSIS-LOO estimates
-l <- list()
+# compute PSIS-LOO for each imputation in the primary models
+# first read loo if there is already something computed
+if ( file.exists("models/lasso_psis_loo.rds") ) l <- readRDS( "models/lasso_psis_loo.rds" )
 
-# fill the l list with PSIS-LOO of m1 and m2 (which are to be compared)
-for ( i in names(m)[1:2] ) {
-  for ( j in 1:imp ) {
-    l[[i]][[j]] <- loo( m[[i]], newdata = d3[[j]])
-    saveRDS( l, "models/horseshoe_psis_loo.rds" ) # save after each iteration to keep it safe
+# if no PSIS-LOO was already computed, start from a scratch
+if (!exists("l") ) {
+  l <- list()
+  for ( i in names(m) ) {
+    for ( j in 1:imp ) {
+      l[[i]][[j]] <- loo( m[[i]] , newdata = d3[[j]] )
+      saveRDS( l, "models/lasso_psis_loo.rds" ) # save after each iteration
+      print( paste0(i,", dataset #",j) ) # print the number of the last data set with PSIS-LOO
+    }
+  }
+  # otherwise continue from the next data set after the last one with already computed PSIS-LOO
+} else {
+  for ( i in names(m) ) {
+    for ( j in 1:(imp-1) ) {
+      j = length(l[[i]])
+      if ( j < imp ) {
+        l[[i]][[j+1]] <- loo( m[[i]] , newdata = d3[[j+1]] )
+        saveRDS( l, "models/lasso_psis_loo.rds" )
+        print(paste0(i,", dataset #",j+1) ) # print the number of the last data set with PSIS-LOO
+      }
+    }
   }
 }
 
