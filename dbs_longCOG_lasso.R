@@ -28,9 +28,9 @@ for ( i in pkgs ) {
 imp = 100 # number of multiple imputations to account for missing pre-surgery data
 s = 87542 # seed for reproducibility
 
-# create folders "models", "figures" and "tables" to store results in
+# create folders "models", "figures" and "tables" (and "temp" for temporary files for now) to store results in
 # prints TRUE and creates the folder if it was not present, prints NULL if the folder was already present.
-sapply( c("models", "figures", "tables"), function(i) if( !dir.exists(i) ) dir.create(i) )
+sapply( c("models", "figures", "tables", "temp"), function(i) if( !dir.exists(i) ) dir.create(i) )
 
 # Note that although I set a seed for all models, the results are only exactly
 # reproducible on the same operating system with the same C++ compiler and version.
@@ -70,7 +70,7 @@ efa <- lapply( 1:imp, function(i)
                                nfactors = j, # fit 3-8 factor solutions
                                rotate = "varimax", # rotate varimax to enforce orthogonality and for interpretation purposes
                                scores = "regression" # compute regression scores for each patient
-  )
+    )
   )
 )
 
@@ -197,20 +197,21 @@ for ( i in 1:imp ) {
 # set rstan options
 options( mc.cores = parallel::detectCores() ) # use all parallel CPU cores
 ch = 4 # number of chains
-it = 2000 # iterations per chain
+it = 2500 # iterations per chain
 wu = 500 # warm-up iterations, to be discarded
 ad = .99 # adapt_delta parameter
 
 # save the data and scaling values for post-processing
-saveRDS( list(d1 = d1, d3 = d3, scl = scl), "data/long_dat.rds" )
+saveRDS( list(d1 = d1, d3 = d3, scl = scl, tests = tests, doms = doms), "data/long_dat.rds" )
 
 
 # ---- models set-up ---- 
 
 # set-up the linear models
 f <- list(
-  m1_lasso_doms = paste0( "drs | cens(cens_drs) ~ 1 + ", paste("time", doms, sep = " * ", collapse = " + "), " + (1 + time || id)" ) %>% as.formula() %>% bf(),
-  m2_lasso_tests = paste0( "drs | cens(cens_drs) ~ 1 + ", paste("time", tests, sep = " * ", collapse = " + "), " + (1 + time || id)" ) %>% as.formula() %>% bf()
+  m1_lasso_doms = paste0( "drs | cens(cens_drs) ~ 1 + ", paste("time", doms, sep = " * ", collapse = " + "), " + (1 + time | id)" ) %>% as.formula() %>% bf(),
+  m2_lasso_tests = paste0( "drs | cens(cens_drs) ~ 1 + ", paste("time", tests, sep = " * ", collapse = " + "), " + (1 + time | id)" ) %>% as.formula() %>% bf(),
+  m3_flat_doms = paste0( "drs | cens(cens_drs) ~ 1 + ", paste("time", doms, sep = " * ", collapse = " + "), " + (1 + time | id)" ) %>% as.formula() %>% bf()
 )
 
 # set-up priors for the model m1 (cognitive domains lasso)
@@ -222,6 +223,7 @@ p <- list(
     # random effects
     prior( normal(0, .1), class = sd, coef = Intercept, group = id ),
     prior( normal(0, .1), class = sd, coef = time, group = id ),
+    prior( lkj(2), class = cor ),
     # other distributional parameters
     prior( exponential(1), class = sigma ),
     prior( gamma(2, 0.1), class = nu )
@@ -230,6 +232,7 @@ p <- list(
 
 # add priors for models m2 (cognitive tests lasso) and m3 (congnitive domains flat priors)
 p$m2_lasso_tests <- p$m1_lasso_doms # the cognitive tests lasso model have identical priors to m1
+p$m3_flat_doms <- NULL
 
 
 # ---- primary models fitting ----
@@ -256,6 +259,7 @@ sapply( names(m) , function(i) max(m[[i]]$rhats, na.rm = T ) )
 
 # clean the environment
 rm( list = ls()[ !( ls() %in% c( "d3", "imp", "m" ) ) ] )
+m$m3_flat_doms <- NULL
 gc()
 
 # compute PSIS-LOO for each imputation in the primary models

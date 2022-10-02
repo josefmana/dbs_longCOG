@@ -1,5 +1,17 @@
 // generated with brms 2.17.0
 functions {
+ /* compute correlated group-level effects
+  * Args:
+  *   z: matrix of unscaled group-level effects
+  *   SD: vector of standard deviation parameters
+  *   L: cholesky factor correlation matrix
+  * Returns:
+  *   matrix of scaled group-level effects
+  */
+  matrix scale_r_cor(matrix z, vector SD, matrix L) {
+    // r is stored in another dimension order than z
+    return transpose(diag_pre_multiply(SD, L) * z);
+  }
   /* compute the logm1 link
    * Args:
    *   p: a positive scalar
@@ -35,6 +47,7 @@ data {
   // group-level predictor values
   vector[N] Z_1_1;
   vector[N] Z_1_2;
+  int<lower=1> NC_1;  // number of group-level correlations
   int prior_only;  // should the likelihood be ignored?
 }
 transformed data {
@@ -54,14 +67,19 @@ parameters {
   real<lower=0> sigma;  // dispersion parameter
   real<lower=1> nu;  // degrees of freedom or shape
   vector<lower=0>[M_1] sd_1;  // group-level standard deviations
-  vector[N_1] z_1[M_1];  // standardized group-level effects
+  matrix[M_1, N_1] z_1;  // standardized group-level effects
+  cholesky_factor_corr[M_1] L_1;  // cholesky factor of correlation matrix
 }
 transformed parameters {
-  vector[N_1] r_1_1;  // actual group-level effects
-  vector[N_1] r_1_2;  // actual group-level effects
+  matrix[N_1, M_1] r_1;  // actual group-level effects
+  // using vectors speeds up indexing in loops
+  vector[N_1] r_1_1;
+  vector[N_1] r_1_2;
   real lprior = 0;  // prior contributions to the log posterior
-  r_1_1 = (sd_1[1] * (z_1[1]));
-  r_1_2 = (sd_1[2] * (z_1[2]));
+  // compute actual group-level effects
+  r_1 = scale_r_cor(z_1, sd_1, L_1);
+  r_1_1 = r_1[, 1];
+  r_1_2 = r_1[, 2];
   lprior += normal_lpdf(Intercept | 0.3, 0.1);
   lprior += chi_square_lpdf(lasso_inv_lambda | lasso_df);
   lprior += exponential_lpdf(sigma | 1);
@@ -71,6 +89,7 @@ transformed parameters {
     - 1 * normal_lccdf(0 | 0, 0.1);
   lprior += normal_lpdf(sd_1[2] | 0, 0.1)
     - 1 * normal_lccdf(0 | 0, 0.1);
+  lprior += lkj_corr_cholesky_lpdf(L_1 | 2);
 }
 model {
   // likelihood including constants
@@ -95,12 +114,14 @@ model {
   // priors including constants
   target += lprior;
   target += double_exponential_lpdf(b | 0, lasso_scale * lasso_inv_lambda);
-  target += std_normal_lpdf(z_1[1]);
-  target += std_normal_lpdf(z_1[2]);
+  target += std_normal_lpdf(to_vector(z_1));
 }
 generated quantities {
   // actual population-level intercept
   real b_Intercept = Intercept - dot_product(means_X, b);
+  // compute group-level correlations
+  corr_matrix[M_1] Cor_1 = multiply_lower_tri_self_transpose(L_1);
+  vector<lower=-1,upper=1>[NC_1] cor_1;
   // additionally sample draws from priors
   real prior_Intercept = normal_rng(0.3,0.1);
   real prior_lasso_inv_lambda = chi_square_rng(lasso_df);
@@ -108,6 +129,13 @@ generated quantities {
   real prior_nu = gamma_rng(2,0.1);
   real prior_sd_1__1 = normal_rng(0,0.1);
   real prior_sd_1__2 = normal_rng(0,0.1);
+  real prior_cor_1 = lkj_corr_rng(M_1,2)[1, 2];
+  // extract upper diagonal of correlation matrix
+  for (k in 1:M_1) {
+    for (j in 1:(k - 1)) {
+      cor_1[choose(k - 1, 2) + j] = Cor_1[j, k];
+    }
+  }
   // use rejection sampling for truncated priors
   while (prior_lasso_inv_lambda < 0) {
     prior_lasso_inv_lambda = chi_square_rng(lasso_df);
