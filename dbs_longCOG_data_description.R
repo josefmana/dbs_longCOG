@@ -1,5 +1,4 @@
-# All analyses reported in the article (Mana et al., in review) ran in R version 4.2.0 (2022-04-22),
-# on aarch64-apple-darwin20 (64-bit) platform under macOS Monterey 12.6.
+# Ran in R version 4.2.0 (2022-04-22), on aarch64-apple-darwin20 (64-bit) platform under macOS Monterey 12.6.
 
 # I used the following versions of packages employed: dplyr_1.0.9, tidyverse_1.3.1, DiagrammeR_1.0.9,
 # DiagrammeRsvg_0.1, rsvg_2.3.1, ggplot2_3.3.6 and patchwork_1.1.1.
@@ -7,60 +6,42 @@
 # set working directory (works only in RStudio)
 setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
 
-# list required packages into a character object
+# list required packages
 pkgs <- c(
-  "dplyr", # for data wrangling
-  "tidyverse", # for data wrangling
-  "DiagrammeR", # for flowcharts
-  "DiagrammeRsvg", # for saving plots created in DiagrammeR
-  "rsvg", # for saving plots created in DiagrammeR
-  "ggplot2", # for plotting
-  "patchwork" # for ggplots manipulations
+  "dplyr", "tidyverse", # for data wrangling
+  "DiagrammeR", "DiagrammeRsvg", "rsvg", # for flowcharts
+  "ggplot2", "patchwork" # for general plotting
 )
 
-# load or install each of the packages as needed
+# load or install packages as needed
 for ( i in pkgs ) {
   if ( i %in% rownames( installed.packages() ) == F ) install.packages(i) # install if it ain't installed yet
   if ( i %in% names( sessionInfo()$otherPkgs ) == F ) library( i , character.only = T ) # load if it ain't loaded yet
 }
 
-# create folders "models", "figures" and "tables" to store results in
+# create folders "models", "figures", "tables" and "sessions" to store results and sessions info in
 # prints TRUE and creates the folder if it was not present, prints NULL if the folder was already present.
-sapply( c("models", "figures", "tables"), function(i) if( !dir.exists(i) ) dir.create(i) )
+sapply( c("models", "figures", "tables", "sessions"), function(i) if( !dir.exists(i) ) dir.create(i) )
 
 # set ggplot theme
-theme_set( theme_classic(base_size = 25) )
-
-# create folders "models", "figures" and "tables" to store results in
-# prints TRUE and creates the folder if it was not present, prints NULL if the folder was already present.
-sapply(
-  c("models", "figures", "tables"), # folders to be created
-  function(i)
-    if( !dir.exists(i) ) dir.create(i)
-)
+theme_set( theme_classic(base_size = 14) )
 
 # read the data set and prepare subsets for individual analyses
 d0 <- read.csv( "data/20220508_dbs_longCOG_data.csv" , sep = "," )
 d1 <- d0[ d0$included == 1 , ] # only STN-DBS treated patients with pre- and post-surgery data
 d2 <- d1[ d1$ass_type == "pre" , ] # only pre-surgery assessments of included patients
 
-# read a file with mapping variables' names used in the script to variables' names for the manuscript
+# read a file containing mapping of variables' names used in the script to variables' names for the manuscript
 var_nms <- read.csv( "data/var_nms.csv" , sep = ";" , row.names = 1 , encoding = "UTF-8")
 
 
 # ----------- Fig 1 participant inclusion flowchart  -----------
 
 # check that when selecting only rows containing pre-surgery assessment there ain't no patient duplicated
-isTRUE(
-  all.equal(
-    d0[ d0$ass_type == "pre" , ]$id,
-    unique( d0[ d0$ass_type == "pre" , ]$id )
-  )
-) # TRUE
+isTRUE( all.equal( d0[ d0$ass_type == "pre" , ]$id, unique( d0[ d0$ass_type == "pre" , ]$id ) ) ) # TRUE
 
-# create a table summarizing reasons for excluding patients
-t0 <- table(d0[ d0$ass_type == "pre" , ]$why_excluded)
-print(t0)
+# print a table summarizing reasons for excluding patients
+table(d0[ d0$ass_type == "pre" , ]$why_excluded) %>% print()
 
 # using numbers from t0 create an inclusion/exclusion flowchart
 f1 <- " digraph {
@@ -129,10 +110,7 @@ f1 <- " digraph {
   }"
 
 # save the flowchart as Fig 1
-grViz(f1) %>%
-  export_svg %>%
-  charToRaw %>%
-  rsvg_pdf("figures/Fig 1 inclusion-exclusion flowchart.pdf")
+grViz(f1) %>% export_svg %>% charToRaw %>% rsvg_png("figures/Fig 1 inclusion-exclusion flowchart.png")
 
 
 # ----------- Fig S1 distribution of assessments  -----------
@@ -146,9 +124,9 @@ f.s1$hist <- d1[ complete.cases(d1$drs_tot) , ] %>%
   ggplot( aes(x = time_y) ) +
   stat_bin( binwidth = .5, position = position_nudge(x = -.5*.5) ) + # creates bars
   stat_bin( binwidth = .5, geom = "text", aes(label = ..count..), vjust = -1.0,
-            position = position_nudge(x = -.5*.5), size = 6 ) + # add numbers
+            position = position_nudge(x = -.5*.5), size = 4 ) + # add numbers
   labs( x = "Time from STN-DBS surgery (years)", y = "Number of Assessments" ) +
-  scale_y_continuous( expand = c(0, 0), limits = c(0, 69), breaks = seq(0, 60, 10), labels = seq(0, 60, 10) ) +
+  scale_y_continuous( expand = c(0, 0), limits = c(0, 74), breaks = seq(0, 70, 10), labels = seq(0, 70, 10) ) +
   scale_x_continuous( limits = c(-2, 12), breaks = seq(-2, 12, 1), labels = seq(-2, 12, 1) )
 
 # prepare a bin plot showing distribution of the number of assessments per patient (Fig S1b)
@@ -156,7 +134,7 @@ f.s1$bin <- table( d1[ complete.cases(d1$drs_tot) , ]$id ) %>%
   as.data.frame() %>%
   ggplot( aes(x = Freq) ) +
   geom_bar( width = .25 ) +
-  geom_text( stat = "count", aes(label = ..count..), vjust = -1.0, size = 6 ) +
+  geom_text( stat = "count", aes(label = ..count..), vjust = -1.0, size = 4 ) +
   scale_y_continuous( expand = c(0, 0), limits = c(0, 65) ) +
   labs( x = "Number of Assessments per Patient", y = "Number of Patients" )
 
@@ -164,70 +142,93 @@ f.s1$bin <- table( d1[ complete.cases(d1$drs_tot) , ]$id ) %>%
 f.s1$hist / f.s1$bin + plot_annotation( tag_levels = "a" ) & theme( plot.tag = element_text(face = "bold") )
 
 # save as Fig S1
-ggsave( "figures/Fig S1 distribution of assessments.jpg" , height = 1.83 * 6.12 , width = 1 * 11.6 , dpi = 600 )
+ggsave( "figures/Fig S1 distribution of assessments.jpg", dpi = 600 )
 
 
-# ----------- Tab 1 sample characteristics  -----------
+# ----------- Tab 1 & Tab 2 sample characteristics -----------
 
-# list all baseline characteristics and stimulation parameters
-vars <- names(d2)[which(names(d2)=="age_stim_y"):which(names(d2)=="fp_dr")]
-pars <- names(d1)[which(names(d1)=="current_r_mA"):which(names(d1)=="frequency_l_Hz")]
-
-# prepare a data frame to be filled-in with baseline characteristics (and stimulation parameters next)
-t1 <- list(
-  base = data.frame( N = rep( NA, length(vars) ), Md = NA, `Min-Max` = NA, M = NA, SD = NA, row.names = vars ),
-  stim = data.frame( N = rep( NA, length(pars) ), Md = NA, `Min-Max` = NA, M = NA, SD = NA, row.names = pars )
+# list all variables for Tab 1 (clinics and stimulation parameters) and Tab 2 (neuropsychology)
+nms <- list(
+  dems = names(d2)[which(names(d2)=="age_stim_y"):which(names(d2)=="mds_updrs_iii_med_off")],
+  pars = names(d1)[which(names(d1)=="current_r_mA"):which(names(d1)=="frequency_l_Hz")],
+  tests = names(d2)[which(names(d2)=="drs_tot"):which(names(d2)=="fp_dr")]
 )
 
+# prepare a data frame to be filled-in with baseline characteristics and stimulation parameters
+t <- lapply(
+  names(nms), function(i)
+    data.frame( N = rep(NA,length(nms[[i]])), Md = NA, `Min-Max` = NA, M = NA, SD = NA, row.names = nms[[i]] )
+) %>% `names<-`( names(nms) )
+
 # fill-in statistics of all baseline variables but sex (which is nominal)
-for ( i in vars[-3] ) {
-  t1$base[ i , "N" ] <- sum( !is.na(d2[[i]]) ) # number of data points
-  t1$base[ i , "Md" ] <- sprintf( "%.0f" , round( median(d2[[i]], na.rm = T ) , digits = 0 ) ) # median, rounded to integers
-  t1$base[ i , "Min.Max" ] <- paste0( sprintf( "%.0f" , round( min(d2[[i]], na.rm = T ) , digits = 0 ) ), "-",
-                                      sprintf( "%.0f" , round( max(d2[[i]], na.rm = T ) , digits = 0 ) ) ) # min-max, rounded to integers
-  t1$base[ i , "M" ] <- sprintf( "%.2f" , round( mean(d2[[i]], na.rm = T ) , digits = 2 ) ) # mean, rounded to hundredths
-  t1$base[ i , "SD" ] <- sprintf( "%.2f" , round( sd(d2[[i]], na.rm = T ) , digits = 2 ) ) # SD, rounded to hundredths
+for ( i in names(nms)[c(1,3)] ) {
+  for ( j in nms[[i]] ) {
+    
+    # skip sex
+    if (j == "sex" ) next
+    
+    # fill-in the rest
+    t[[i]][ j , ] <- c(
+      sum( !is.na(d2[[j]]) ), # number of data points
+      sprintf( "%.0f" , round( median(d2[[j]], na.rm = T ) , digits = 0 ) ), # median, rounded to integers
+      paste0( sprintf( "%.0f" , round( min(d2[[j]], na.rm = T ) , digits = 0 ) ), "-",
+              sprintf( "%.0f" , round( max(d2[[j]], na.rm = T ) , digits = 0 ) ) ), # min-max, rounded to integers
+      sprintf( "%.2f" , round( mean(d2[[j]], na.rm = T ) , digits = 2 ) ), # mean, rounded to hundredths
+      sprintf( "%.2f" , round( sd(d2[[j]], na.rm = T ) , digits = 2 ) ) # SD, rounded to hundredths
+    )
+    
+  }
 }
 
 # add frequency of males to the table sex row
-t1$base[ "sex" , c("N","Min.Max")] <- c(
+t$dems[ "sex" , c("N","Min.Max")] <- c(
   sum( !is.na(d2$sex) ), # number of entries
-  # add frequency (percentage) to Min.Max
-  paste0( table(d2$sex)["male"], " (", # frequency
-          sprintf( "%.0f" , round( 100 * ( table(d2$sex)[ "male" ] / sum( table(d2$sex) ) ), 0 ) ), " %)" ) ) # percentage, rounded to integers
+  paste0(
+    table(d2$sex)["male"], " (", # frequency
+    sprintf( "%.0f" , round( 100 * ( table(d2$sex)[ "male" ] / sum( table(d2$sex) ) ), 0 ) ), " %)" # percentage, rounded to integers
+  )
+)
 
 # fill-in statistics of stimulation parameters (all columns but N which I will fill-in by hand because
 # the data are longitudinal and the N column is supposed to represent number of patients, not events)
-for ( i in pars ) {
-  t1$stim[ i , "Md" ] <- sprintf( "%.1f" , round( median( d1[[i]], na.rm = T ) , digits = 1 ) ) # median, rounded to hundredths
-  t1$stim[ i , "Min.Max" ] <- paste0( sprintf( "%.1f" , round( min( d1[[i]], na.rm = T ) , digits = 1 ) ), "-",
-                                      sprintf( "%.1f" , round( max( d1[[i]], na.rm = T ) , digits = 1 ) ) ) # min-max, rounded to decimals
-  t1$stim[ i , "M" ] <- sprintf( "%.2f" , round( mean( d1[[i]], na.rm = T ) , digits = 2 ) ) # mean, rounded to hundredths
-  t1$stim[ i , "SD" ] <- sprintf( "%.2f" , round( sd( d1[[i]], na.rm = T ) , digits = 2 ) ) # SD, rounded to hundredths
-}
+for ( i in nms$pars ) t$pars[ i , 2:ncol(t$pars) ] <- c(
+  sprintf( "%.1f" , round( median( d1[[i]], na.rm = T ) , digits = 1 ) ), # median, rounded to decimals
+  paste0( sprintf( "%.1f" , round( min( d1[[i]], na.rm = T ) , digits = 1 ) ), "-",
+          sprintf( "%.1f" , round( max( d1[[i]], na.rm = T ) , digits = 1 ) ) ), # min-max, rounded to decimals
+  sprintf( "%.2f" , round( mean( d1[[i]], na.rm = T ) , digits = 2 ) ), # mean, rounded to hundredths
+  sprintf( "%.2f" , round( sd( d1[[i]], na.rm = T ) , digits = 2 ) ) # SD, rounded to hundredths
+)
 
 # fill-in number of patients in each row of stimulation parameters table
-t1$stim$N <- c( rep(67,2) , rep(59,2) , rep(nrow(d2),4) )
+t$pars$N <- c( rep(67,2) , rep(59,2) , rep(nrow(d2),4) )
 
-# prepare row names by making them a column and the changing names to a publication-ready format
-for ( i in names(t1) ) t1[[i]] <- t1[[i]] %>% rownames_to_column( var = "Characteristic" )
+# prepare row names by making them into a column
+for ( i in names(t) ) t[[i]] <- t[[i]] %>% rownames_to_column( var = "Characteristic" )
 
-# merge baseline characteristics and stimulation parameters to a single table
-t1 <- do.call( rbind.data.frame, t1 )
+# loop through all variables the pre-tables and change their names accordingly
+for ( i in names(t) ) {
+  for ( j in 1:nrow(t[[i]]) ) {
+    # add indentions in Tab 1 (clinics and parameters) but not Tab 2 (neuropsychology)
+    if (i != "tests" ) t[[i]][j, "Characteristic"] <- paste0( "\t", var_nms[ t[[i]][j,]$Characteristic, ] )
+    else t[[i]][j, "Characteristic"] <- var_nms[ t[[i]][j,]$Characteristic, ]
+  }
+}
 
-# loop through all variables in Tab 1 and change their names accordingly
-for ( i in 1:nrow(t1) ) t1[i, "Characteristic"] <- paste0( "\t", var_nms[ t1[i,]$Characteristic, ] )
+# prepare Tab 1 and Tab 2 proper
+t1 <- do.call( rbind.data.frame, t[1:2] )
+t2 <- t$tests %>% rename( "Test" = "Characteristic" )
 
 # add header before each subsection of Tab 1
 t1 <- t1 %>%
   add_row( Characteristic = "Baseline characteristics" , .before = 1 ) %>%
-  add_row( Characteristic = "Stimulation parameters" , .before = length(vars)+2 )
+  add_row( Characteristic = "Stimulation parameters" , .before = length(nms$dems)+2 )
 
 # save as csv for import to word editor
-write.table( t1, file = "tables/Tab 1 sample characteristics.csv", sep = ",", row.names = F, na = "", quote = F )
+write.table( t1, file = "tables/Tab 1 clinical characteristics.csv", sep = ",", row.names = F, na = "", quote = F )
+write.table( t2, file = "tables/Tab 2 baseline neuropsychology.csv", sep = ",", row.names = F, na = "", quote = F )
 
 
-# ----------- descriptives for in-text reporting -----------
+# ----------- descriptive stats for in-text reporting -----------
 
 # duration of follow-up
 mean( d1[ complete.cases(d1$drs_tot) & d1$ass_type != "pre", ]$time_y ) # 3.54
@@ -240,3 +241,9 @@ max( d1[ complete.cases(d1$drs_tot) & d1$ass_type != "pre", ]$time_y ) # 11.38
 median( table(d1[ complete.cases(d1$drs_tot) , ]$id) ) # 3
 min( table(d1[ complete.cases(d1$drs_tot) , ]$id) ) # 2
 max( table(d1[ complete.cases(d1$drs_tot) , ]$id) ) # 6
+
+
+# ----------- session info -----------
+
+# write the sessionInfo() into a .txt file
+capture.output( sessionInfo(), file = "sessions/data_description.txt" )

@@ -42,30 +42,30 @@ duration_r_us;Pulse duration right (µs)
 duration_l_us;Pulse duration left (µs)
 frequency_r_Hz;Frequency right (Hz)
 frequency_l_Hz;Frequency left (Hz)
-b_tmt_a;TMT-A
-b_tmt_b;TMT-B
-b_ds_f;DS-F
-b_ds_b;DS-B
-b_lns;LNS
-b_ss_f;SS-F
-b_ss_b;SS-B
-b_tol;TOL
-b_pst_d;PST-D
-b_pst_w;PST-W
-b_pst_c;PST-C
-b_cowat;COWAT
-b_cft;CFT
-b_sim;Sim.
-b_ravlt_ir;RAVLT-IR
-b_ravlt_b;RAVLT-B
-b_ravlt_dr;RAVLT-DR
-b_ravlt_rec50;RAVLT-Rec50
-b_ravlt_rec15;RAVLT-Rec15
-b_fp_ir;FP-IR
-b_fp_dr;FP-DR
-b_staix1;STAI-X1
-b_staix2;STAI-X2
-proc_spd;Processing speed
+cs_tmt_a;TMT-A
+cs_tmt_b;TMT-B
+cs_ds_f;DS-F
+cs_ds_b;DS-B
+cs_lns;LNS
+cs_ss_f;SS-F
+cs_ss_b;SS-B
+cs_tol;TOL
+cs_pst_d;PST-D
+cs_pst_w;PST-W
+cs_pst_c;PST-C
+cs_cowat;COWAT
+cs_cft;CFT
+cs_sim;Sim.
+cs_ravlt_ir;RAVLT-IR
+cs_ravlt_b;RAVLT-B
+cs_ravlt_dr;RAVLT-DR
+cs_ravlt_rec50;RAVLT-Rec50
+cs_ravlt_rec15;RAVLT-Rec15
+cs_fp_ir;FP-IR
+cs_fp_dr;FP-DR
+cs_staix1;STAI-X1
+cs_staix2;STAI-X2
+exec_fun;Executive functions/Attention
 epis_mem;Episodic memory
 verb_wm;Verbal working memory
 visp_mem;Visuospatial memory
@@ -77,7 +77,7 @@ RMSEA;RMSEA
 RMSEA_90_CI_low;90% CI RMSEA (lower bound)
 RMSEA_90_CI_upp;90% CI RMSEA (upper bound)
 b_Intercept;Intercept
-b_proc_spd;PS
+b_exec_fun;EF/Att.
 b_epis_mem;EM
 b_verb_wm;VWM
 b_visp_mem;VM
@@ -85,7 +85,7 @@ b_set_shift;SS
 b_anxiety;An.
 b_visp_wm;SWM
 b_time;Time
-b_time:proc_spd;PS × Time
+b_time:exec_fun;EF/Att. × Time
 b_time:epis_mem;EM × Time
 b_time:verb_wm;VWM × Time
 b_time:visp_mem;VM × Time

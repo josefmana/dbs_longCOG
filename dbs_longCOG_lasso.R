@@ -209,30 +209,27 @@ saveRDS( list(d1 = d1, d3 = d3, scl = scl, tests = tests, doms = doms), "data/lo
 
 # set-up the linear models
 f <- list(
+  m0_time_only = "drs | cens(cens_drs) ~ 1 + time + (1 + time | id)" %>% as.formula() %>% bf(),
   m1_lasso_doms = paste0( "drs | cens(cens_drs) ~ 1 + ", paste("time", doms, sep = " * ", collapse = " + "), " + (1 + time | id)" ) %>% as.formula() %>% bf(),
-  m2_lasso_tests = paste0( "drs | cens(cens_drs) ~ 1 + ", paste("time", tests, sep = " * ", collapse = " + "), " + (1 + time | id)" ) %>% as.formula() %>% bf(),
-  m3_flat_doms = paste0( "drs | cens(cens_drs) ~ 1 + ", paste("time", doms, sep = " * ", collapse = " + "), " + (1 + time | id)" ) %>% as.formula() %>% bf()
+  m2_lasso_tests = paste0( "drs | cens(cens_drs) ~ 1 + ", paste("time", tests, sep = " * ", collapse = " + "), " + (1 + time | id)" ) %>% as.formula() %>% bf()
 )
 
 # set-up priors for the model m1 (cognitive domains lasso)
-p <- list(
-  m1_lasso_doms = c(
-    # fixed effects
-    prior( normal(0.3, .1), class = Intercept ),
-    prior( lasso(1), class = b ),
-    # random effects
-    prior( normal(0, .1), class = sd, coef = Intercept, group = id ),
-    prior( normal(0, .1), class = sd, coef = time, group = id ),
-    prior( lkj(2), class = cor ),
-    # other distributional parameters
-    prior( exponential(1), class = sigma ),
-    prior( gamma(2, 0.1), class = nu )
-    )
-  )
+p <- list()
 
-# add priors for models m2 (cognitive tests lasso) and m3 (congnitive domains flat priors)
-p$m2_lasso_tests <- p$m1_lasso_doms # the cognitive tests lasso model have identical priors to m1
-p$m3_flat_doms <- NULL
+# fill-in with identical prior templates for all three models
+for ( i in names(f) ) p[[i]] <- c(
+  # fixed effects
+  prior( normal(0.3, .1), class = Intercept ),
+  prior( lasso(1), class = b ),
+  # random effects
+  prior( normal(0, .1), class = sd, coef = Intercept, group = id ),
+  prior( normal(0, .1), class = sd, coef = time, group = id ),
+  prior( lkj(2), class = cor ),
+  # other distributional parameters
+  prior( exponential(1), class = sigma ),
+  prior( gamma(2, 0.1), class = nu )
+)
 
 
 # ---- primary models fitting ----
@@ -259,7 +256,6 @@ sapply( names(m) , function(i) max(m[[i]]$rhats, na.rm = T ) )
 
 # clean the environment
 rm( list = ls()[ !( ls() %in% c( "d3", "imp", "m" ) ) ] )
-m$m3_flat_doms <- NULL
 gc()
 
 # compute PSIS-LOO for each imputation in the primary models
