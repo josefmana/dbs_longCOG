@@ -42,29 +42,29 @@ duration_r_us;Pulse duration right (µs)
 duration_l_us;Pulse duration left (µs)
 frequency_r_Hz;Frequency right (Hz)
 frequency_l_Hz;Frequency left (Hz)
-cs_tmt_a;TMT-A
-cs_tmt_b;TMT-B
-cs_ds_f;DS-F
-cs_ds_b;DS-B
-cs_lns;LNS
-cs_ss_f;SS-F
-cs_ss_b;SS-B
-cs_tol;TOL
-cs_pst_d;PST-D
-cs_pst_w;PST-W
-cs_pst_c;PST-C
-cs_cowat;COWAT
-cs_cft;CFT
-cs_sim;Sim.
-cs_ravlt_ir;RAVLT-IR
-cs_ravlt_b;RAVLT-B
-cs_ravlt_dr;RAVLT-DR
-cs_ravlt_rec50;RAVLT-Rec50
-cs_ravlt_rec15;RAVLT-Rec15
-cs_fp_ir;FP-IR
-cs_fp_dr;FP-DR
-cs_staix1;STAI-X1
-cs_staix2;STAI-X2
+sc_tmt_a;TMT-A
+sc_tmt_b;TMT-B
+sc_ds_f;DS-F
+sc_ds_b;DS-B
+sc_lns;LNS
+sc_ss_f;SS-F
+sc_ss_b;SS-B
+sc_tol;TOL
+sc_pst_d;PST-D
+sc_pst_w;PST-W
+sc_pst_c;PST-C
+sc_cowat;COWAT
+sc_cft;CFT
+sc_sim;Sim.
+sc_ravlt_ir;RAVLT-IR
+sc_ravlt_b;RAVLT-B
+sc_ravlt_dr;RAVLT-DR
+sc_ravlt_rec50;RAVLT-Rec50
+sc_ravlt_rec15;RAVLT-Rec15
+sc_fp_ir;FP-IR
+sc_fp_dr;FP-DR
+sc_staix1;STAI-X1
+sc_staix2;STAI-X2
 exec_fun;Executive functions/Attention
 epis_mem;Episodic memory
 verb_wm;Verbal working memory

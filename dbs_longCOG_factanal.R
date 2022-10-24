@@ -46,11 +46,11 @@ var_nms <- read.csv( "data/var_nms.csv" , sep = ";" , row.names = 1 , encoding =
 d <- d[ , c( 2, which(names(d) == "tmt_a"):which(names(d) == "fp_dr"), which(names(d) %in% paste0("staix",1:2)) ) ]
 
 # change names such that they get correct label in post-processing
-# "cs_" stands for "centered & scaled" because the variables will be standardized before analyses
-colnames(d)[-1] <- paste0( "cs_", colnames(d)[-1] )
+# "sc_" stands for "scaled" because the variables will be standardized before analyses
+colnames(d)[-1] <- paste0( "sc_", colnames(d)[-1] )
 
 # log-transform reaction times before the analysis
-for ( i in c( paste0("cs_tmt_", c("a","b")), paste0("cs_pst_", c("d","w","c")) ) ) d[[i]] <- log( d[[i]] )
+for ( i in c( paste0("sc_tmt_", c("a","b")), paste0("sc_pst_", c("d","w","c")) ) ) d[[i]] <- log( d[[i]] )
 
 # standardize (center and scale) all test scores before analysis
 for ( i in colnames(d)[-1] ) d[,i] <- as.vector( scale(d[,i], center = T, scale = T) )
@@ -259,7 +259,7 @@ f.s2$TLI / f.s2$RMSEA_90_CI_upp + plot_layout( guides = "collect" ) +
 ggsave( "figures/Fig S2 factor analysis performance indexes.jpg", dpi = 600 )
 
 
-# ----------- tab 2 factor loadings  -----------
+# ----------- tab 3 factor loadings  -----------
 
 # prepare an array for loading matrices of each imputed EFA
 loads <- array(
@@ -277,28 +277,28 @@ for( i in 1:imp ) loads[ , , i ] <- efa[[i]][[nf-2]]$loadings %>%
   ) %>% as.matrix()
 
 # write a summary of loadings across all imputed data sets
-t2 <- matrix(
+t3 <- matrix(
   data = NA, nrow = nrow(loads[ , , 1]), ncol = ncol(loads[ , , 1]),
   dimnames = list( rownames(loads[ , , 1 ]) , colnames(loads[ , , 1]) )
 ) %>% as.data.frame()
 
 # fill-in averages and SDs across all imputations 
-for ( i in rownames(t2) ) {
-  t2[ i , ] <- paste0(
+for ( i in rownames(t3) ) {
+  t3[ i , ] <- paste0(
     sprintf( "%.2f" , round( loads[i, , ] %>% t() %>% colMeans() , 2 ) ), " (", # mean
     sprintf( "%.2f" , round( loads[i, , ] %>% t() %>% apply( . , 2 , sd ), 2) ), ")" # SD
   )
 }
 
 # make rownames to a column
-t2 <- t2 %>% rownames_to_column( var = "Test" )
+t3 <- t3 %>% rownames_to_column( var = "Test" )
 
 # rename tests (rows) and factors (columns) such that they are publication-ready
-for ( i in 1:(nrow(t2)-2) ) t2[i,"Test"] <- var_nms[ t2[i,]$Test,  ]
-for ( i in 2:ncol(t2) ) colnames(t2)[i] <- var_nms[ colnames(t2)[i],  ]
+for ( i in 1:(nrow(t3)-2) ) t3[i,"Test"] <- var_nms[ t3[i,]$Test,  ]
+for ( i in 2:ncol(t3) ) colnames(t3)[i] <- var_nms[ colnames(t3)[i],  ]
 
 # save as csv
-write.table( t2, file = "tables/Tab 2 factor loadings.csv", sep = ",", row.names = F, quote = F )
+write.table( t3, file = "tables/Tab 3 factor loadings.csv", sep = ",", row.names = F, quote = F )
 
 
 # ----------- session info -----------
