@@ -1,17 +1,11 @@
-# Ran in R version 4.2.0 (2022-04-22), on aarch64-apple-darwin20 (64-bit) platform under macOS Monterey 12.6.
-
-# I used the following versions of packages employed: dplyr_1.0.9, tidyverse_1.3.1, DiagrammeR_1.0.9,
-# DiagrammeRsvg_0.1, rsvg_2.3.1, ggplot2_3.3.6 and patchwork_1.1.1.
-
 # set working directory (works only in RStudio)
 setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
 
 # list required packages
-pkgs <- c(
-  "dplyr", "tidyverse", # for data wrangling
-  "DiagrammeR", "DiagrammeRsvg", "rsvg", # for flowcharts
-  "ggplot2", "patchwork" # for general plotting
-)
+pkgs <- c( "dplyr", "tidyverse", # for data wrangling
+           "DiagrammeR", "DiagrammeRsvg", "rsvg", # for flowcharts
+           "ggplot2", "patchwork" # for general plotting
+           )
 
 # load or install packages as needed
 for ( i in pkgs ) {

@@ -1,17 +1,11 @@
-# Ran in R version 4.2.0 (2022-04-22), on aarch64-apple-darwin20 (64-bit) platform under macOS Monterey 12.6.
-
-# I used the following versions of packages employed: dplyr_1.0.9, tidyverse_1.3.1, brms_2.17.0,
-# tidybayes_3.0.2, ggplot2_3.3.6 and patchwork_1.1.1.
-
 # set working directory (works only in RStudio)
 setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
 
 # list required packages into a character object
-pkgs <- c(
-  "dplyr", "tidyverse", # for data wrangling
-  "brms", "tidybayes", # for Bayesian analyses 
-  "ggplot2", "patchwork" # for plotting
-)
+pkgs <- c( "dplyr", "tidyverse", # for data wrangling
+           "brms", "tidybayes", # for Bayesian analyses 
+           "ggplot2", "patchwork" # for plotting
+           )
 
 # load or install packages as needed
 for ( i in pkgs ) {
@@ -159,3 +153,9 @@ preds %>%
 
 # save as Fig 2
 ggsave( "figures/Fig 2 linear vs non-linear fit.jpg", dpi = 600 )
+
+
+# ----------- session info -----------
+
+# write the sessionInfo() into a .txt file
+capture.output( sessionInfo(), file = "sessions/desc_trajectories.txt" )

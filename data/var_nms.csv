@@ -92,3 +92,49 @@ b_time:visp_mem;VM × Time
 b_time:set_shift;SS × Time
 b_time:anxiety;An. × Time
 b_time:visp_wm;SWM × Time
+b_sc_tmt_a;TMT-A
+b_sc_tmt_b;TMT-B
+b_sc_ds_f;DS-F
+b_sc_ds_b;DS-B
+b_sc_lns;LNS
+b_sc_ss_f;SS-F
+b_sc_ss_b;SS-B
+b_sc_tol;TOL
+b_sc_pst_d;PST-D
+b_sc_pst_w;PST-W
+b_sc_pst_c;PST-C
+b_sc_cowat;COWAT
+b_sc_cft;CFT
+b_sc_sim;Sim.
+b_sc_ravlt_ir;RAVLT-IR
+b_sc_ravlt_b;RAVLT-B
+b_sc_ravlt_dr;RAVLT-DR
+b_sc_ravlt_rec50;RAVLT-Rec50
+b_sc_ravlt_rec15;RAVLT-Rec15
+b_sc_fp_ir;FP-IR
+b_sc_fp_dr;FP-DR
+b_sc_staix1;STAI-X1
+b_sc_staix2;STAI-X2
+b_time:sc_tmt_a;TMT-A × Time
+b_time:sc_tmt_b;TMT-B × Time
+b_time:sc_ds_f;DS-F × Time
+b_time:sc_ds_b;DS-B × Time
+b_time:sc_lns;LNS × Time
+b_time:sc_ss_f;SS-F × Time
+b_time:sc_ss_b;SS-B × Time
+b_time:sc_tol;TOL × Time
+b_time:sc_pst_d;PST-D × Time
+b_time:sc_pst_w;PST-W × Time
+b_time:sc_pst_c;PST-C × Time
+b_time:sc_cowat;COWAT × Time
+b_time:sc_cft;CFT × Time
+b_time:sc_sim;Sim. × Time
+b_time:sc_ravlt_ir;RAVLT-IR × Time
+b_time:sc_ravlt_b;RAVLT-B × Time
+b_time:sc_ravlt_dr;RAVLT-DR × Time
+b_time:sc_ravlt_rec50;RAVLT-Rec50 × Time
+b_time:sc_ravlt_rec15;RAVLT-Rec15 × Time
+b_time:sc_fp_ir;FP-IR × Time
+b_time:sc_fp_dr;FP-DR × Time
+b_time:sc_staix1;STAI-X1 × Time
+b_time:sc_staix2;STAI-X2 × Time

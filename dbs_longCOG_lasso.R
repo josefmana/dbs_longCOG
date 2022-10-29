@@ -1,17 +1,11 @@
-# Ran in R version 4.2.0 (2022-04-22), on aarch64-apple-darwin20 (64-bit) platform under macOS Monterey 12.6.
-
-# I used the following versions of packages employed: dplyr_1.0.9, tidyverse_1.3.1, brms_2.17.0,
-# tidybayes_3.0.2, ggplot2_3.3.6 and patchwork_1.1.1.
-
 # set working directory (works only in RStudio)
 setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
 
 # list required packages into a character object
-pkgs <- c(
-  "dplyr", "tidyverse", # for data wrangling
-  "brms", "tidybayes", # for Bayesian analyses 
-  "ggplot2", "patchwork" # for plotting
-)
+pkgs <- c( "dplyr", "tidyverse", # for data wrangling
+           "brms", "tidybayes", # for Bayesian analyses 
+           "ggplot2", "patchwork" # for plotting
+           )
 
 # load or install packages as needed
 for ( i in pkgs ) {
@@ -147,11 +141,8 @@ f <- list(
   m2_lasso_tests = paste0( "drs | cens(cens_drs) ~ 1 + ", paste("time", tests, sep = " * ", collapse = " + "), " + (1 + time | id)" ) %>% as.formula() %>% bf()
 )
 
-# set-up priors
-p <- list()
-
-# fill-in with identical prior templates for all three models
-for ( i in names(f) ) p[[i]] <- c(
+# set-up priors (using the same priors for both models)
+p <- c(
   # fixed effects
   prior( normal(0.3, .1), class = Intercept ),
   prior( lasso(1), class = b ),
@@ -171,7 +162,7 @@ for ( i in names(f) ) p[[i]] <- c(
 m <- list()
 
 # conduct model fitting
-for ( i in names(f) ) m[[i]] <- brm_multiple( formula = f[[i]], family = student(), prior = p[[i]],
+for ( i in names(f) ) m[[i]] <- brm_multiple( formula = f[[i]], family = student(), prior = p,
                                               data = df, sample_prior = T, seed = s, chains = ch,
                                               iter = it, warmup = wu, control = list( adapt_delta = ad ),
                                               file = paste0( "models/",i,".rds" ),
@@ -179,16 +170,11 @@ for ( i in names(f) ) m[[i]] <- brm_multiple( formula = f[[i]], family = student
                                               )
 
 
-# ----------- soft model checking -----------
-
-# print the highest Rhat to get an idea whether chains converged
-sapply( names(m) , function(i) max(m[[i]]$rhats, na.rm = T ) )
-
 
 # ---- model comparisons ----
 
 # clean the environment
-rm( list = ls()[ !( ls() %in% c( "df", "imp", "m" ) ) ] )
+rm( list = ls()[ !( ls() %in% c( "d", "df", "imp", "m", "scl", "doms", "tests", "s", "cbPal", "var_nms" ) ) ] )
 gc()
 
 # compute PSIS-LOO for each imputation in the primary models
@@ -220,3 +206,223 @@ if (!exists("l") ) {
     }
   }
 }
+
+# compute loo comparisons
+l_comp <- lapply( 1:imp, function(i) loo_compare( l$m1_lasso_doms[[i]], l$m2_lasso_tests[[i]] ) )
+
+# prepare a table for loo comparisons
+t_comp <- sapply(
+  1:imp, function(i)
+    cbind(
+      # negative = m1_lasso_doms wins, positive = m2_lasso_tests wins
+      if ( l$m1_lasso_doms[[i]]$estimates[1,1] == l_comp[[i]][,"elpd_loo"][1] ) l_comp[[i]][2,"elpd_diff"] else -l_comp[[i]][2,"elpd_diff"],
+      l_comp[[i]][2,"se_diff"]
+      )
+  ) %>% t() %>% as.data.frame() %>%
+  `colnames<-`( c("elpd_dif","se_dif") ) %>%
+  rownames_to_column( "dataset" ) %>%
+  mutate( ci_low = elpd_dif - 1.96 * se_dif,
+          ci_upp = elpd_dif + 1.96 * se_dif,
+          sig_dif = ifelse( ci_low > 0 | ci_upp < 0, "*", "" ),
+          winner = ifelse( elpd_dif < 0, "domains", "tests" )
+          )
+
+# save the table (the "G" in "Tab G." means "github only", i.e. the table won't be presented in the article)
+write.table( t_comp %>% mutate_if( is.numeric, ~ round(.,2) %>% sprintf("%.2f",.) ),
+             file = "tables/Tab G1 model comparisons.csv", sep = ",", row.names = F )
+
+
+# ----------- soft model checking -----------
+
+# check the highest Rhat for chains convergence and the highest Pareto-k for influential outliers
+cbind.data.frame(
+  Rhat = sapply( names(m) , function(i) max(m[[i]]$rhats, na.rm = T ) ) %>% round(3),
+  Pareto_k = sapply( names(l) , function(i) sapply( 1:imp, function(j) max( l[[i]][[j]]$diagnostics$pareto_k ) ) ) %>% apply(., 2, max ) %>% round(3)
+)
+
+# print all Pareto-k values for both models
+f.pk1 <- sapply( names(l), function(i) sapply( 1:imp, function(j) l[[i]][[j]]$diagnostics$pareto_k ) ) %>%
+  as.data.frame() %>%
+  pivot_longer( cols = everything(), values_to = "Pareto-k", names_to = "Predictors:",
+                names_transform = function(x) { ifelse( x == "m1_lasso_doms", "cognitive domains", "cognitive tests" ) }
+                ) %>%
+  ggplot( aes(x = `Pareto-k`, fill = `Predictors:`, color = NULL ) ) +
+  geom_histogram( position = "identity" ) +
+  scale_fill_manual( values = alpha( cbPal[c(7,6)], alpha = .35 ) ) +
+  scale_y_continuous( name = "Frequency" ) +
+  geom_vline( xintercept = 0.5, linetype = "dashed", color = "red" ) +
+  theme( legend.position = "bottom" )
+
+# print the high tail of all Pareto-k values
+f.pk2 <- sapply( names(l), function(i) sapply( 1:imp, function(j) l[[i]][[j]]$diagnostics$pareto_k ) ) %>%
+  as.data.frame() %>%
+  pivot_longer( cols = everything(), values_to = "Pareto-k", names_to = "Predictors:",
+                names_transform = function(x) { ifelse( x == "m1_lasso_doms", "cognitive domains", "cognitive tests" ) }
+                ) %>%
+  ggplot( aes(x = `Pareto-k`, fill = `Predictors:`, color = NULL ) ) +
+  geom_histogram( position = "identity" ) +
+  scale_fill_manual( values = alpha( cbPal[c(7,6)], alpha = .35 ) ) +
+  geom_vline( xintercept = 0.5, linetype = "dashed", color = "red" ) +
+  scale_y_continuous( name = "Frequency" ) +
+  scale_x_continuous( limits = c(.5,.66) ) +
+  theme_classic( base_size = 12 ) +
+  theme( legend.position = "none" )
+
+# create a single plot with an inset
+f.pk1 + annotation_custom( ggplotGrob(f.pk2), xmin = .3, xmax = .7, ymin = 2.5e3, ymax = 6.5e3 )
+
+# save as Fig. S4
+ggsave( "figures/Fig S4 psis-loo pareto-ks.jpeg", dpi = 600 )
+
+
+# ----------- posterior predictive checks -----------
+
+# simulate values for each patient each six months from 2 years before to 12 years after surgery
+n_seq = 24
+
+# re-format id in d4 to a factor
+d$id <- factor( d$id, levels = unique(d$id) )
+
+# prepare data sets for prediction for each subject in the data set
+d_seq <- expand.grid( seq( from = -2, to = 12, length.out = n_seq ), levels(d$id) ) %>%
+  `colnames<-` ( c("time_y","id") ) %>%
+  mutate( time = time_y + scl$Md$time )
+
+# add cognitive domains and tests columns
+for ( i in c(doms,tests) ) d_seq[[i]] <- NA
+
+# add subjects' median (w.r.t. imputations) cognitive profile
+for ( i in 1:nrow(d_seq) ) {
+  for ( j in c(doms,tests) ) {
+    d_seq[i, j] <- sapply( 1:imp,
+                           function(k)
+                             df[[k]][ df[[k]]$id == d_seq[i,"id"] & df[[k]]$time < (0+scl$Md$time) , j ]
+                           ) %>% median()
+  }
+}
+
+# prepare a list for predictions stratified by subjects chunks
+# calculating prediction of single data points based on fixed-effects, random-effects and remaining distributional (residual) parameters
+ppred <- list()
+gc()
+
+# add predictions to ppred
+for (i in names(m) ) {
+  for ( j in unique(d_seq$id) ) ppred[[i]][[j]] <- d_seq[ d_seq$id == j, ] %>%
+      add_predicted_draws( m[[i]], seed = s ) %>%
+      mutate(drs = scl$M$drs + scl$SD$drs * .prediction) %>%
+      median_hdi(.width = .95) %>%
+      mutate(drs.upper = ifelse(drs.upper > 144, 144, drs.upper) ) # manual censoring
+} # took 6558.316 sec in total
+
+# save the original prediction file as .rds
+saveRDS( ppred, "data/ppred.rds" )
+
+# collapse predictions to a single table for each model
+for ( i in names(ppred) ) ppred[[i]] <- do.call( rbind.data.frame, ppred[[i]] ) %>%
+  add_column( `Predicted by:` = ifelse(i == "m1_lasso_doms", "cognitive domains", "cognitive tests") )
+
+# collapse one more to get a single prediction data set for both models
+ppred <- do.call( rbind.data.frame, ppred ) %>% as.data.frame() %>% `rownames<-`( 1:nrow(.) )
+
+# re-code id in the data set and ppreds such that the they are anonymized
+all( levels(d$id) == levels(ppred$id) ) # TRUE, continue
+N <-  levels(d$id) %>% length() # extract the number of subjects
+levels(ppred$id) <- paste0( "S", sprintf("%.3d", 1:N) )
+levels(d$id) <- paste0( "S", sprintf("%.3d", 1:N) )
+
+# save the original prediction file as .rds
+write.table( ppred, "data/ppred.csv", sep = ",", row.names = F )
+
+# plot predictions and observed data for each subject separately
+d %>% mutate( drs = drs_tot ) %>%
+  filter( complete.cases(drs) ) %>%
+  # plotting proper
+  ggplot( aes(x = time_y, y = drs) ) +
+  # add prediction lines and 95% compatibility intervals
+  geom_line( data = ppred, size = 1, aes(x = time_y, y = drs, group = `Predicted by:`, color = `Predicted by:` ) ) +
+  geom_ribbon( data = ppred, alpha = .2, aes(x = time_y, y = drs, ymin = drs.lower, ymax = drs.upper, group = `Predicted by:`, fill = `Predicted by:` ) ) +
+  # add observed points
+  geom_point( color = "black", size = 1.25 ) +
+  # finish the plot with the last cosmetic changes
+  scale_color_manual( values = cbPal[c(2,3)] ) +
+  scale_fill_manual( values = cbPal[c(2,3)] ) +
+  facet_wrap( ~id, nrow =  14 ) + # arrange to a 14 x 9 grid
+  labs( x = "Time after surgery (Years)", y = "DRS-2 (0-144 points)") +
+  theme_classic( base_size = 7 ) +
+  theme( legend.position = "bottom" )
+
+# save it as Fig. S3
+ggsave( "figures/Fig S3 posterior predictive check.jpeg", dpi = 600, width = 7.77, height = 11.19 )
+
+
+# ----------- models' posteriors -----------
+
+# extract and summarize posteriors of the "fixed-effects"
+post <- lapply( names(m), function(i) m[[i]] %>%
+                  spread_draws( `b_.*`, regex = T ) %>% # extract all "fixed-effect" parameters
+                  select( contains("b_") ) %>% # get rid of the info about chains
+                  # re-scale to DRS-2 raw scale
+                  mutate( b_Intercept = ( b_Intercept * scl$SD$drs ) + scl$M$drs,
+                          across( !b_Intercept, function(x) { x * scl$SD$drs } )
+                          ) %>%
+                  # calculate median posterior, 95% PPI and probability of being negative
+                  apply( . , 2 , function(x) { c(b = median(x), PPI = hdi(x, .width = .95), pd = sum(x<0)/length(x) ) } ) %>%
+                  # relocate time such that it is after the baseline effects
+                  as.data.frame() %>%  relocate( b_time, .after = ifelse( i == "m1_lasso_doms", "b_visp_wm", "b_sc_staix2") ) %>%
+                  # tidy up
+                  t() %>% as.data.frame() %>% rownames_to_column( var = "Parameter" )
+                ) %>% `names<-` ( names(m) )
+
+# the plots
+f <- lapply( names(post), function(i) post[[i]] %>%
+               # select only the estimands (i.e., the interaction terms and remaining time effect for comparison)
+               slice( which( grepl("time", Parameter) ) ) %>%
+               ggplot( aes( x = reorder(Parameter, b, decreasing = T) , y = b, ymin = PPI1, ymax = PPI2 ) ) +
+               geom_pointrange( shape = 21, size = 3, fatten = 1.5 , fill = "black", color = "grey" ) +
+               geom_hline( yintercept = 0, size = 2/3, color = "red" ) +
+               labs( x = NULL, y = "DRS-2 (points per year)") +
+               scale_y_continuous( limits = c(-1,1) ) +
+               coord_flip()
+               )
+
+# put the plots side-to-side
+( f[[1]] | f[[2]] ) + plot_annotation( tag_levels = "a" ) & theme( plot.tag = element_text(face = "bold") )
+
+# save it
+ggsave( "figures/Fig 2 estimands.jpg" , dpi = 600, width = 1.3*9.64, height = 11.7 )
+
+# prepare the Tab. S2 (cog. domains posterior summary) and Tab. S3 (cog. tests posterior summary)
+t <- lapply( names(post), function(i) post[[i]] %>%
+               # tidy the table columns 
+               mutate( Parameter = paste0( "\t", var_nms[Parameter,1] ),
+                       b = sprintf( "%.2f", round(b,2 ) ),
+                       `95% PPI` = paste0( "[", sprintf("%.2f",round(PPI1,2)),", ",sprintf("%.2f",round(PPI2,2)),"]" ),
+                       `Pr(b < 0)` = sprintf( "%.3f", round(pd,3) )
+                       ) %>%
+               # add rows delineating types of parametera
+               add_row( Parameter = "Global intercept", .before = 1 ) %>%
+               add_row( Parameter = "Baseline correlates", .before = 3 ) %>%
+               add_row( Parameter = "Time-dependent effects", .before = ifelse( i == "m1_lasso_doms", 11, 27 ) ) %>%
+               # keep only variables of interest
+               select( Parameter, b, `95% PPI`, `Pr(b < 0)` )
+             ) %>% `names<-`( c("S2","S3") )
+
+# save the tables as .csv
+for ( i in names(t) ) write.table( t[[i]], sep = ",", row.names = F, na = "",
+                                   file = paste0("tables/Tab ",i," summary of posteriors (cognitive ",
+                                                 ifelse(i=="S2","domains","tests"),").csv" )
+                                   )
+
+
+
+# ----------- stats for in-text reporting -----------
+
+# summary of models comparisons
+table(t_comp[ , c("sig_dif","winner") ] )
+
+
+# ----------- session info -----------
+
+# write the sessionInfo() into a .txt file
+capture.output( sessionInfo(), file = "sessions/lasso.txt" )
