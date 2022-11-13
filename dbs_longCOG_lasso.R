@@ -47,7 +47,7 @@ efa <- readRDS( "models/factanal.rds" ) # EFA models including regression-based 
 var_nms <- read.csv( "data/var_nms.csv" , sep = ";" , row.names = 1 , encoding = "UTF-8")
 
 
-# ----------- pre-processing  -----------
+# ---- pre-processing  ----
 
 # before merging compute scaling values for DRS-2, BDI-II, LEDD, age and time
 scl <- list( M = list( drs = mean( d$drs_tot , na.rm = T ), # 136.90
@@ -221,8 +221,8 @@ t_comp <- sapply(
   ) %>% t() %>% as.data.frame() %>%
   `colnames<-`( c("elpd_dif","se_dif") ) %>%
   rownames_to_column( "dataset" ) %>%
-  mutate( ci_low = elpd_dif - 1.96 * se_dif,
-          ci_upp = elpd_dif + 1.96 * se_dif,
+  mutate( ci_low = qnorm( .025, elpd_dif, se_dif ),
+          ci_upp = qnorm( .975, elpd_dif, se_dif ),
           sig_dif = ifelse( ci_low > 0 | ci_upp < 0, "*", "" ),
           winner = ifelse( elpd_dif < 0, "domains", "tests" )
           )
@@ -232,7 +232,7 @@ write.table( t_comp %>% mutate_if( is.numeric, ~ round(.,2) %>% sprintf("%.2f",.
              file = "tables/Tab G1 model comparisons.csv", sep = ",", row.names = F )
 
 
-# ----------- soft model checking -----------
+# ---- soft model checking ----
 
 # check the highest Rhat for chains convergence and the highest Pareto-k for influential outliers
 cbind.data.frame(
@@ -244,7 +244,7 @@ cbind.data.frame(
 f.pk1 <- sapply( names(l), function(i) sapply( 1:imp, function(j) l[[i]][[j]]$diagnostics$pareto_k ) ) %>%
   as.data.frame() %>%
   pivot_longer( cols = everything(), values_to = "Pareto-k", names_to = "Predictors:",
-                names_transform = function(x) { ifelse( x == "m1_lasso_doms", "cognitive domains", "cognitive tests" ) }
+                names_transform = function(x) { ifelse( x == "m1_lasso_doms", "cognitive functions", "cognitive tests" ) }
                 ) %>%
   ggplot( aes(x = `Pareto-k`, fill = `Predictors:`, color = NULL ) ) +
   geom_histogram( position = "identity" ) +
@@ -257,11 +257,11 @@ f.pk1 <- sapply( names(l), function(i) sapply( 1:imp, function(j) l[[i]][[j]]$di
 f.pk2 <- sapply( names(l), function(i) sapply( 1:imp, function(j) l[[i]][[j]]$diagnostics$pareto_k ) ) %>%
   as.data.frame() %>%
   pivot_longer( cols = everything(), values_to = "Pareto-k", names_to = "Predictors:",
-                names_transform = function(x) { ifelse( x == "m1_lasso_doms", "cognitive domains", "cognitive tests" ) }
+                names_transform = function(x) { ifelse( x == "m1_lasso_doms", "cognitive functions", "cognitive tests" ) }
                 ) %>%
   ggplot( aes(x = `Pareto-k`, fill = `Predictors:`, color = NULL ) ) +
   geom_histogram( position = "identity" ) +
-  scale_fill_manual( values = alpha( cbPal[c(7,6)], alpha = .35 ) ) +
+  scale_fill_manual( values = alpha( cbPal[6], alpha = .35 ) ) + # because there are only "cognitive tests" observations with k > 0.5
   geom_vline( xintercept = 0.5, linetype = "dashed", color = "red" ) +
   scale_y_continuous( name = "Frequency" ) +
   scale_x_continuous( limits = c(.5,.66) ) +
@@ -269,13 +269,13 @@ f.pk2 <- sapply( names(l), function(i) sapply( 1:imp, function(j) l[[i]][[j]]$di
   theme( legend.position = "none" )
 
 # create a single plot with an inset
-f.pk1 + annotation_custom( ggplotGrob(f.pk2), xmin = .3, xmax = .7, ymin = 2.5e3, ymax = 6.5e3 )
+f.pk1 + annotation_custom( ggplotGrob(f.pk2), xmin = .3, xmax = .7, ymin = 3.2e3, ymax = 7.2e3 )
 
 # save as Fig. S4
-ggsave( "figures/Fig S4 psis-loo pareto-ks.jpeg", dpi = 600 )
+ggsave( "figures/Fig S4 psis-loo pareto-ks.jpeg", dpi = 600, width = 9.64, height = 6.54 )
 
 
-# ----------- posterior predictive checks -----------
+# ---- posterior predictive checks ----
 
 # simulate values for each patient each six months from 2 years before to 12 years after surgery
 n_seq = 24
@@ -320,7 +320,7 @@ saveRDS( ppred, "data/ppred.rds" )
 
 # collapse predictions to a single table for each model
 for ( i in names(ppred) ) ppred[[i]] <- do.call( rbind.data.frame, ppred[[i]] ) %>%
-  add_column( `Predicted by:` = ifelse(i == "m1_lasso_doms", "cognitive domains", "cognitive tests") )
+  add_column( `Predicted by:` = ifelse(i == "m1_lasso_doms", "cognitive functions", "cognitive tests") )
 
 # collapse one more to get a single prediction data set for both models
 ppred <- do.call( rbind.data.frame, ppred ) %>% as.data.frame() %>% `rownames<-`( 1:nrow(.) )
@@ -356,7 +356,7 @@ d %>% mutate( drs = drs_tot ) %>%
 ggsave( "figures/Fig S3 posterior predictive check.jpeg", dpi = 600, width = 7.77, height = 11.19 )
 
 
-# ----------- models' posteriors -----------
+# ---- models' posteriors ----
 
 # extract and summarize posteriors of the "fixed-effects"
 post <- lapply( names(m), function(i) m[[i]] %>%
@@ -376,13 +376,22 @@ post <- lapply( names(m), function(i) m[[i]] %>%
 
 # the plots
 f <- lapply( names(post), function(i) post[[i]] %>%
-               # select only the estimands (i.e., the interaction terms and remaining time effect for comparison)
+               # select only the estimands (i.e., the interaction terms and the global time effect for comparison)
                slice( which( grepl("time", Parameter) ) ) %>%
+               # rename the Parameter column according to the var_nms file such that the predictors are
+               # named in accordance with the in-text math model (i.e., delta[predictor] )
+               mutate( Parameter = sub( "time:", "", Parameter ) %>% sapply( ., function(x) var_nms[x, ] ) ) %>%
+               # plotting proper
                ggplot( aes( x = reorder(Parameter, b, decreasing = T) , y = b, ymin = PPI1, ymax = PPI2 ) ) +
-               geom_pointrange( shape = 21, size = 3, fatten = 1.5 , fill = "black", color = "grey" ) +
-               geom_hline( yintercept = 0, size = 2/3, color = "red" ) +
+               geom_pointrange( shape = 21, size = 4, fatten = 2,
+                                fill = alpha( case_when( i == "m1_lasso_doms" ~ cbPal[7], i == "m2_lasso_tests" ~ cbPal[6] ), alpha = 1 ),
+                                color = alpha( case_when( i == "m1_lasso_doms" ~ cbPal[7], i == "m2_lasso_tests" ~ cbPal[6] ), alpha = .3 )
+                                ) +
+               geom_hline( yintercept = 0, size = 1, color = "black" ) +
                labs( x = NULL, y = "DRS-2 (points per year)") +
                scale_y_continuous( limits = c(-1,1) ) +
+               scale_x_discrete( labels = function(x) parse( text = paste0( "delta[", x, "]" ) ) ) + # add predictor parameter names
+               theme( axis.text = element_text( size = 16 ) ) +
                coord_flip()
                )
 
@@ -390,7 +399,7 @@ f <- lapply( names(post), function(i) post[[i]] %>%
 ( f[[1]] | f[[2]] ) + plot_annotation( tag_levels = "a" ) & theme( plot.tag = element_text(face = "bold") )
 
 # save it
-ggsave( "figures/Fig 2 estimands.jpg" , dpi = 600, width = 1.3*9.64, height = 11.7 )
+ggsave( "figures/Fig 3 estimands.jpg" , dpi = 600, width = 1.3*9.64, height = 11.7 )
 
 # prepare the Tab. S2 (cog. domains posterior summary) and Tab. S3 (cog. tests posterior summary)
 t <- lapply( names(post), function(i) post[[i]] %>%
@@ -400,10 +409,10 @@ t <- lapply( names(post), function(i) post[[i]] %>%
                        `95% PPI` = paste0( "[", sprintf("%.2f",round(PPI1,2)),", ",sprintf("%.2f",round(PPI2,2)),"]" ),
                        `Pr(b < 0)` = sprintf( "%.3f", round(pd,3) )
                        ) %>%
-               # add rows delineating types of parametera
-               add_row( Parameter = "Global intercept", .before = 1 ) %>%
-               add_row( Parameter = "Baseline correlates", .before = 3 ) %>%
-               add_row( Parameter = "Time-dependent effects", .before = ifelse( i == "m1_lasso_doms", 11, 27 ) ) %>%
+               # add rows delineating types of parameters
+               add_row( Parameter = "Global intercept (α)", .before = 1 ) %>%
+               add_row( Parameter = "Baseline correlates (β) ", .before = 3 ) %>%
+               add_row( Parameter = "Time-dependent effects (𝛿)", .before = ifelse( i == "m1_lasso_doms", 11, 27 ) ) %>%
                # keep only variables of interest
                select( Parameter, b, `95% PPI`, `Pr(b < 0)` )
              ) %>% `names<-`( c("S2","S3") )
@@ -416,13 +425,13 @@ for ( i in names(t) ) write.table( t[[i]], sep = ",", row.names = F, na = "",
 
 
 
-# ----------- stats for in-text reporting -----------
+# ---- stats for in-text reporting ----
 
 # summary of models comparisons
 table(t_comp[ , c("sig_dif","winner") ] )
 
 
-# ----------- session info -----------
+# ---- session info ----
 
 # write the sessionInfo() into a .txt file
 capture.output( sessionInfo(), file = "sessions/lasso.txt" )

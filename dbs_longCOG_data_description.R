@@ -29,7 +29,7 @@ d2 <- d1[ d1$ass_type == "pre" , ] # only pre-surgery assessments of included pa
 var_nms <- read.csv( "data/var_nms.csv" , sep = ";" , row.names = 1 , encoding = "UTF-8")
 
 
-# ----------- Fig 1 participant inclusion flowchart  -----------
+# ---- Fig 1 participant inclusion flowchart  ----
 
 # check that when selecting only rows containing pre-surgery assessment there ain't no patient duplicated
 isTRUE( all.equal( d0[ d0$ass_type == "pre" , ]$id, unique( d0[ d0$ass_type == "pre" , ]$id ) ) ) # TRUE
@@ -107,7 +107,7 @@ f1 <- " digraph {
 grViz(f1) %>% export_svg %>% charToRaw %>% rsvg_png("figures/Fig 1 inclusion-exclusion flowchart.png")
 
 
-# ----------- Fig S1 distribution of assessments  -----------
+# ---- Fig S1 distribution of assessments  ----
 
 # prepare a histogram of the distribution of assessments across time (Fig S1a)
 f.s1 <- list()
@@ -139,7 +139,7 @@ f.s1$hist / f.s1$bin + plot_annotation( tag_levels = "a" ) & theme( plot.tag = e
 ggsave( "figures/Fig S1 distribution of assessments.jpg", dpi = 600 )
 
 
-# ----------- Tab 1 & Tab 2 sample characteristics -----------
+# ---- Tab 1 & Tab 2 sample characteristics ----
 
 # list all variables for Tab 1 (clinics and stimulation parameters) and Tab 2 (neuropsychology)
 nms <- list(
@@ -222,7 +222,10 @@ write.table( t1, file = "tables/Tab 1 clinical characteristics.csv", sep = ",", 
 write.table( t2, file = "tables/Tab 2 baseline neuropsychology.csv", sep = ",", row.names = F, na = "", quote = F )
 
 
-# ----------- descriptive stats for in-text reporting -----------
+# ---- stats for in-text reporting ----
+
+# number of patients
+length( unique(d1$id) ) # 126
 
 # duration of follow-up
 mean( d1[ complete.cases(d1$drs_tot) & d1$ass_type != "pre", ]$time_y ) # 3.54
@@ -237,7 +240,7 @@ min( table(d1[ complete.cases(d1$drs_tot) , ]$id) ) # 2
 max( table(d1[ complete.cases(d1$drs_tot) , ]$id) ) # 6
 
 
-# ----------- session info -----------
+# ---- session info ----
 
 # write the sessionInfo() into a .txt file
 capture.output( sessionInfo(), file = "sessions/data_description.txt" )

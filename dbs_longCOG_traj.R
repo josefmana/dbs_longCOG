@@ -15,7 +15,6 @@ for ( i in pkgs ) {
 
 # set some values for later
 s = 87542 # seed for reproducibility
-nf = 7 # number of factors extracted via factor analysis
 
 # Note that although I set a seed for all models, the results are only exactly
 # reproducible on the same operating system with the same C++ compiler and version.
@@ -41,11 +40,8 @@ cbPal <- c( "#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#
 d0 <- read.csv( "data/20220508_dbs_longCOG_data.csv" , sep = "," )
 df <- d0[ d0$included == 1 , ] # only STN-DBS treated patients with pre- and post-surgery data
 
-# read a file containing mapping of variables' names used in the script to variables' names for the manuscript
-var_nms <- read.csv( "data/var_nms.csv" , sep = ";" , row.names = 1 , encoding = "UTF-8")
 
-
-# ----------- pre-processing  -----------
+# ---- pre-processing  ----
 
 # before merging compute scaling values for DRS-2, BDI-II, LEDD, age and time
 scl <- list( M = list( drs = mean( df$drs_tot , na.rm = T ), # 136.90
@@ -102,6 +98,9 @@ for ( i in names(f) ) m[[i]] <- brm( formula = f[[i]], family = student(), prior
 
 # ---- soft model checking ----
 
+# add PSIS-LOO to both model for influential variables check and model comparisons
+for ( i in names(m) ) m[[i]] <- add_criterion( m[[i]] , criterion = c("loo","waic") )
+
 # check the highest Rhat for chains convergence and Pareto-k for influential outliers
 cbind.data.frame(
   R_hat = sapply( names(m) , function(i) max( rhat(m[[i]]), na.rm = T ) ) %>% round(3),
@@ -114,16 +113,7 @@ for ( i in names(m) ) plot( loo(m[[i]]), main = i )
 par( mfrow = c(1,1) )
 
 
-# ---- model comparison ----
-
-# add PSIS-LOO to both model for influential variables check and model comparisons
-for ( i in names(m) ) m[[i]] <- add_criterion( m[[i]] , criterion = c("loo","waic") )
-
-# compare the models via PSIS-LOO
-loo( m$m0_linear, m$m0_spline )
-
-
-# ---- Fig 2 linear vs non-linear fit ----
+# ---- fig 2 linear vs non-linear fit ----
 
 # prepare data to be predicted
 d_seq <- data.frame( time_y = seq(-2,12,length.out = 50), id = NA ) %>% mutate( time = time_y + scl$Md$time )
@@ -147,15 +137,44 @@ preds %>%
   geom_line( size = 2.5 , alpha = .75 ) +
   scale_y_continuous(name = "DRS-2", limits = c(119,145), breaks = seq(120,150,10), labels = seq(120,150,10) ) +
   scale_x_continuous(name = "Time from surgery (years)", limits = c(-2,12), breaks = seq(-2,12,2), labels = seq(-2,12,2) ) +
-  scale_color_manual( values = cbPal[c(3,2)] ) +
-  scale_fill_manual( values = cbPal[c(3,2)] ) +
-  theme( legend.position = c(0.15,0.21), legend.key.width = unit(3,"cm"), legend.key.height = unit(1.5,"cm") )
+  scale_color_manual( values = c("black",cbPal[8]) ) +
+  scale_fill_manual( values = cbPal[c(1,8)] ) +
+  theme( legend.position = c(0.15,0.21), legend.key.width = unit(2.6,"cm"), legend.key.height = unit(1.5,"cm") )
 
 # save as Fig 2
-ggsave( "figures/Fig 2 linear vs non-linear fit.jpg", dpi = 600 )
+ggsave( "figures/Fig 2 linear vs non-linear fit.jpg", dpi = 600, width = 9.64, height = 6.54 )
 
 
-# ----------- session info -----------
+# ---- stats for in-text reporting ----
+
+# compare the models via PSIS-LOO
+loo_compare( m$m0_linear, m$m0_spline )[ 2, paste0( c("elpd","se"), "_diff" ) ] %>% # extract ELPD_dif and its SE
+  # re-format the object for data wrangling
+  t() %>% as.data.frame() %>%
+  # flip the sign of elpd_diff such that positive means m0_linear had better predictive performance
+  mutate( elpd_diff = ifelse( rownames( loo_compare(m$m0_linear,m$m0_spline) )[1] == "m$m0_linear" , -elpd_diff, elpd_diff ) ) %>%
+  # add 95% CI
+  mutate( ELPD_dif = sprintf( "%.2f", round( elpd_diff, 2) ),
+          SE_dif = sprintf( "%.2f", round( se_diff, 2 ) ),
+          `95% CI` = paste0( "[", sprintf( "%.2f", qnorm( .025, elpd_diff, se_diff ) %>% round(2) ),
+                             ", ", sprintf( "%.2f", qnorm( .975, elpd_diff, se_diff ) %>% round(2) ), "]"
+                             ) ) %>%
+  # print the results (note, the ne)
+  select( ELPD_dif, SE_dif, `95% CI` ) %>% t()
+
+# expected cognitive decline in DRS-2 points/year as approximated by the linear model (i.e., the estimand #1)
+spread_draws( m$m0_linear, `b_.*` , regex = T ) %>% # extract parameter estimates
+  # calculate model group-level intercept and slope summaries in the correct scale
+  median_hdi( b_Intecept = (b_Intercept * scl$SD$drs ) + scl$M$drs,
+              b_slope = b_time * scl$SD$drs,
+              .width = .95 ) %>%
+  # tidy-up the table
+  select( starts_with("b_") ) %>% mutate_all( function(x) x = sprintf( "%.2f", round(x, 2) ) ) %>%
+  matrix( nrow = 2, ncol = 3, byrow = T, dimnames = list( c("intercept","slope"), c("b","PPI_low","PPI_upp") ) ) %>%
+  as.data.frame() %>% mutate( `b [95% PPI]` = paste0(b," [",PPI_low,", ",PPI_upp,"]") ) %>% select( `b [95% PPI]`)
+
+
+# ---- session info ----
 
 # write the sessionInfo() into a .txt file
 capture.output( sessionInfo(), file = "sessions/desc_trajectories.txt" )

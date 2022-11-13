@@ -34,7 +34,7 @@ d <- read.csv( "data/20220508_dbs_longCOG_data.csv", sep = "," ) %>% filter( inc
 var_nms <- read.csv( "data/var_nms.csv" , sep = ";" , row.names = 1 , encoding = "UTF-8")
 
 
-# ----------- pre-processing  -----------
+# ---- pre-processing  ----
 
 # for EFA keep only id and cognitive tests in d2
 d <- d[ , c( 2, which(names(d) == "tmt_a"):which(names(d) == "fp_dr"), which(names(d) %in% paste0("staix",1:2)) ) ]
@@ -50,7 +50,7 @@ for ( i in c( paste0("sc_tmt_", c("a","b")), paste0("sc_pst_", c("d","w","c")) )
 for ( i in colnames(d)[-1] ) d[,i] <- as.vector( scale(d[,i], center = T, scale = T) )
 
 
-# ----------- imputation  -----------
+# ---- imputation  ----
 
 # find out the optimal number of components for multiple imputation
 nb <- estim_ncpPCA( d[,-1] , ncp.min = 0, ncp.max = 10 , nbsim = imp )
@@ -60,7 +60,7 @@ set.seed(s) # set seed for reproducibility
 d.imp <- MIPCA( d[ ,- 1] , ncp = nb$ncp , nboot = imp )
 
 
-# ----------- model fitting & selection -----------
+# ---- models fitting & selection ----
 
 # fit EFAs with 3:8 factors to each imputed data set
 efa <- lapply(
@@ -84,7 +84,7 @@ print_load <- function( i, c = .4, f = 7 ) print( efa[[i]][[f-2]]$loadings, cuto
 nf = 7
 
 
-# ----------- post-processing  -----------
+# ---- post-processing  ----
 
 # prepare an array for labels of the seven-factor solution factors
 # create an empty 2 (names/signs) x 7 (factors) x 100 (imputations) array
@@ -128,7 +128,7 @@ for ( i in 1:imp ) {
 }
 
 
-# ----------- saving the outcomes  -----------
+# ---- saving the outcomes  ----
 
 # save all EFA models
 saveRDS( object = efa, file = "models/factanal.rds" )
@@ -143,7 +143,7 @@ for ( i in 1:imp ) write.table( x = cbind.data.frame( id = d$id, d.imp$res.MI[[i
 )
 
 
-# ----------- extracting performance indexes  -----------
+# ---- extracting performance indexes  ----
 
 # prepare a table for performance indexes of each solution for each imputed data set
 fat <- array(
@@ -171,7 +171,7 @@ for ( i in 1:imp ) {
 }
 
 
-# ----------- tab s1 summary of performance index of factor analyses  -----------
+# ---- tab s1 summary of performance index of factor analyses  ----
 
 # summarize the fat table
 t.s1 <- data.frame( Model = paste0( 3:8, "-factor"), TLI = NA, RMSEA = NA, RMSEA_90_CI_upp = NA, var_account = NA )
@@ -217,7 +217,7 @@ colnames(t.s1)[4:5] <- c( "RMSEA 90% CI (upper bound)", "Total variance accounte
 write.table( t.s1, file = "tables/Tab S1 factor analysis performance indexes.csv", sep = ",", row.names = F, quote = F)
 
 
-# ----------- fig s2 factor analyses performance indexes  -----------
+# ---- fig s2 factor analyses performance indexes  ----
 
 # set-up a list to contain Fig S2 component figures
 f.s2 <- list()
@@ -250,10 +250,10 @@ f.s2$TLI / f.s2$RMSEA_90_CI_upp + plot_layout( guides = "collect" ) +
   plot_annotation( tag_levels = "a" ) & theme( plot.tag = element_text(face = "bold") )
 
 # save as Fig S2
-ggsave( "figures/Fig S2 factor analysis performance indexes.jpg", dpi = 600 )
+ggsave( "figures/Fig S2 factor analysis performance indexes.jpg", dpi = 600, width = 9.64, height = 6.54 )
 
 
-# ----------- tab 3 factor loadings  -----------
+# ---- tab 3 factor loadings ----
 
 # prepare an array for loading matrices of each imputed EFA
 loads <- array(
@@ -295,7 +295,7 @@ for ( i in 2:ncol(t3) ) colnames(t3)[i] <- var_nms[ colnames(t3)[i],  ]
 write.table( t3, file = "tables/Tab 3 factor loadings.csv", sep = ",", row.names = F, quote = F )
 
 
-# ----------- session info -----------
+# ---- session info ----
 
 # write the sessionInfo() into a .txt file
 capture.output( sessionInfo(), file = "sessions/factor_analysis.txt" )
