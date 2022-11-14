@@ -382,7 +382,7 @@ f <- lapply( names(post), function(i) post[[i]] %>%
                # named in accordance with the in-text math model (i.e., delta[predictor] )
                mutate( Parameter = sub( "time:", "", Parameter ) %>% sapply( ., function(x) var_nms[x, ] ) ) %>%
                # plotting proper
-               ggplot( aes( x = reorder(Parameter, b, decreasing = T) , y = b, ymin = PPI1, ymax = PPI2 ) ) +
+               ggplot( aes( x = reorder(Parameter, b, decreasing = T), y = b, ymin = PPI1, ymax = PPI2 ) ) +
                geom_pointrange( shape = 21, size = 4, fatten = 2,
                                 fill = alpha( case_when( i == "m1_lasso_doms" ~ cbPal[7], i == "m2_lasso_tests" ~ cbPal[6] ), alpha = 1 ),
                                 color = alpha( case_when( i == "m1_lasso_doms" ~ cbPal[7], i == "m2_lasso_tests" ~ cbPal[6] ), alpha = .3 )

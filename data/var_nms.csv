@@ -138,3 +138,6 @@ b_time:sc_fp_ir;FP-IR × Time
 b_time:sc_fp_dr;FP-DR × Time
 b_time:sc_staix1;STAI-X1 × Time
 b_time:sc_staix2;STAI-X2 × Time
+b_age;Age
+bsp_mibdi;BDI-II
+bsp_miled;LEDD

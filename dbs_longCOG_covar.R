@@ -33,7 +33,7 @@ ad = .99 # adapt_delta parameter
 sapply( c("models", "figures", "tables", "sessions"), function(i) if( !dir.exists(i) ) dir.create(i) )
 
 # set ggplot theme
-theme_set( theme_classic(base_size = 14) )
+theme_set( theme_classic(base_size = 24) )
 
 # prepare colors to use in graphs (a colorblind-friendly palette)
 cbPal <- c( "#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7" )
@@ -104,3 +104,108 @@ for ( i in names(f.drs) ) m[[i]] <- brm_multiple( formula = f.drs[[i]] + f.bdi +
 sapply( names(m), function(i)
         sapply( paste0("_",c("drs","bdi","led"),"_" ),  function(j) max( m[[i]]$rhats %>% select(contains(j)), na.rm = T ) )
         )
+
+
+# ---- comparing estimands ----
+
+# extract posteriors from all models
+draws <- list()
+
+# loop through the models to fill-in the draws list
+for ( i in c("m1_lasso_doms","m2_lasso_tests","m3_doms_cov","m4_tests_cov") ) {
+  m <- readRDS( paste0(getwd(), "/models/", i, ".rds") )
+  draws[[i]] <- as_draws_df(m) %>%
+    `colnames<-` ( gsub("_drs","",names(.) ) ) %>% # rename parameters in covariate models to appropriate format
+    select( starts_with( c("b_","bsp_") ) & !starts_with( c("b_bdi","b_led","bsp_bdi") ) ) # keep only fixed-effects
+  rm(m)
+  gc()
+}
+
+# pull all posteriors into a single file
+post <- lapply( names(draws), function(i)
+  
+  # prepare a column with model labels
+  draws[[i]] %>%
+    # back-transform posteriors to raw DRS-2 (or DRS-2 per year) scale
+    mutate( b_Intercept = ( b_Intercept * scl$SD$drs ) + scl$M$drs,
+            across( !b_Intercept, function(x) { x * scl$SD$drs } )
+            ) %>%
+    # calculate median posterior and 95% PPI
+    apply( . , 2 , function(x) { c( b = median(x), PPI = hdi(x, .width = .95) ) } ) %>% t() %>%
+    as.data.frame() %>% rownames_to_column( var = "Parameter" ) %>% add_column( `Predicted by:` = i )
+  
+  ) %>%
+  
+  # pull both "cognitive functions" and "cognitive tests" models together
+  do.call( rbind.data.frame, . ) %>%
+  
+  # make final adjustments
+  mutate(
+    # re-code model to a nicer and consistent form (will serve to color density plots)
+    `Predicted by:` = case_when(
+      grepl("m1_lasso_doms", `Predicted by:`) ~ "Cognitive functions",
+      grepl("m2_lasso_tests", `Predicted by:`) ~ "Cognitive tests",
+      grepl("m3_doms_cov", `Predicted by:`) ~ "Cognitive functions (with covariates)",
+      grepl("m4_tests_cov", `Predicted by:`) ~ "Cognitive tests (with covariates)"
+      ),
+    # add labels for effects grouping (will serve to split facets of the plot)
+    Group = ifelse( Parameter == "b_Intercept", "alpha",
+                    ifelse( grepl( "time|bdi|led|age", Parameter ), "delta", "beta" )
+                    )
+    )
+
+# prepare a list for subplots of Fig. S5 (cognitive functions) and Fig. S6 (cognitive tests)
+fig <- list()
+
+# loop through type of predictor (functions vs. tests)
+for ( i in c("functions","tests") ) fig[[i]] <- lapply(
+  
+  # loop through the parameter type
+  # (need to use lapply instead of for loop here to ensure the correct Greek symbols are printed,
+  # the for loop always printed the last one used, i.e. delta, in all plots for some reason)
+  c("alpha","beta","delta"), function(j)
+    
+    # select only relevant parameters
+    post[ post$Group == j & grepl(i,post$`Predicted by:`), ] %>%
+    
+    # prepare the labels
+    mutate(
+      title = case_when( j == "alpha" ~ "Global intercept",
+                         j == "beta" ~ "Baseline correlates",
+                         j == "delta" ~ "Time-dependent effects"),
+      Parameter = case_when(
+        j == "delta" ~ sub( "time:", "", Parameter ) %>% sapply( ., function(x) var_nms[x, ] ),
+        j != "delta" ~ Parameter %>% sapply( ., function(x) var_nms[x, ] ) )
+    ) %>%
+    
+    # plotting proper
+    ggplot( aes( x = reorder(Parameter, b, decreasing = T), y = b, ymin = PPI1, ymax = PPI2, fill = `Predicted by:` ) ) +
+    geom_pointrange( shape = 21, size = 3, fatten = 2, position = position_dodge( width = .7 ), color = cbPal[1] ) +
+    geom_hline( yintercept = 0, size = 1, linetype = "dashed", color = "black" ) +
+    
+    # scale the axes and colors
+    scale_x_discrete( labels = ifelse( j == "alpha", parse( text = "alpha"), function(x) parse( text = paste0( j, "[", x, "]" ) ) ) ) +
+    scale_y_continuous( limits = case_when( j == "alpha" ~ c( 139,141 ) ) ) +
+    scale_fill_manual( values =  case_when( i == "functions" ~ cbPal[c(7,2)], i == "tests" ~ cbPal[c(6,3)] ) ) +
+    
+    # label and flip axes, position legend and add title
+    labs( x = NULL, y = ifelse( j == "delta", "DRS-2 (points per year)", "DRS-2" ) ) +
+    theme( axis.text = element_text( size = 24 ), legend.position = "bottom" ) +
+    facet_wrap( . ~ title) +
+    coord_flip()
+    
+) %>% `names<-`(c("alpha","beta","delta") ) # after the lapply loop is finished, name each plot accordingly
+
+# arrange and print the cognitive functions plot
+with( fig$functions, (alpha / beta / delta ) + plot_layout( heights = c(1,7,11), guides = "collect") & theme( legend.position = "bottom") )
+ggsave( "figures/Fig S5 cognitive functions covariate check.jpg" , dpi = 600, width = 1.2*9.64, height = 3.3*6.54 )
+
+# arrange and print the cognitive tests plot
+with( fig$tests, (alpha / beta / delta ) + plot_layout( heights = c(1,23,27), guides = "collect") & theme( legend.position = "bottom") )
+ggsave( "figures/Fig S6 cognitiove tests covariate check.jpg" , dpi = 600, width = 1.2*9.64, height = 4.2*6.54 )
+
+
+# ---- session info ----
+
+# write the sessionInfo() into a .txt file
+capture.output( sessionInfo(), file = "sessions/covar.txt" )
