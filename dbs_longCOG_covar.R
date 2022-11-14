@@ -181,7 +181,7 @@ for ( i in c("functions","tests") ) fig[[i]] <- lapply(
     # plotting proper
     ggplot( aes( x = reorder(Parameter, b, decreasing = T), y = b, ymin = PPI1, ymax = PPI2, fill = `Predicted by:` ) ) +
     geom_pointrange( shape = 21, size = 3, fatten = 2, position = position_dodge( width = .7 ), color = cbPal[1] ) +
-    geom_hline( yintercept = 0, size = 1, linetype = "dashed", color = "black" ) +
+    geom_hline( yintercept = 0, size = 1, linetype = "dashed", color = "red" ) +
     
     # scale the axes and colors
     scale_x_discrete( labels = ifelse( j == "alpha", parse( text = "alpha"), function(x) parse( text = paste0( j, "[", x, "]" ) ) ) ) +

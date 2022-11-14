@@ -387,7 +387,7 @@ f <- lapply( names(post), function(i) post[[i]] %>%
                                 fill = alpha( case_when( i == "m1_lasso_doms" ~ cbPal[7], i == "m2_lasso_tests" ~ cbPal[6] ), alpha = 1 ),
                                 color = alpha( case_when( i == "m1_lasso_doms" ~ cbPal[7], i == "m2_lasso_tests" ~ cbPal[6] ), alpha = .3 )
                                 ) +
-               geom_hline( yintercept = 0, size = 1, color = "black" ) +
+               geom_hline( yintercept = 0, size = 1, linetype = "dashed", color = "black" ) +
                labs( x = NULL, y = "DRS-2 (points per year)") +
                scale_y_continuous( limits = c(-1,1) ) +
                scale_x_discrete( labels = function(x) parse( text = paste0( "delta[", x, "]" ) ) ) + # add predictor parameter names
