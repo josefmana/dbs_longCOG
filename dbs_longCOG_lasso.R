@@ -420,7 +420,7 @@ t <- lapply( names(post), function(i) post[[i]] %>%
 # save the tables as .csv
 for ( i in names(t) ) write.table( t[[i]], sep = ",", row.names = F, na = "",
                                    file = paste0("tables/Tab ",i," summary of posteriors (cognitive ",
-                                                 ifelse(i=="S2","functions","tests"),").csv" )
+                                                 ifelse(i=="S3","functions","tests"),").csv" )
                                    )
 
 
