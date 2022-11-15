@@ -181,7 +181,7 @@ for ( i in c("functions","tests") ) fig[[i]] <- lapply(
     # plotting proper
     ggplot( aes( x = reorder(Parameter, b, decreasing = T), y = b, ymin = PPI1, ymax = PPI2, fill = `Predicted by:` ) ) +
     geom_pointrange( shape = 21, size = 3, fatten = 2, position = position_dodge( width = .7 ), color = cbPal[1] ) +
-    geom_hline( yintercept = 0, size = 1, linetype = "dashed", color = "red" ) +
+    geom_hline( yintercept = 0, size = 1.5, linetype = "dashed", color = "red" ) +
     
     # scale the axes and colors
     scale_x_discrete( labels = ifelse( j == "alpha", parse( text = "alpha"), function(x) parse( text = paste0( j, "[", x, "]" ) ) ) ) +
@@ -196,13 +196,13 @@ for ( i in c("functions","tests") ) fig[[i]] <- lapply(
     
 ) %>% `names<-`(c("alpha","beta","delta") ) # after the lapply loop is finished, name each plot accordingly
 
-# arrange and print the cognitive functions plot
-with( fig$functions, (alpha / beta / delta ) + plot_layout( heights = c(1,7,11), guides = "collect") & theme( legend.position = "bottom") )
-ggsave( "figures/Fig S5 cognitive functions covariate check.jpg" , dpi = 600, width = 1.2*9.64, height = 3.3*6.54 )
-
 # arrange and print the cognitive tests plot
 with( fig$tests, (alpha / beta / delta ) + plot_layout( heights = c(1,23,27), guides = "collect") & theme( legend.position = "bottom") )
-ggsave( "figures/Fig S6 cognitiove tests covariate check.jpg" , dpi = 600, width = 1.2*9.64, height = 4.2*6.54 )
+ggsave( "figures/Fig S3 cognitiove tests covariate check.jpg" , dpi = 600, width = 1.2*9.64, height = 4.2*6.54 )
+
+# arrange and print the cognitive functions plot
+with( fig$functions, (alpha / beta / delta ) + plot_layout( heights = c(1,7,11), guides = "collect") & theme( legend.position = "bottom") )
+ggsave( "figures/Fig S4 cognitive functions covariate check.jpg" , dpi = 600, width = 1.2*9.64, height = 3.3*6.54 )
 
 
 # ---- session info ----

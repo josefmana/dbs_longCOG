@@ -271,8 +271,8 @@ f.pk2 <- sapply( names(l), function(i) sapply( 1:imp, function(j) l[[i]][[j]]$di
 # create a single plot with an inset
 f.pk1 + annotation_custom( ggplotGrob(f.pk2), xmin = .3, xmax = .7, ymin = 3.2e3, ymax = 7.2e3 )
 
-# save as Fig. S4
-ggsave( "figures/Fig S4 psis-loo pareto-ks.jpeg", dpi = 600, width = 9.64, height = 6.54 )
+# save as Fig. S6
+ggsave( "figures/Fig S6 psis-loo pareto-ks.jpeg", dpi = 600, width = 9.64, height = 6.54 )
 
 
 # ---- posterior predictive checks ----
@@ -352,8 +352,8 @@ d %>% mutate( drs = drs_tot ) %>%
   theme_classic( base_size = 7 ) +
   theme( legend.position = "bottom" )
 
-# save it as Fig. S3
-ggsave( "figures/Fig S3 posterior predictive check.jpeg", dpi = 600, width = 7.77, height = 11.19 )
+# save it as Fig. S5
+ggsave( "figures/Fig S5 posterior predictive check.jpeg", dpi = 600, width = 7.77, height = 11.19 )
 
 
 # ---- models' posteriors ----
@@ -401,7 +401,7 @@ f <- lapply( names(post), function(i) post[[i]] %>%
 # save it
 ggsave( "figures/Fig 3 estimands.jpg" , dpi = 600, width = 1.3*9.64, height = 11.7 )
 
-# prepare the Tab. S2 (cog. domains posterior summary) and Tab. S3 (cog. tests posterior summary)
+# prepare the Tab. S2 (cog. tests posterior summary) and Tab. S3 (cog. functions posterior summary)
 t <- lapply( names(post), function(i) post[[i]] %>%
                # tidy the table columns 
                mutate( Parameter = paste0( "\t", var_nms[Parameter,1] ),
@@ -415,12 +415,12 @@ t <- lapply( names(post), function(i) post[[i]] %>%
                add_row( Parameter = "Time-dependent effects (𝛿)", .before = ifelse( i == "m1_lasso_doms", 11, 27 ) ) %>%
                # keep only variables of interest
                select( Parameter, b, `95% PPI`, `Pr(b < 0)` )
-             ) %>% `names<-`( c("S2","S3") )
+             ) %>% `names<-`( c("S3","S2") )
 
 # save the tables as .csv
 for ( i in names(t) ) write.table( t[[i]], sep = ",", row.names = F, na = "",
                                    file = paste0("tables/Tab ",i," summary of posteriors (cognitive ",
-                                                 ifelse(i=="S2","domains","tests"),").csv" )
+                                                 ifelse(i=="S2","functions","tests"),").csv" )
                                    )
 
 
