@@ -396,7 +396,7 @@ f <- lapply( names(post), function(i) post[[i]] %>%
                )
 
 # put the plots side-to-side
-( f[[1]] | f[[2]] ) + plot_annotation( tag_levels = "a" ) & theme( plot.tag = element_text(face = "bold") )
+( f[[2]] | f[[1]] ) + plot_annotation( tag_levels = "a" ) & theme( plot.tag = element_text(face = "bold") )
 
 # save it
 ggsave( "figures/Fig 3 estimands.jpg" , dpi = 600, width = 1.3*9.64, height = 11.7 )
