@@ -418,7 +418,7 @@ t <- lapply( names(post), function(i) post[[i]] %>%
              ) %>% `names<-`( c("S3","S2") )
 
 # save the tables as .csv
-for ( i in names(t) ) write.table( t[[i]], sep = ",", row.names = F, na = "", quote = F,
+for ( i in names(t) ) write.table( t[[i]], sep = ";", row.names = F, na = "", quote = F,
                                    file = paste0("tables/Tab ",i," summary of posteriors (cognitive ",
                                                  ifelse(i=="S3","functions","tests"),").csv" )
                                    )
