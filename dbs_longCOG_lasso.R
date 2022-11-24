@@ -170,7 +170,6 @@ for ( i in names(f) ) m[[i]] <- brm_multiple( formula = f[[i]], family = student
                                               )
 
 
-
 # ---- model comparisons ----
 
 # clean the environment
@@ -272,7 +271,7 @@ f.pk2 <- sapply( names(l), function(i) sapply( 1:imp, function(j) l[[i]][[j]]$di
 f.pk1 + annotation_custom( ggplotGrob(f.pk2), xmin = .3, xmax = .7, ymin = 3.2e3, ymax = 7.2e3 )
 
 # save as Fig. S6
-ggsave( "figures/Fig S6 psis-loo pareto-ks.jpeg", dpi = 600, width = 9.64, height = 6.54 )
+ggsave( "figures/Fig S6 psis-loo pareto-ks.png", dpi = 600, width = 9.64, height = 6.54 )
 
 
 # ---- posterior predictive checks ----
@@ -353,7 +352,7 @@ d %>% mutate( drs = drs_tot ) %>%
   theme( legend.position = "bottom" )
 
 # save it as Fig. S5
-ggsave( "figures/Fig S5 posterior predictive check.jpeg", dpi = 600, width = 7.77, height = 11.19 )
+ggsave( "figures/Fig S5 posterior predictive check.png", dpi = 600, width = 7.77, height = 11.19 )
 
 
 # ---- models' posteriors ----
@@ -396,10 +395,10 @@ f <- lapply( names(post), function(i) post[[i]] %>%
                )
 
 # put the plots side-to-side
-( f[[2]] | f[[1]] ) + plot_annotation( tag_levels = "a" ) & theme( plot.tag = element_text(face = "bold") )
+( f[[2]] | f[[1]] ) + plot_annotation( tag_levels = "A" ) & theme( plot.tag = element_text(face = "bold") )
 
 # save it
-ggsave( "figures/Fig 3 estimands.jpg" , dpi = 600, width = 1.3*9.64, height = 11.7 )
+ggsave( "figures/Fig 3 estimands.png" , dpi = 600, width = 1.3*9.64, height = 11.7 )
 
 # prepare the Tab. S2 (cog. tests posterior summary) and Tab. S3 (cog. functions posterior summary)
 t <- lapply( names(post), function(i) post[[i]] %>%

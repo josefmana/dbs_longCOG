@@ -142,7 +142,7 @@ preds %>%
   theme( legend.position = c(0.15,0.21), legend.key.width = unit(2.6,"cm"), legend.key.height = unit(1.5,"cm") )
 
 # save as Fig 2
-ggsave( "figures/Fig 2 linear vs non-linear fit.jpg", dpi = 600, width = 9.64, height = 6.54 )
+ggsave( "figures/Fig 2 linear vs non-linear fit.png", dpi = 600, width = 9.64, height = 6.54 )
 
 
 # ---- stats for in-text reporting ----

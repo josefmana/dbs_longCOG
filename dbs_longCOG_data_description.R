@@ -29,7 +29,7 @@ d2 <- d1[ d1$ass_type == "pre" , ] # only pre-surgery assessments of included pa
 var_nms <- read.csv( "data/var_nms.csv" , sep = ";" , row.names = 1 , encoding = "UTF-8")
 
 
-# ---- Fig 1 participant inclusion flowchart  ----
+# ---- fig 1 participant inclusion flowchart  ----
 
 # check that when selecting only rows containing pre-surgery assessment there ain't no patient duplicated
 isTRUE( all.equal( d0[ d0$ass_type == "pre" , ]$id, unique( d0[ d0$ass_type == "pre" , ]$id ) ) ) # TRUE
@@ -107,7 +107,7 @@ f1 <- " digraph {
 grViz(f1) %>% export_svg %>% charToRaw %>% rsvg_png("figures/Fig 1 inclusion-exclusion flowchart.png")
 
 
-# ---- Fig S1 distribution of assessments  ----
+# ---- fig s1 distribution of assessments  ----
 
 # prepare a histogram of the distribution of assessments across time (Fig S1a)
 f.s1 <- list()
@@ -133,13 +133,13 @@ f.s1$bin <- table( d1[ complete.cases(d1$drs_tot) , ]$id ) %>%
   labs( x = "Number of Assessments per Patient", y = "Number of Patients" )
 
 # arrange for printing
-f.s1$hist / f.s1$bin + plot_annotation( tag_levels = "a" ) & theme( plot.tag = element_text(face = "bold") )
+f.s1$hist / f.s1$bin + plot_annotation( tag_levels = "A" ) & theme( plot.tag = element_text(face = "bold") )
 
 # save as Fig S1
-ggsave( "figures/Fig S1 distribution of assessments.jpg", dpi = 600 )
+ggsave( "figures/Fig S1 distribution of assessments.png", dpi = 600 )
 
 
-# ---- Tab 1 & Tab 2 sample characteristics ----
+# ---- tab 1 & tab 2 sample characteristics ----
 
 # list all variables for Tab 1 (clinics and stimulation parameters) and Tab 2 (neuropsychology)
 nms <- list(

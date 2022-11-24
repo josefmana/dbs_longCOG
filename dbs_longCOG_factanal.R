@@ -247,10 +247,10 @@ for ( i in c("TLI","RMSEA_90_CI_upp") ) {
 
 # arrange Fig S2 for printing
 f.s2$TLI / f.s2$RMSEA_90_CI_upp + plot_layout( guides = "collect" ) +
-  plot_annotation( tag_levels = "a" ) & theme( plot.tag = element_text(face = "bold") )
+  plot_annotation( tag_levels = "A" ) & theme( plot.tag = element_text(face = "bold") )
 
 # save as Fig S2
-ggsave( "figures/Fig S2 factor analysis performance indexes.jpg", dpi = 600, width = 9.64, height = 6.54 )
+ggsave( "figures/Fig S2 factor analysis performance indexes.png", dpi = 600, width = 9.64, height = 6.54 )
 
 
 # ---- tab 3 factor loadings ----
