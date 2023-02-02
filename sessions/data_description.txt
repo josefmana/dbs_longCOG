@@ -1,6 +1,6 @@
 R version 4.2.0 (2022-04-22)
 Platform: aarch64-apple-darwin20 (64-bit)
-Running under: macOS 13.0
+Running under: macOS 13.1
 
 Matrix products: default
 LAPACK: /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/lib/libRlapack.dylib

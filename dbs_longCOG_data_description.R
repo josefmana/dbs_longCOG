@@ -116,11 +116,10 @@ f.s1 <- list()
 # due to more than one stimulation parameter
 f.s1$hist <- d1[ complete.cases(d1$drs_tot) , ] %>% 
   ggplot( aes(x = time_y) ) +
-  stat_bin( binwidth = .5, position = position_nudge(x = -.5*.5) ) + # creates bars
-  stat_bin( binwidth = .5, geom = "text", aes(label = ..count..), vjust = -1.0,
-            position = position_nudge(x = -.5*.5), size = 4 ) + # add numbers
+  stat_bin( breaks = seq(-2,12,.5) ) + # creates bars
+  stat_bin( breaks = seq(-2,12,.5), geom = "text", aes(label = ..count..), vjust = -1.0, size = 4 ) + # add numbers
   labs( x = "Time from STN-DBS surgery (years)", y = "Number of Assessments" ) +
-  scale_y_continuous( expand = c(0, 0), limits = c(0, 74), breaks = seq(0, 70, 10), labels = seq(0, 70, 10) ) +
+  scale_y_continuous( expand = c(0, 0), limits = c(0, 107), breaks = seq(0, 100, 10), labels = seq(0, 100, 10) ) +
   scale_x_continuous( limits = c(-2, 12), breaks = seq(-2, 12, 1), labels = seq(-2, 12, 1) )
 
 # prepare a bin plot showing distribution of the number of assessments per patient (Fig S1b)
