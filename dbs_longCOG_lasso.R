@@ -271,6 +271,7 @@ f.pk2 <- sapply( names(l), function(i) sapply( 1:imp, function(j) l[[i]][[j]]$di
 f.pk1 + annotation_custom( ggplotGrob(f.pk2), xmin = .3, xmax = .7, ymin = 3.2e3, ymax = 7.2e3 )
 
 # save as Fig. S6
+ggsave( "figures/Fig S6 psis-loo pareto-ks.tiff", dpi = 300, width = 9.64, height = 6.54 )
 ggsave( "figures/Fig S6 psis-loo pareto-ks.png", dpi = 600, width = 9.64, height = 6.54 )
 
 
@@ -326,7 +327,7 @@ ppred <- do.call( rbind.data.frame, ppred ) %>% as.data.frame() %>% `rownames<-`
 
 # re-code id in the data set and ppreds such that the they are anonymized
 all( levels(d$id) == levels(ppred$id) ) # TRUE, continue
-N <-  levels(d$id) %>% length() # extract the number of subjects
+N <- levels(d$id) %>% length() # extract the number of subjects
 levels(ppred$id) <- paste0( "S", sprintf("%.3d", 1:N) )
 levels(d$id) <- paste0( "S", sprintf("%.3d", 1:N) )
 
@@ -352,6 +353,7 @@ d %>% mutate( drs = drs_tot ) %>%
   theme( legend.position = "bottom" )
 
 # save it as Fig. S5
+ggsave( "figures/Fig S5 posterior predictive check.tiff", dpi = 300, width = 7.77, height = 11.19 )
 ggsave( "figures/Fig S5 posterior predictive check.png", dpi = 600, width = 7.77, height = 11.19 )
 
 
@@ -398,7 +400,8 @@ f <- lapply( names(post), function(i) post[[i]] %>%
 ( f[[2]] | f[[1]] ) + plot_annotation( tag_levels = "A" ) & theme( plot.tag = element_text(face = "bold") )
 
 # save it
-ggsave( "figures/Fig 3 estimands.png" , dpi = 600, width = 1.3*9.64, height = 11.7 )
+ggsave( "figures/Fig 3 estimand (rq2).tiff" , dpi = 300, width = 1.3*9.64, height = 11.7 )
+ggsave( "figures/Fig 3 estimand (rq2).png" , dpi = 600, width = 1.3*9.64, height = 11.7 )
 
 # prepare the Tab. S2 (cog. tests posterior summary) and Tab. S3 (cog. functions posterior summary)
 t <- lapply( names(post), function(i) post[[i]] %>%
@@ -421,6 +424,111 @@ for ( i in names(t) ) write.table( t[[i]], sep = ";", row.names = F, na = "", qu
                                    file = paste0("tables/Tab ",i," summary of posteriors (cognitive ",
                                                  ifelse(i=="S3","functions","tests"),").csv" )
                                    )
+
+
+# ---- posterior predictions for graphical abstract ----
+
+# write down a list of predictors effect which we're going to visualize
+prds <- c( "exec_fun" , "epis_mem" )
+
+# prepare a raw data set for visualizations
+d0 <- d %>%
+  select( id, time_y , drs_tot ) %>%
+  filter( complete.cases(drs_tot) ) %>%
+  rename( "drs" = "drs_tot" ) %>%
+  # add median of all pre-surgery cognitive variables across imputations
+  mutate(
+    exec_fun = sapply( 1:imp , function(i) df[[i]]$exec_fun ) %>% apply( . , 1 , median ),
+    epis_mem = sapply( 1:imp , function(i) df[[i]]$epis_mem ) %>% apply( . , 1 , median ),
+    verb_wm = sapply( 1:imp , function(i) df[[i]]$verb_wm ) %>% apply( . , 1 , median ),
+    visp_mem = sapply( 1:imp , function(i) df[[i]]$visp_mem ) %>% apply( . , 1 , median ),
+    set_shift = sapply( 1:imp , function(i) df[[i]]$set_shift ) %>% apply( . , 1 , median ),
+    anxiety = sapply( 1:imp , function(i) df[[i]]$anxiety ) %>% apply( . , 1 , median ),
+    visp_wm = sapply( 1:imp , function(i) df[[i]]$visp_wm ) %>% apply( . , 1 , median )
+  )
+
+# get quantile groups for each patient according to each latent cognitive factor
+quant <- d0[ d0$time_y < 0 , ] %>%
+  mutate(
+    # re-coding such that 1 means the lowermost quantile and 4 means the uppermost quantile
+    exec_fun_pent = -ntile(exec_fun, 5) + 6,
+    epis_mem_pent = -ntile(epis_mem, 5) + 6,
+    verb_wm_pent = -ntile(verb_wm, 5) + 6,
+    visp_mem_pent = -ntile(visp_mem, 5) + 6,
+    set_shift_pent = -ntile(set_shift, 5) + 6,
+    anxiety_pent = -ntile(anxiety, 5) + 6,
+    visp_wm_pent = -ntile(visp_wm, 5) + 6
+  )
+
+# add the quantile groups to the longitudinal data set (d0)
+d0 <- d0 %>% left_join( quant %>% select( id, contains("_pent") ) , by = "id" )
+
+# prepare a prediction dummy data set
+d_seq <- list(
+  epred_fix = list(), # prediction of the expectation (epred) based on fixed-effects only
+  epred_all = list() # prediction of the expectation based on both fixed- and random-effects
+)
+
+# write down how many predictions (time-points) per predictor group/quantile to calculate
+n_seq = 30
+
+# loop through predictors
+for ( i in names(d_seq) ) {
+  for ( j in prds ) d_seq[[i]][[j]] <- expand.grid(
+    as.vector( by( d0[[j]], d0[[ paste0(j, "_pent") ]] , median ) ),
+    seq( from = -2, to = 12, length.out = n_seq )
+  ) %>% `colnames<-` ( c(j, "time_y") ) %>%
+      # add all variables needed
+      mutate(
+        time = time_y + scl$Md$time,
+        exec_fun = if( j == "exec_fun") exec_fun else 0,
+        epis_mem = if( j == "epis_mem") epis_mem else 0,
+        grp = rep( 1:5, n_seq ), # in the expand.grid above, need to write predictor first, time second, otherwise this is incorrect
+        verb_wm = 0, visp_mem = 0, set_shift = 0, anxiety = 0, visp_wm = 0, id = "sub000"
+      )
+}
+
+# add predictions of the expectation (e_pred) to d_seq
+for ( i in names(d_seq) ) {
+  for ( j in prds ) d_seq[[i]][[j]] <- d_seq[[i]][[j]] %>%
+      add_epred_draws( m$m1_lasso_doms , allow_new_levels = T, seed = 1, if (i == "epred_fix") { re_formula = NA } ) %>%
+      mutate(.epred = scl$M$drs + scl$SD$drs * .epred) %>%
+      median_hdi(.width = .95)
+}
+
+# prepare variable names for the plot
+nms <-list( exec_fun = bquote("Longitudinal cognition predicted by pre-surgery" ~bold("executive functions") ),
+            epis_mem = bquote("Longitudinal cognition predicted by pre-surgery" ~bold("episodic memory") ) )
+
+# prepare figure for the graphical abstract
+f <- list()
+
+# fill-in plots for Executive functions and Episodic memory
+for( i in prds ) f[[i]] <- d0[ , c( "time_y","id","drs") ] %>%
+  mutate( grp = d0[ , paste0(i, "_pent") ] ) %>%
+  ggplot( aes(x = time_y, y = drs, group = id) ) +
+  geom_hline( yintercept = 139, linetype = "dotted", size = 1.5, alpha = 1 ) +
+  geom_line( size = .5, alpha = .33 ) +
+  geom_point( size = 4, alpha = .33 ) +
+  geom_ribbon(data = d_seq$epred_all[[i]], alpha = .1, aes(x = time_y, y = .epred, ymin = .lower, ymax = .upper, fill = grp ) ) +
+  geom_ribbon(data = d_seq$epred_fix[[i]], alpha = .3, aes(x = time_y, y = .epred, ymin = .lower, ymax = .upper, fill = grp ) ) +
+  geom_line(data = d_seq$epred_fix[[i]], size = 2.5, aes( x = time_y, y = .epred, color = grp ) ) +
+  scale_color_gradient( low = "red", high = "grey66" ) +
+  scale_y_continuous(name = "DRS-2", limits = c(80,153), breaks = seq(80,140,20), labels = seq(80,140,20) ) +
+  scale_x_continuous(name = "Time from surgery (years)", limits = c(-3,12), breaks = seq(-2,12,2), labels = seq(-2,12,2) ) +
+  facet_wrap( ~ grp, nrow = 1, labeller = as_labeller( c(`1` = "first pentile",
+                                                         `2` = "second pentile",
+                                                         `3` = "third pentile",
+                                                         `4` = "fourth pentile",
+                                                         `5` = "fifth pentile") ) ) +
+  ggtitle( nms[[i]] ) +
+  theme( legend.position = "none", plot.title = element_text(hjust = .5) )
+
+# arrange figure's subplots for saving
+( f$exec_fun / f$epis_mem )
+
+# save the figure
+ggsave( "figures/Fig GA posteriors predictions.png", dpi = 300, width = 1.2*10.5, height = 11.7 )
 
 
 # ---- stats for in-text reporting ----

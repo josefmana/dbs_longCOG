@@ -95,11 +95,13 @@ doms_sum["nms", , ] <- t( read.csv( "data/dbs_longCOG_efa_labels.csv" , sep = ",
 
 # fill-in signs of each factor in each imputation to know which scores should be reversed
 doms_sum["sgn", , ] <- apply( doms_sum["nms", , ] , 2 , function(x) startsWith( x , "-") ) %>%
-  t() %>% as.data.frame() %>% mutate( across( everything() , ~ ifelse( . == T , -1 , 1 ) ) ) %>% t()
+  t() %>% as.data.frame() %>% # formatting
+  mutate( across( everything() , ~ ifelse( . == T , -1 , 1 ) ) ) %>% t()
 
 # get rid of the minus sign in labels table
 doms_sum["nms", , ] <- doms_sum["nms", , ] %>%
-  t() %>% as.data.frame() %>% mutate( across( everything() , ~ gsub( "-" , "" , . ) ) ) %>% t()
+  t() %>% as.data.frame() %>%
+  mutate( across( everything() , ~ gsub( "-" , "" , . ) ) ) %>% t()
 
 # list all the domains
 doms <- c("exec_fun", # loaded on primarily by PST, the first factor in 82% data sets
@@ -250,8 +252,8 @@ f.s2$TLI / f.s2$RMSEA_90_CI_upp + plot_layout( guides = "collect" ) +
   plot_annotation( tag_levels = "A" ) & theme( plot.tag = element_text(face = "bold") )
 
 # save as Fig S2
+ggsave( "figures/Fig S2 factor analysis performance indexes.tiff", dpi = 300, width = 9.64, height = 6.54 )
 ggsave( "figures/Fig S2 factor analysis performance indexes.png", dpi = 600, width = 9.64, height = 6.54 )
-
 
 # ---- tab 3 factor loadings ----
 
