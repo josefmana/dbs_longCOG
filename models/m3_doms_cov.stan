@@ -39,6 +39,9 @@ data {
   int<lower=1> K_drs;  // number of population-level effects
   matrix[N_drs, K_drs] X_drs;  // population-level design matrix
   int<lower=1> Ksp_drs;  // number of special effects terms
+  // covariates of special effects terms
+  vector[N_drs] Csp_drs_1;
+  vector[N_drs] Csp_drs_2;
   // data for the lasso prior
   real<lower=0> lasso_df_drs;  // prior degrees of freedom
   real<lower=0> lasso_scale_drs;  // prior scale
@@ -200,7 +203,7 @@ model {
     Yl_led[Jmi_led] = Ymi_led;
     for (n in 1:N_drs) {
       // add more terms to the linear predictor
-      mu_drs[n] += (bsp_drs[1]) * Yl_bdi[n] + (bsp_drs[2]) * Yl_led[n] + r_1_drs_1[J_1_drs[n]] * Z_1_drs_1[n] + r_1_drs_2[J_1_drs[n]] * Z_1_drs_2[n];
+      mu_drs[n] += (bsp_drs[1]) * Yl_bdi[n] + (bsp_drs[2]) * Yl_led[n] + (bsp_drs[3]) * Yl_bdi[n] * Csp_drs_1[n] + (bsp_drs[4]) * Yl_led[n] * Csp_drs_2[n] + r_1_drs_1[J_1_drs[n]] * Z_1_drs_1[n] + r_1_drs_2[J_1_drs[n]] * Z_1_drs_2[n];
     }
     for (n in 1:N_bdi) {
       // add more terms to the linear predictor

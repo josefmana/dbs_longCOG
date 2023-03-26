@@ -141,3 +141,5 @@ b_time:sc_staix2;STAI-X2 × Time
 b_age;Age
 bsp_mibdi;BDI-II
 bsp_miled;LEDD
+b_time:age;Age
+bsp_mibdi:time;BDI-IIbsp_miled:time;LEDD

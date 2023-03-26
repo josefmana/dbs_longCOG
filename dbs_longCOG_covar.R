@@ -49,8 +49,8 @@ var_nms <- read.csv( "data/var_nms.csv" , sep = ";" , row.names = 1 , encoding =
 
 # set-up the linear models for drs
 f.drs <- list(
-  m3_doms_cov = ( paste0( "drs | cens(cens_drs) ~ 1 + age + mi(bdi) + mi(led) + ", paste("time", doms, sep = " * ", collapse = " + "), " + (1 + time | id)" ) %>% as.formula() %>% bf() ) + student(),
-  m4_tests_cov = ( paste0( "drs | cens(cens_drs) ~ 1 + age + mi(bdi) + mi(led) + ", paste("time", tests, sep = " * ", collapse = " + "), " + (1 + time | id)" ) %>% as.formula() %>% bf() ) + student()
+  m3_doms_cov = ( paste0( "drs | cens(cens_drs) ~ 1 + ", paste( paste0( "time * ", c("age","mi(bdi)","mi(led)") ), collapse = " + " ), " + ", paste("time", doms, sep = " * ", collapse = " + "), " + (1 + time | id)" ) %>% as.formula() %>% bf() ) + student(),
+  m4_tests_cov = ( paste0( "drs | cens(cens_drs) ~ 1 + ", paste( paste0( "time * ", c("age","mi(bdi)","mi(led)") ), collapse = " + " ), " + ", paste("time", tests, sep = " * ", collapse = " + "), " + (1 + time | id)" ) %>% as.formula() %>% bf() ) + student()
 )
 
 # set-up linear models for covariates with missing values
@@ -106,7 +106,7 @@ sapply( names(m), function(i)
         )
 
 
-# ---- comparing estimands ----
+# ---- comparing estimates ----
 
 # extract posteriors from all models
 draws <- list()
@@ -150,7 +150,7 @@ post <- lapply( names(draws), function(i)
       ),
     # add labels for effects grouping (will serve to split facets of the plot)
     Group = ifelse( Parameter == "b_Intercept", "alpha",
-                    ifelse( grepl( "time|bdi|led|age", Parameter ), "delta", "beta" )
+                    ifelse( grepl( "time|bdi:time|led:time", Parameter ), "delta", "beta" )
                     )
     )
 
@@ -185,7 +185,7 @@ for ( i in c("functions","tests") ) fig[[i]] <- lapply(
     
     # scale the axes and colors
     scale_x_discrete( labels = ifelse( j == "alpha", parse( text = "alpha"), function(x) parse( text = paste0( j, "[", x, "]" ) ) ) ) +
-    scale_y_continuous( limits = case_when( j == "alpha" ~ c( 139,141 ) ) ) +
+    scale_y_continuous( limits = case_when( j == "alpha" ~ c( 139,142 ) ) ) +
     scale_fill_manual( values =  case_when( i == "functions" ~ cbPal[c(7,2)], i == "tests" ~ cbPal[c(6,3)] ) ) +
     
     # label and flip axes, position legend and add title
