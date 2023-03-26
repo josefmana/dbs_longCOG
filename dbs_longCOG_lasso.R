@@ -273,6 +273,7 @@ f.pk1 + annotation_custom( ggplotGrob(f.pk2), xmin = .3, xmax = .7, ymin = 3.2e3
 # save as Fig. S6
 ggsave( "figures/Fig S6 psis-loo pareto-ks.tiff", dpi = 300, width = 9.64, height = 6.54 )
 ggsave( "figures/Fig S6 psis-loo pareto-ks.png", dpi = 600, width = 9.64, height = 6.54 )
+ggsave( "figures/Fig S6 psis-loo pareto-ks.jpg", dpi = 600, width = 9.64, height = 6.54 )
 
 
 # ---- posterior predictive checks ----
@@ -355,6 +356,7 @@ d %>% mutate( drs = drs_tot ) %>%
 # save it as Fig. S5
 ggsave( "figures/Fig S5 posterior predictive check.tiff", dpi = 300, width = 7.77, height = 11.19 )
 ggsave( "figures/Fig S5 posterior predictive check.png", dpi = 600, width = 7.77, height = 11.19 )
+ggsave( "figures/Fig S5 posterior predictive check.jpg", dpi = 600, width = 7.77, height = 11.19 )
 
 
 # ---- models' posteriors ----
@@ -402,6 +404,7 @@ f <- lapply( names(post), function(i) post[[i]] %>%
 # save it
 ggsave( "figures/Fig 3 estimand (rq2).tiff" , dpi = 300, width = 1.3*9.64, height = 11.7 )
 ggsave( "figures/Fig 3 estimand (rq2).png" , dpi = 600, width = 1.3*9.64, height = 11.7 )
+ggsave( "figures/Fig 3 estimand (rq2).jpg" , dpi = 600, width = 1.3*9.64, height = 11.7 )
 
 # prepare the Tab. S2 (cog. tests posterior summary) and Tab. S3 (cog. functions posterior summary)
 t <- lapply( names(post), function(i) post[[i]] %>%
@@ -529,6 +532,7 @@ for( i in prds ) f[[i]] <- d0[ , c( "time_y","id","drs") ] %>%
 
 # save the figure
 ggsave( "figures/Fig GA posteriors predictions.png", dpi = 300, width = 1.2*10.5, height = 11.7 )
+ggsave( "figures/Fig GA posteriors predictions.jpg", dpi = 300, width = 1.2*10.5, height = 11.7 )
 
 
 # ---- stats for in-text reporting ----

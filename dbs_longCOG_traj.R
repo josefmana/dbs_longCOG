@@ -144,6 +144,8 @@ preds %>%
 # save as Fig 2
 ggsave( "figures/Fig 2 linear vs non-linear fit.tiff", dpi = 300, width = 9.64, height = 6.54 )
 ggsave( "figures/Fig 2 linear vs non-linear fit.png", dpi = 600, width = 9.64, height = 6.54 )
+ggsave( "figures/Fig 2 linear vs non-linear fit.jpg", dpi = 600, width = 9.64, height = 6.54 )
+
 
 # ---- stats for in-text reporting ----
 
