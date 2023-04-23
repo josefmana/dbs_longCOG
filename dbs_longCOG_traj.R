@@ -75,7 +75,7 @@ df <- df %>%
 # ---- models set-up ---- 
 
 # set-up the linear model
-f <- list( m0_linear = bf( drs | cens(cens_drs) ~ time + (1 + time | id) ),
+f <- list( m0_linear = bf( drs | cens(cens_drs) ~ 1 + time + (1 + time | id) ),
            m0_spline = bf( drs | cens(cens_drs) ~ t2(time) + (1 + time | id) )
            )
 
