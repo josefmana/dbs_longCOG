@@ -32,7 +32,12 @@ sim <- function( N = 126, n_prds = 10, eff = rep(0,10), cor = diag( rep(1,10) ),
   
   # generate data and pre-select variables
   t <- mvrnorm( N, rep(0,n_prds), cor ) # simulate "n_prds" preedictors from multivariate standard normal distribution
-  o <- rnorm( N, rowSums(t[ , 1:length(eff) ] * eff) ) # generate the outcome
+  
+  # generate the outcome
+  if ( length(eff) == 1 ) o <- rnorm( N, sum(t[ , 1 ] * eff) )
+  else o <- rnorm( N, rowSums(t[ , 1:length(eff) ] * eff) )
+  
+  # pre-select predictors
   sel <- sapply( 1:n_prds, function(i) ifelse( cor.test( t[,i], o )$p.value < thres, 1, 0 ) ) # pre-select variables
   
   # compute the final multiple linear regression
@@ -74,8 +79,11 @@ sim <- function( N = 126, n_prds = 10, eff = rep(0,10), cor = diag( rep(1,10) ),
 }
 
 # prepare two types of covariance matrixes
-nocor <- function(K = 10) return( diag( rep(1,K) ) )
-nocov <- nocor(K = 27)
+nocov_fun <- function(K = 10) return( diag( rep(1,K) ) ) # a function for no correlation an varying number of measures
+nocov <- nocov_fun(K = 27) # no covariance for K = 27 test measures (number of predictors in Kim et al., 2014)
+
+# putative covariation (correlation in this case) structure of predictors in Kim et al. (2014)
+# based on grouping of tests to common clusters with (mostly) ~ 50 % shared variability (i.e., r = .7, r2 = .49) 
 yocov <- matrix( c(
   1,rep(.7,2),rep(0,24), .7,1,.7,rep(0,24), rep(.7,2),1,rep(0,24), # Trail Making Test
   rep(0,3),1,rep(0,23), # BNT
@@ -106,7 +114,7 @@ for ( i in c("nocov","yocov") ) {
     
     d0[[i]][[j]] <- sapply( 1:1e2, function(k)
       sim( N = 103, n_prds = 27, eff = rep(0,27), cor = get(i), thres = .2, meth = j )
-      ) %>% t() %>% as.data.frame()
+      ) %>% t() %>% as.data.frame() # tidy up
     
   }
 }
@@ -122,13 +130,44 @@ fn0 <- sapply( names(d0), function(i) sapply( names(d0[[i]]), function(j) ifelse
 
 # ---- simulating effects ----
 
-# simulate a few thousands of random data sets with null effects
-d1 <- lapply( c("two-step","multi","lasso"), function(i)
-  sapply( 1:1e2, function(j) sim( N = 103, n_prds = 27, eff = rep(0.3,5), thres = .2, type = i ) ) %>% t() %>% as.data.frame()
-)
+# start with one to five medium-size predictors (r = .3) in two settings: a lot (K = 27) and medium amount (K = 10) tests
+d1 <- list()
 
-# summarize false negatives
-sapply( 1:3, function(i) ifelse( ( d1[[i]][ ,6:27] > .05 | is.na(d1[[i]][ ,6:27]) ), 0, 1 ) %>% rowSums() %>% table() )
+# loop through the posibilities
+for ( i in c("lot","med") ) {
+  
+  d1[[i]] <- list()
+  K <- case_when( i == "lot" ~ 27, i == "med" ~ 10 ) # number of potential predictors
+  
+  # loop through 1-5 to-be true/false positives
+  for ( j in 1:5 ) {
+    
+    d1[[i]][[j]] <- list()
+    
+    # loop through estimation methods
+    for ( k in c("two-step","multi","lasso") ) {
+      
+      d1[[i]][[j]][[k]] <- sapply( 1:1e2, function(x)
+        sim( N = 103, n_prds = K, eff = rep(0.3,j), cor = nocov_fun(K=K), thres = .2, meth = k )
+      ) %>% t() %>% as.data.frame() # tidy up
+      
+    }
+  }
+}
 
-# summarize true positives
-sapply( 1:3, function(i) ifelse( ( d1[[i]][ ,1:5] > .05 | is.na(d1[[i]][ ,1:5]) ), 0, 1 ) %>% rowSums() %>% table() )
+# finish by simulating two kinds of effects with covaried predictors where we assume total medium effect of variables that
+# represent TMT (1:3), Stroop colors (11:12) and LEDD (27) from Kim et al. (2014)
+# (i) each variable has a proportinal weight with all clusters linking to 0.3
+# (ii) exactly one variable from each cluster has the total 0.3 weight
+d2 <- list()
+
+#
+for ( i in c("two-step","multi","lasso") ) {
+  
+  d2[[i]]$cluster <- sapply( 1:1e2, function(j) sim( N = 103, n_prds = 27, eff = c( rep(.1,3),rep(0,7),rep(.15,2),rep(0,14),.3 ), cor = yocov, thres = .2, meth = i ) )  %>% t() %>% as.data.frame()
+  d2[[i]]$test <- sapply( 1:1e2, function(j) sim( N = 103, n_prds = 27, eff = c( .3,rep(0,9),.3,rep(0,15),.3 ), cor = yocov, thres = .2, meth = i ) ) %>% t() %>% as.data.frame()
+  
+}
+
+
+
