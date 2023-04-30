@@ -1,6 +1,6 @@
 # A neat small script that checks for overoptimistic bias in the best case scenario for choosing significant predictors of an
 # outcome from a number of predictors via two-stage procedure that first pre-selects potential predictors via simple correlations
-# and then estimates effect sizes via multiple regressions compared to vanilla multiple regression and Bayesian Lasso.
+# and then estimates effect sizes via multiple regressions compared to Bayesian Lasso.
 
 # list packages to be used
 pkgs <- c( "rstudioapi", # setting working directory via RStudio API
@@ -32,59 +32,47 @@ forms <- c(".jpg",".png",".tiff")
 
 # ---- prepare data-generating function ----
 
-# prepare a function with varying number of subjects, number of predictors, varying pre-selection threshold and effect sizes
+# prepare a function on varying number of subjects, number of predictors, varying pre-selection threshold and effect sizes
+# that prints a set of p-values (for two-step method) and their Bayesian equivalents (for the Bayesian Lasso), one for each
+# potential predictor; takes the following inputs:
 # N = number of subjects
-# n_prds = number of independent predictors (integer)
+# n_prds = number of predictors (integer)
 # eff = list of effect sizes (vector)
 # cor = covariance matrix (identical with correlation in case of standard normals)
-# thres = p-value used as a threshold for pre-selection (numeric)
-# meth = either two-step procedure ("two-step"), multiple regression ("multi") or Bayesian Lasso ("lasso")
-sim <- function( N = 126, n_prds = 7, eff = rep(0,7), cor = diag( rep(1,7) ), thres = .1, meth = "two-step" ) {
+# thres = p-value used as a threshold for pre-selection in the two-step method (numeric)
+sim <- function( N = 126, n_prds = 7, eff = rep(0,7), cor = diag( rep(1,7) ), thres = .1 ) {
   
-  # simulate "n_prds" pre dictors from multivariate standard normal distribution
+  # simulate "n_prds" predictors from multivariate standard normal distribution
   t <- mvrnorm( N, rep(0,n_prds), cor )
   
   # generate the outcome
-  if ( length(eff) == 1 ) o <- rnorm( N, sum(t[ , 1 ] * eff) ) # exactly one non-zero effect
-  else o <- rnorm( N, rowSums(t[ , 1:length(eff) ] * eff) ) # none or more than one non-zero effects
+  if ( length(eff) == 1 ) o <- rnorm( N, sum(t[ , 1] * eff), 1 ) # exactly one non-zero effect
+  else o <- rnorm( N, rowSums(t[ , 1:length(eff) ] * eff), 1 ) # none or more than one non-zero effects
   
   # pre-select predictors
-  sel <- sapply( 1:n_prds, function(i) ifelse( cor.test( t[,i], o )$p.value < thres, 1, 0 ) )
+  sel <- sapply( 1:n_prds, function(i) ifelse( cor.test( t[ , i], o )$p.value < thres, 1, 0 ) )
   
-  # compute the final multiple linear regression
-  if( meth == "two-step" ) {
-    
-    # if the two-step procedure was selected, used only the pre-selected variables
-    if( sum(sel) == 0 ) reg <- lm( o ~ 1 ) # intercept only if no variable was selected
-    else reg <- lm( o ~ t[ , which(sel == 1) ] )
-    
-    # extract p-values
-    if ( sum(sel) == 0 ) p <- NULL # there ain't no p-value if no variable was pre-selected
-    else p <- as.vector( summary(reg)$coefficients[ 2:(sum(sel)+1), 4 ] )
-    
-  } else if( meth == "multi" ) {
-    
-    # otherwise regress the outcome on all pre-surgery variables
-    reg <- lm( o ~ t )
-    p <- as.vector( summary(reg)$coefficients[ -1 , 4 ] )
-    
-  } else if ( meth == "lasso" ) {
-    
-    # finally a Bayesian Lasso
-    reg <- brm( as.formula( paste0( "o ~ ", paste( paste0("t",1:n_prds), collapse = " + " ) ) ),
-                prior = prior( lasso(1), class = b ),
-                data =  cbind.data.frame(o, t) %>% `colnames<-`( c("o", paste0("t",1:n_prds) ) )
+  # compute final multiple linear regression for the two-step procedure
+  # use only pre-selected variables
+  if( sum(sel) == 0 ) reg <- lm( o ~ 1 ) # intercept only if no variable was selected
+  else reg <- lm( o ~ t[ , which(sel == 1) ] )
+  
+  # extract p-values
+  if ( sum(sel) == 0 ) p <- NULL # there ain't no p-value if no variable was pre-selected
+  else p <- as.vector( summary(reg)$coefficients[ 2:(sum(sel)+1), 4 ] )
+  
+  # fit the Bayesian Lasso
+  lasso <- brm( as.formula( paste0( "o ~ ", paste( paste0("t",1:n_prds), collapse = " + " ) ) ), # linear model
+                family = gaussian(), prior = prior( lasso(1), class = b ), # likelihood and priors
+                data =  cbind.data.frame(o, t) %>% `colnames<-`( c("o", paste0("t",1:n_prds) ) ) # observed variables
                 )
-    
-    # extract probability of direction and recalculate to a p-value equivalent
-    p <- pd_to_p( p_direction(reg)$pd, direction = "two-sided" )[ 2:(n_prds+1) ]
-    
-  }
+  
+  # extract probability of direction and recalculate to a p-value equivalent
+  pd <- pd_to_p( p_direction(lasso)$pd, direction = "two-sided" )[ 2:(n_prds+1) ]
   
   # sum-up the results and print them
-  res <- rep(1, n_prds) # prepare ones (for those that were not tested, technically p = 1, easier to work with than NAs)
-  if( meth == "two-step" ) res[ which(sel == 1) ] <- p
-  else res <- p # add p-value
+  res <- data.frame( var = paste0("V", 1:n_prds), two_step = rep(1, n_prds), lasso = pd ) # prepare ones (for those that were not tested, technically p = 1, easier to work with than NAs)
+  res$two_step[ which(sel == 1) ] <- p
   return(res) # return the results
   
 }
@@ -140,30 +128,28 @@ if ( !exists("d0") ) {
   d0 <- list() # prepare a list
   
   for ( i in c("nocov","yocov") ) {
-    for ( j in c("two-step","multi","lasso") ) {
-      
-      # simulate the data
-      d0[[i]][[j]] <- sapply( 1:1e2, function(k) sim( N = 126, n_prds = 23, eff = rep(0,23), cor = get(i), thres = .2, meth = j ) ) %>% t() %>% as.data.frame()
-      
-      # save after each iteration
-      saveRDS( list( d0 = d0 ), "models/sims.rds" )
-      print( paste0(i, " null, via ", j, " method fitted" ) )
-      
-    }
+    
+    # simulate the data
+    d0[[i]] <- lapply( 1:1e2,
+                       function(j)
+                         # add. a column denoting the number of the simulation (nominal variable) and simulate
+                         cbind.data.frame( data.frame( sim = rep(j,23) ), sim( N = 126, n_prds = 23, eff = rep(0,23), cor = get(i), thres = .2 ) )
+                       
+                       # after simulating, tidy up the table
+                       ) %>% do.call( rbind.data.frame, . )
+    
+    # save after each iteration
+    saveRDS( list( d0 = d0 ), "models/sims.rds" )
+    
   }
 }
-
-# summarize false negatives
-#fn0 <- sapply( names(d0), function(i) sapply( names(d0[[i]]), function(j) ifelse( d0[[i]][[j]] < .05, 1, 0 ) %>% rowSums() %>% table() ) )
-
-# the results seem to be almost invariant to threshold used, overall, in ca 2/5 of cases there is at least one false positive
 
 
 # ---- simulating effects ----
 
-# as the code is fitting hundreds of Stan models, it crashes from time to time, so we will put in place some insurances
+# as the code is fitting few hundreds of Stan models, it crashes every so often, so we will put some insurances in place
 
-# fit one to five medium-size predictors (r = .3) in two settings: a lot (K = 23) and medium amount (K = 10) tests
+# fit one to five medium-size predictors (r = .3) in two settings: a lot (K = 23) and medium amount (K = 7) tests
 # if it there are no simulations of this type (see l. 135), start from a scratch
 if ( !exists("d1") ) {
   
@@ -178,22 +164,20 @@ if ( !exists("d1") ) {
     # loop through 1-5 to-be true/false positives
     for ( j in 1:5 ) {
       
-      d1[[i]][[j]] <- list()
+      # simulate the data
+      d1[[i]][[j]] <- lapply( 1:1e2,
+                              function(l)
+                                # add. a column denoting the number of the simulation (nominal variable) and simulate
+                                cbind.data.frame( data.frame( sim = rep(l,K) ), sim( N = 126, n_prds = K, eff = rep(0,K), cor = nocov_fun(K=K), thres = .2 ) )
+
+                         # after simulating, tidy up the table
+                         ) %>% do.call( rbind.data.frame, . )
       
-      # loop through estimation methods
-      for ( k in c("lasso","two-step","multi") ) {
-        
-        # simulate the data
-        d1[[i]][[j]][[k]] <- sapply( 1:1e2, function(x) sim( N = 103, n_prds = K, eff = rep(0.3,j), cor = nocov_fun(K=K), thres = .2, meth = k ) ) %>% t() %>% as.data.frame()
-        
-        # save after each iteration
-        saveRDS( list( d0 = d0, d1 = d1 ), "models/sims.rds" )
-        print( paste0(K, " predictors,", j, " true positives fitted via ", k, " method" ) )
-        
+      # save after each iteration
+      saveRDS( list( d0 = d0, d1 = d1 ), "models/sims.rds" )
+      
       }
     }
-  }
-  
   # otherwise continue from the next data set after the last one with already computed simulations
 } else {
   
@@ -210,19 +194,18 @@ if ( !exists("d1") ) {
       # compute only settings that are not computed yet
       if ( j > l ) {
         
-        d1[[i]][[j]] <- list()
+        # simulate the data
+        d1[[i]][[j]] <- lapply( 1:1e2,
+                                function(k)
+                                  # add. a column denoting the number of the simulation (nominal variable) and simulate
+                                  cbind.data.frame( data.frame( sim = rep(k,K) ), sim( N = 126, n_prds = K, eff = rep(0,K), cor = nocov_fun(K=K), thres = .2 ) )
+                                
+                                # after simulating, tidy up the table
+                                ) %>% do.call( rbind.data.frame, . )
         
-        # loop through estimation methods
-        for ( k in c("lasso","two-step","multi") ) {
+        # save after each iteration
+        saveRDS( list( d0 = d0, d1 = d1 ), "models/sims.rds" )
           
-          # simulate the data
-          d1[[i]][[j]][[k]] <- sapply( 1:1e2, function(x) sim( N = 126, n_prds = K, eff = rep(0.3,j), cor = nocov_fun(K=K), thres = .2, meth = k ) ) %>% t() %>% as.data.frame()
-          
-          # save after each iteration
-          saveRDS( list( d0 = d0, d1 = d1 ), "models/sims.rds" )
-          print( paste0(K, " predictors,", j, " true positives fitted via ", k, " method" ) )
-          
-        }
       }
     }
   }
@@ -236,22 +219,25 @@ if ( !exists("d2") ) {
   
   d2 <- list() # prepare a list
   
-  # loop through estimation methods to get
-  for ( i in c("lasso","two-step","multi") ) {
+  # calculate the simulations
+  d2$cluster <- lapply( 1:1e2, function(i) cbind.data.frame( data.frame( sim = rep(i,23) ), sim( N = 126, n_prds = 23, eff = c( rep(0,2), rep(.15,2),rep(0,6),rep(.1,3),rep(0,10) ), cor = yocov, thres = .2 ) ) ) %>% do.call( rbind.data.frame, . )
+  d2$test <- lapply( 1:1e2, function(i) cbind.data.frame( data.frame( sim = rep(i,23) ), sim( N = 126, n_prds = 23, eff = c( rep(0,2), .3, rep(0,7),.3,rep(0,12) ), cor = yocov, thres = .2 ) ) ) %>% do.call( rbind.data.frame, . )
     
-    # calculate the simulations
-    d2[[i]]$cluster <- sapply( 1:1e2, function(j) sim( N = 126, n_prds = 23, eff = c( rep(0,2), rep(.15,2),rep(0,6),rep(.1,3),rep(0,10) ), cor = yocov, thres = .2, meth = i ) )  %>% t() %>% as.data.frame()
-    d2[[i]]$test <- sapply( 1:1e2, function(j) sim( N = 126, n_prds = 23, eff = c( rep(0,2), .3, rep(0,7),.3,rep(0,12) ), cor = yocov, thres = .2, meth = i ) ) %>% t() %>% as.data.frame()
-    
-  }
 }
 
 # save it all
 saveRDS( list( d0 = d0, d1 = d1, d2 = d2 ), "models/sims.RDS" )
 
 
-# ---- prepare summaries for plotting ----
+# ---- plotting ----
 
-
+d0$yocov %>%
+  pivot_longer( cols = c("two_step","lasso"), names_to = "meth", values_to = "p" ) %>%
+  mutate( sig = ifelse(p < .05, 1, 0 ) ) %>%
+  pivot_wider( id_cols = c("sim","meth"), values_from = sig, names_from = var ) %>%
+  mutate( false_positives = rowSums( across( starts_with("V") ) ) ) %>%
+  ggplot( aes( x = false_positives, fill = meth) ) +
+  geom_bar( width = .25, position = position_dodge(width = .25 ) ) +
+  geom_text( stat = "count", aes(label = after_stat(count) ), vjust = -1.0, size = 4, position = position_dodge(width = .25 ) )
 
 
