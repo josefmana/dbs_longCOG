@@ -1,13 +1,14 @@
 # A neat small script that checks for overoptimistic bias in the best case scenario for choosing significant predictors of an
-# outcome from a number of predictors via two-stage procedure that first pre-selects potential predictors via simple correlations
+# outcome from a number of potential predictors via two-stage procedure that first pre-selects potential predictors via simple correlations
 # and then estimates effect sizes via multiple regressions compared to Bayesian Lasso.
 
 # list packages to be used
 pkgs <- c( "rstudioapi", # setting working directory via RStudio API
+           "conflicted", # conflict resolutions
            "tidyverse", "dplyr", "reshape2", # data wrangling
            "MASS", # multivariate normal distribution
            "brms", "bayestestR", # Bayesian model fitting and summaries
-           "ggplot2" # plotting
+           "ggplot2", "patchwork" # plotting
            )
 
 # load or install each of the packages as needed
@@ -16,15 +17,23 @@ for (i in pkgs) {
   if ( i %in% names (sessionInfo() $otherPkgs) == F ) library(i, character.only = T ) # load if it ain't loaded yet
 }
 
+# check for conflicts among packages and set preferences
+conflict_scout()
+conflict_prefer("filter", "dplyr")
+conflict_prefer("select", "dplyr")
+
 # set working directory (works in RStudio only)
-setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
+setwd( dirname(getSourceEditorContext()$path) )
 
 # create folders "models", "figures", "tables" and "sessions" to store results and sessions info in
 # prints TRUE and creates the folder if it was not present, prints NULL if the folder was already present.
 sapply( c("models", "figures", "tables", "sessions"), function(i) if( !dir.exists(i) ) dir.create(i) )
 
 # set ggplot theme
-theme_set( theme_classic(base_size = 14) )
+theme_set( theme_classic(base_size = 18) )
+
+# prepare colors to use in graphs (a colorblind-friendly palette)
+cbPal <- c( "#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7" )
 
 # formats in which figures are to be saved
 forms <- c(".jpg",".png",".tiff")
@@ -104,7 +113,7 @@ melt(yocov) %>%
   rename( "Pearson's r" = "value" ) %>%
   ggplot( aes(x = Var1, y = rev(Var2), fill = `Pearson's r` ) ) +
   geom_tile( color = "grey" ) +
-  scale_fill_gradient2( low = "white", high = "navy", limit = c(0,1), midpoint = .33 ) +
+  scale_fill_gradient2( low = "white", high = cbPal[7], limit = c(0,1), midpoint = .33 ) +
   labs( x = "Row variable", y = "Column variable" ) +
   scale_x_continuous( breaks = 1:23, labels = 1:23 ) +
   scale_y_continuous( breaks = 1:23, labels = 23:1 ) +
@@ -136,7 +145,7 @@ if ( !exists("d0") ) {
                          cbind.data.frame( data.frame( sim = rep(j,23) ), sim( N = 126, n_prds = 23, eff = rep(0,23), cor = get(i), thres = .2 ) )
                        
                        # after simulating, tidy up the table
-                       ) %>% do.call( rbind.data.frame, . )
+                       ) %>% do.call( rbind.data.frame, . ) %>% add_column( cov = i, .before = 1 )
     
     # save after each iteration
     saveRDS( list( d0 = d0 ), "models/sims.rds" )
@@ -171,7 +180,10 @@ if ( !exists("d1") ) {
                                 cbind.data.frame( data.frame( sim = rep(l,K) ), sim( N = 126, n_prds = K, eff = rep(0,K), cor = nocov_fun(K=K), thres = .2 ) )
 
                          # after simulating, tidy up the table
-                         ) %>% do.call( rbind.data.frame, . )
+                         ) %>%
+        do.call( rbind.data.frame, . ) %>%
+        add_column( true_positives = j, .before = 1 ) %>%
+        add_column( no_preds = K, .before = 1 )
       
       # save after each iteration
       saveRDS( list( d0 = d0, d1 = d1 ), "models/sims.rds" )
@@ -201,7 +213,10 @@ if ( !exists("d1") ) {
                                   cbind.data.frame( data.frame( sim = rep(k,K) ), sim( N = 126, n_prds = K, eff = rep(0,K), cor = nocov_fun(K=K), thres = .2 ) )
                                 
                                 # after simulating, tidy up the table
-                                ) %>% do.call( rbind.data.frame, . )
+                                ) %>%
+          do.call( rbind.data.frame, . ) %>%
+          add_column( true_positives = j, .before = 1 ) %>%
+          add_column( no_preds = K, .before = 1 )
         
         # save after each iteration
         saveRDS( list( d0 = d0, d1 = d1 ), "models/sims.rds" )
@@ -229,15 +244,60 @@ if ( !exists("d2") ) {
 saveRDS( list( d0 = d0, d1 = d1, d2 = d2 ), "models/sims.RDS" )
 
 
+# ---- prepare summaries ----
+
+# summary of false positives conditional on null hypothesis
+t0 <- do.call( rbind.data.frame, d0 ) %>%
+  # re-format such that we have a column for all variables to be pushed to ggplot
+  pivot_longer( cols = c("two_step","lasso"), names_to = "meth", values_to = "p" ) %>% # prepare a single column of p-values
+  mutate( sig = ifelse(p < .05, 1, 0 ) ) %>% # flag findings significant on 5% level
+  pivot_wider( id_cols = c("cov","sim","meth"), values_from = sig, names_from = var ) %>% # pivot again such that each potential predictor has its own column with indicator of a "hit" per simulation/method pairs
+  mutate( false_positives = rowSums( across( starts_with("V") ) ) ) %>% # calculate number of "hits"/false positives across variables for each simulation/method pair
+  select( cov, meth, false_positives ) %>% # keep only variables of interest for the plot
+  table() %>% as.data.frame() %>% # prepare a table of frequencies of false hits per method
+  # prepare names
+  mutate(
+    Method = case_when( meth == "two_step" ~ "Two-step procedure", meth == "lasso" ~ "Bayesian Lasso" ),
+    Covariance = case_when( cov == "nocov" ~ "Independent predictors", cov == "yocov" ~ "Covaried predictors" ) %>% factor( levels = c("Independent predictors","Covaried predictors"), ordered = T )
+  )
+
+# summary of false negatives under no covariance
+t1 <- lapply( names(d1), function(i)
+  
+  # looping through levels of nocov simulations with true predictors present
+  lapply( 1:length(d1[[i]]), function(j)
+    
+    # for each combination of d1 individually count false positives and false negatives
+    d1[[i]][[j]] %>%
+      pivot_longer( cols = c("two_step","lasso"), names_to = "meth", values_to = "p" ) %>% # prepare a single column of p-values
+      mutate( sig = ifelse(p < .05, 1, 0 ) ) %>% # flag findings significant on 5% level
+      pivot_wider( id_cols = c("no_preds","true_positives","sim","meth"), values_from = sig, names_from = var ) %>%
+      mutate(
+        false_positives = rowSums( across( paste0( "V", (j+1):case_when( i == "lot" ~ 23, i == "med" ~ 7 ) ) ) ),
+        false_negatives = j - rowSums( across( paste0( "V", 1:j ) ) )
+      )
+    
+  ) %>% do.call( rbind.data.frame, . ) %>% select( -starts_with("V") ) # keep only the outcomes so that it's easier to bind the data sets
+
+) %>% do.call( rbind.data.frame, . ) # collapse to a single long data sets
+
+  
+
 # ---- plotting ----
 
-d0$yocov %>%
-  pivot_longer( cols = c("two_step","lasso"), names_to = "meth", values_to = "p" ) %>%
-  mutate( sig = ifelse(p < .05, 1, 0 ) ) %>%
-  pivot_wider( id_cols = c("sim","meth"), values_from = sig, names_from = var ) %>%
-  mutate( false_positives = rowSums( across( starts_with("V") ) ) ) %>%
-  ggplot( aes( x = false_positives, fill = meth) ) +
-  geom_bar( width = .25, position = position_dodge(width = .25 ) ) +
-  geom_text( stat = "count", aes(label = after_stat(count) ), vjust = -1.0, size = 4, position = position_dodge(width = .25 ) )
+# plot false positives rates conditional on null hypothesis
+t0 %>%
+  # shift frequencies by one such that there is some visual representation of zero as well
+  ggplot( aes(x = false_positives, y = Freq+1, fill = Method ) ) +
+  geom_bar( stat = "identity", position = position_dodge( width = .5), width = .5 ) + # bars
+  geom_text( aes(label = Freq), vjust = -1.0, size = 4, position = position_dodge(width = .5 ) ) + # counts
+  scale_y_continuous( limits = c(0,105), breaks = seq(1,101,25), labels = seq(0,100,25), name = "Count" ) +
+  scale_x_discrete( name = "False positives per one hundred simulations" ) +
+  scale_fill_manual( values = cbPal[c(2,1)] ) + # colors
+  theme( legend.position = "bottom" ) +
+  facet_wrap( ~Covariance ) # prepare subplots
+
+# save it
+for ( i in forms ) ggsave( paste0("figures/Fig S2 simulation false positives under null",i ), dpi = 300, width = 12.8, height = 7.79 )
 
 

@@ -197,12 +197,12 @@ for ( i in c("functions","tests") ) fig[[i]] <- lapply(
 ) %>% `names<-`(c("alpha","beta","delta") ) # after the lapply loop is finished, name each plot accordingly
 
 # arrange and print the cognitive tests plot
-with( fig$tests, (alpha / beta / delta ) + plot_layout( heights = c(1,23,27), guides = "collect") & theme( legend.position = "bottom") )
+with( fig$tests, (alpha / beta / delta ) + plot_layout( heights = c(1,23,27), guides = "collect" ) & theme( legend.position = "bottom") )
 ggsave( "figures/Fig S3 cognitive tests covariate check.tiff" , dpi = 300, width = 1.2*9.64, height = 4.2*6.54 )
 ggsave( "figures/Fig S3 cognitive tests covariate check.png" , dpi = 600, width = 1.2*9.64, height = 4.2*6.54 )
 
 # arrange and print the cognitive functions plot
-with( fig$functions, (alpha / beta / delta ) + plot_layout( heights = c(1,7,11), guides = "collect") & theme( legend.position = "bottom") )
+with( fig$functions, (alpha / beta / delta ) + plot_layout( heights = c(1,7,11), guides = "collect" ) & theme( legend.position = "bottom") )
 ggsave( "figures/Fig S4 cognitive functions covariate check.tiff" , dpi = 300, width = 1.2*9.64, height = 3.3*6.54 )
 ggsave( "figures/Fig S4 cognitive functions covariate check.png" , dpi = 600, width = 1.2*9.64, height = 3.3*6.54 )
 
