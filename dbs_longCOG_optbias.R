@@ -4,7 +4,7 @@
 
 # list packages to be used
 pkgs <- c( "rstudioapi", # setting working directory via RStudio API
-           "conflicted", # conflict resolutions
+           #"conflicted", # conflict resolutions
            "tidyverse", "dplyr", "reshape2", # data wrangling
            "MASS", # multivariate normal distribution
            "brms", "bayestestR", # Bayesian model fitting and summaries
@@ -18,9 +18,9 @@ for (i in pkgs) {
 }
 
 # check for conflicts among packages and set preferences
-conflict_scout()
-conflict_prefer("filter", "dplyr")
-conflict_prefer("select", "dplyr")
+#conflict_scout()
+#conflict_prefer("filter", "dplyr")
+#conflict_prefer("select", "dplyr")
 
 # set working directory (works in RStudio only)
 setwd( dirname(getSourceEditorContext()$path) )
@@ -153,7 +153,6 @@ if ( !exists("d0") ) {
   }
 }
 
-
 # ---- simulating effects ----
 
 # as the code is fitting few hundreds of Stan models, it crashes every so often, so we will put some insurances in place
@@ -177,7 +176,7 @@ if ( !exists("d1") ) {
       d1[[i]][[j]] <- lapply( 1:1e2,
                               function(l)
                                 # add. a column denoting the number of the simulation (nominal variable) and simulate
-                                cbind.data.frame( data.frame( sim = rep(l,K) ), sim( N = 126, n_prds = K, eff = rep(0,K), cor = nocov_fun(K=K), thres = .2 ) )
+                                cbind.data.frame( data.frame( sim = rep(l,K) ), sim( N = 126, n_prds = K, eff = rep(.3,K), cor = nocov_fun(K=K), thres = .2 ) )
 
                          # after simulating, tidy up the table
                          ) %>%
@@ -190,7 +189,8 @@ if ( !exists("d1") ) {
       
       }
     }
-  # otherwise continue from the next data set after the last one with already computed simulations
+
+# otherwise continue from the next data set after the last one with already computed simulations
 } else {
   
   # loop through all the levels, this time no need for creating new lists as they already exist (read from "models/sims.RDS")
@@ -198,7 +198,7 @@ if ( !exists("d1") ) {
     
     if( !exists( i, where = d1 ) ) d1[[i]] <- list()
     
-    K <- case_when( i == "lot" ~ 23, i == "med" ~ 10 ) # number of potential predictors
+    K <- case_when( i == "lot" ~ 23, i == "med" ~ 7 ) # number of potential predictors
     l <- length(d1[[i]]) # number of already simulated true positives
     
     for ( j in 1:5) {
@@ -210,7 +210,7 @@ if ( !exists("d1") ) {
         d1[[i]][[j]] <- lapply( 1:1e2,
                                 function(k)
                                   # add. a column denoting the number of the simulation (nominal variable) and simulate
-                                  cbind.data.frame( data.frame( sim = rep(k,K) ), sim( N = 126, n_prds = K, eff = rep(0,K), cor = nocov_fun(K=K), thres = .2 ) )
+                                  cbind.data.frame( data.frame( sim = rep(k,K) ), sim( N = 126, n_prds = K, eff = rep(.3,K), cor = nocov_fun(K=K), thres = .2 ) )
                                 
                                 # after simulating, tidy up the table
                                 ) %>%
@@ -251,14 +251,14 @@ t0 <- do.call( rbind.data.frame, d0 ) %>%
   # re-format such that we have a column for all variables to be pushed to ggplot
   pivot_longer( cols = c("two_step","lasso"), names_to = "meth", values_to = "p" ) %>% # prepare a single column of p-values
   mutate( sig = ifelse(p < .05, 1, 0 ) ) %>% # flag findings significant on 5% level
-  pivot_wider( id_cols = c("cov","sim","meth"), values_from = sig, names_from = var ) %>% # pivot again such that each potential predictor has its own column with indicator of a "hit" per simulation/method pairs
+  pivot_wider( id_cols = c("type","sim","meth"), values_from = sig, names_from = var ) %>% # pivot again such that each potential predictor has its own column with indicator of a "hit" per simulation/method pairs
   mutate( false_positives = rowSums( across( starts_with("V") ) ) ) %>% # calculate number of "hits"/false positives across variables for each simulation/method pair
-  select( cov, meth, false_positives ) %>% # keep only variables of interest for the plot
+  dplyr::select( type, meth, false_positives ) %>% # keep only variables of interest for the plot
   table() %>% as.data.frame() %>% # prepare a table of frequencies of false hits per method
   # prepare names
   mutate(
     Method = case_when( meth == "two_step" ~ "Two-step procedure", meth == "lasso" ~ "Bayesian Lasso" ),
-    Covariance = case_when( cov == "nocov" ~ "Independent predictors", cov == "yocov" ~ "Covaried predictors" ) %>% factor( levels = c("Independent predictors","Covaried predictors"), ordered = T )
+    Covariance = case_when( type == "nocov" ~ "Independent predictors", type == "yocov" ~ "Covaried predictors" ) %>% factor( levels = c("Independent predictors","Covaried predictors"), ordered = T )
   )
 
 # summary of false negatives under no covariance
@@ -277,7 +277,7 @@ t1 <- lapply( names(d1), function(i)
         false_negatives = j - rowSums( across( paste0( "V", 1:j ) ) )
       )
     
-  ) %>% do.call( rbind.data.frame, . ) %>% select( -starts_with("V") ) # keep only the outcomes so that it's easier to bind the data sets
+  ) %>% do.call( rbind.data.frame, . ) %>% dplyr::select( -starts_with("V") ) # keep only the outcomes so that it's easier to bind the data sets
 
 ) %>% do.call( rbind.data.frame, . ) # collapse to a single long data sets
 
@@ -300,4 +300,17 @@ t0 %>%
 # save it
 for ( i in forms ) ggsave( paste0("figures/Fig S2 simulation false positives under null",i ), dpi = 300, width = 12.8, height = 7.79 )
 
-
+#
+t1 %>%
+  dplyr::select( no_preds, true_positives, false_negatives, meth ) %>%
+  table() %>% as.data.frame() %>%
+  mutate( Method = case_when( meth == "two_step" ~ "Two-step procedure", meth == "lasso" ~ "Bayesian Lasso" ) ) %>%
+  # plot it
+  ggplot( aes(x = false_negatives, y = Freq+1, fill = Method ) ) +
+  geom_bar( stat = "identity", position = position_dodge( width = .5), width = .5 ) + # bars
+  geom_text( aes(label = Freq), vjust = -1.0, size = 4, position = position_dodge(width = .5 ) ) + # counts
+  scale_y_continuous( limits = c(0,110), breaks = seq(1,101,25), labels = seq(0,100,25), name = "Count" ) +
+  scale_x_discrete( name = "False negatives per one hundred simulations" ) +
+  scale_fill_manual( values = cbPal[c(2,1)] ) + # colors
+  theme( legend.position = "bottom" ) +
+  facet_grid( true_positives ~ no_preds )
