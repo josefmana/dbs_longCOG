@@ -4,11 +4,11 @@
 
 # list packages to be used
 pkgs <- c( "rstudioapi", # setting working directory via RStudio API
-           #"conflicted", # conflict resolutions
            "tidyverse", "dplyr", "reshape2", # data wrangling
            "MASS", # multivariate normal distribution
            "brms", "bayestestR", # Bayesian model fitting and summaries
-           "ggplot2", "patchwork" # plotting
+           "ggplot2", # plotting
+           "english" # changing numbers to words
            )
 
 # load or install each of the packages as needed
@@ -16,11 +16,6 @@ for (i in pkgs) {
   if (i %in% rownames (installed.packages()) == F) install.packages(i) # install if it ain't installed yet
   if ( i %in% names (sessionInfo() $otherPkgs) == F ) library(i, character.only = T ) # load if it ain't loaded yet
 }
-
-# check for conflicts among packages and set preferences
-#conflict_scout()
-#conflict_prefer("filter", "dplyr")
-#conflict_prefer("select", "dplyr")
 
 # set working directory (works in RStudio only)
 setwd( dirname(getSourceEditorContext()$path) )
@@ -176,7 +171,7 @@ if ( !exists("d1") ) {
       d1[[i]][[j]] <- lapply( 1:1e2,
                               function(l)
                                 # add. a column denoting the number of the simulation (nominal variable) and simulate
-                                cbind.data.frame( data.frame( sim = rep(l,K) ), sim( N = 126, n_prds = K, eff = rep(.3,K), cor = nocov_fun(K=K), thres = .2 ) )
+                                cbind.data.frame( data.frame( sim = rep(l,K) ), sim( N = 126, n_prds = K, eff = rep(.3,j), cor = nocov_fun(K=K), thres = .2 ) )
 
                          # after simulating, tidy up the table
                          ) %>%
@@ -210,7 +205,7 @@ if ( !exists("d1") ) {
         d1[[i]][[j]] <- lapply( 1:1e2,
                                 function(k)
                                   # add. a column denoting the number of the simulation (nominal variable) and simulate
-                                  cbind.data.frame( data.frame( sim = rep(k,K) ), sim( N = 126, n_prds = K, eff = rep(.3,K), cor = nocov_fun(K=K), thres = .2 ) )
+                                  cbind.data.frame( data.frame( sim = rep(k,K) ), sim( N = 126, n_prds = K, eff = rep(.3,j), cor = nocov_fun(K=K), thres = .2 ) )
                                 
                                 # after simulating, tidy up the table
                                 ) %>%
@@ -225,23 +220,6 @@ if ( !exists("d1") ) {
     }
   }
 }
-
-# finish by simulating two kinds of effects with covaried predictors where we assume total medium effect of variables that
-# represent TMT (3:4), and Stroop test (11:13) inspired by Kim et al. (2014)
-# (i) each variable has a proportional weight with all clusters linking to 0.3
-# (ii) exactly one variable from each cluster has the total 0.3 weight
-if ( !exists("d2") ) {
-  
-  d2 <- list() # prepare a list
-  
-  # calculate the simulations
-  d2$cluster <- lapply( 1:1e2, function(i) cbind.data.frame( data.frame( sim = rep(i,23) ), sim( N = 126, n_prds = 23, eff = c( rep(0,2), rep(.15,2),rep(0,6),rep(.1,3),rep(0,10) ), cor = yocov, thres = .2 ) ) ) %>% do.call( rbind.data.frame, . )
-  d2$test <- lapply( 1:1e2, function(i) cbind.data.frame( data.frame( sim = rep(i,23) ), sim( N = 126, n_prds = 23, eff = c( rep(0,2), .3, rep(0,7),.3,rep(0,12) ), cor = yocov, thres = .2 ) ) ) %>% do.call( rbind.data.frame, . )
-    
-}
-
-# save it all
-saveRDS( list( d0 = d0, d1 = d1, d2 = d2 ), "models/sims.RDS" )
 
 
 # ---- prepare summaries ----
@@ -281,7 +259,6 @@ t1 <- lapply( names(d1), function(i)
 
 ) %>% do.call( rbind.data.frame, . ) # collapse to a single long data sets
 
-  
 
 # ---- plotting ----
 
@@ -300,17 +277,40 @@ t0 %>%
 # save it
 for ( i in forms ) ggsave( paste0("figures/Fig S2 simulation false positives under null",i ), dpi = 300, width = 12.8, height = 7.79 )
 
-#
-t1 %>%
-  dplyr::select( no_preds, true_positives, false_negatives, meth ) %>%
-  table() %>% as.data.frame() %>%
-  mutate( Method = case_when( meth == "two_step" ~ "Two-step procedure", meth == "lasso" ~ "Bayesian Lasso" ) ) %>%
-  # plot it
-  ggplot( aes(x = false_negatives, y = Freq+1, fill = Method ) ) +
-  geom_bar( stat = "identity", position = position_dodge( width = .5), width = .5 ) + # bars
-  geom_text( aes(label = Freq), vjust = -1.0, size = 4, position = position_dodge(width = .5 ) ) + # counts
-  scale_y_continuous( limits = c(0,110), breaks = seq(1,101,25), labels = seq(0,100,25), name = "Count" ) +
-  scale_x_discrete( name = "False negatives per one hundred simulations" ) +
-  scale_fill_manual( values = cbPal[c(2,1)] ) + # colors
-  theme( legend.position = "bottom" ) +
-  facet_grid( true_positives ~ no_preds )
+# plot the results of nocov 1-5 effects simulations
+for (i in c(23,7) ) {
+  
+  # pre-process the table for plotting
+  t1 %>%
+    dplyr::filter( no_preds == i ) %>% # select only model results with "i" total predictors
+    pivot_longer( starts_with("false"), names_to = "err_type", values_to = "Count" ) %>% # collapse false negatives with false positives
+    dplyr::select( true_positives, meth, err_type, Count ) %>% # keep only variables relevant for the plot
+    table() %>% as.data.frame() %>% # calculate summaries
+    mutate(
+      # prepare labelling for procedures (two-step vs lasso) and type of error (false negatives vs positives)
+      Method = case_when( meth == "two_step" ~ "Two-step procedure", meth == "lasso" ~ "Bayesian Lasso" ),
+      Error = case_when( err_type == "false_negatives" ~ "False negatives", err_type == "false_positives" ~ "False positives" ),
+      # prepare labeling of true positives alternatives 
+      True = paste0( english( as.numeric(true_positives) ), " true positive", ifelse( true_positives == 1, "", "s") ) %>%
+        factor( levels = paste0( english(1:5), " true positive", c( "", rep("s",4) ) ), ordered = T )
+    ) %>%
+    # plot it
+    ggplot( aes(x = Count, y = Freq+1, fill = Method ) ) +
+    geom_bar( stat = "identity", position = position_dodge( width = .5), width = .5 ) + # bars
+    geom_text( aes(label = Freq), vjust = -1.0, size = 4, position = position_dodge(width = .5 ) ) + # counts
+    scale_y_continuous( limits = c(0,110), breaks = seq(1,101,25), labels = seq(0,100,25), name = "Count" ) +
+    scale_x_discrete( name = "Frequentist errors per one hundred simulations" ) +
+    scale_fill_manual( values = cbPal[c(2,1)] ) + # colors
+    theme( legend.position = "bottom" ) +
+    facet_grid( True ~ Error )
+  
+  # save it
+  for ( j in forms ) ggsave( paste0("figures/Fig S", case_when( i == 23 ~ 3, i == 7 ~ 4), " simulation of ", i, " nocov predictors", j ), width = 12.8, height = 14.4, dpi = 300 )
+  
+}
+
+
+# ---- session info ----
+
+# write the sessionInfo() into a .txt file
+capture.output( sessionInfo(), file = "sessions/sims.txt" )
