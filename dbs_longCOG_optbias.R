@@ -1,12 +1,12 @@
-# A neat small script that checks for overoptimistic bias in the best case scenario for choosing significant predictors of an
-# outcome from a number of potential predictors via two-stage procedure that first pre-selects potential predictors via simple correlations
-# and then estimates effect sizes via multiple regressions compared to Bayesian Lasso.
+# This is a script to check false error rates in the best case scenario for choosing significant predictors of a longitudinal outcome
+# from a number of potential predictors via two-stage procedure that first pre-selects potential predictors via univariate regression
+# and then continues to multiple regressions compared to Bayesian Lasso.
 
 # list packages to be used
 pkgs <- c( "rstudioapi", # setting working directory via RStudio API
            "tidyverse", "dplyr", "reshape2", # data wrangling
            "MASS", # multivariate normal distribution
-           "brms", "bayestestR", # Bayesian model fitting and summaries
+           "lmerTest", "brms", "bayestestR", # model fitting and summaries
            "ggplot2", # plotting
            "english" # changing numbers to words
            )
@@ -33,49 +33,71 @@ cbPal <- c( "#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#
 # formats in which figures are to be saved
 forms <- c(".jpg",".png",".tiff")
 
+# read the structure of our data set
+struct <- read.csv( "data/data_struct.csv", sep = "," )
+
+# use all parallel CPU cores for computing
+options( mc.cores = parallel::detectCores() )
+
 
 # ---- prepare data-generating function ----
 
 # prepare a function on varying number of subjects, number of predictors, varying pre-selection threshold and effect sizes
 # that prints a set of p-values (for two-step method) and their Bayesian equivalents (for the Bayesian Lasso), one for each
 # potential predictor; takes the following inputs:
-# N = number of subjects
+# b0 = population-level pre-surgery intercept
+# b1 = population-level annual cognitive decline
 # n_prds = number of predictors (integer)
 # eff = list of effect sizes (vector)
 # cor = covariance matrix (identical with correlation in case of standard normals)
 # thres = p-value used as a threshold for pre-selection in the two-step method (numeric)
-sim <- function( N = 126, n_prds = 7, eff = rep(0,7), cor = diag( rep(1,7) ), thres = .1 ) {
+# struct = longitudinal data structure
+sim <- function( b0 = 0, b1 = -.2, n_prds = 7, eff = rep(0,7), cor = diag( rep(1,7) ), thres = .1, struct = struct ) {
   
-  # simulate "n_prds" predictors from multivariate standard normal distribution
-  t <- mvrnorm( N, rep(0,n_prds), cor )
+  # extract number of patients and their IDs
+  ID <- unique(struct$id)
+  N <- length(ID)
+  
+  # simulate patient-specific predictors/variation
+  t <- mvrnorm( N, rep(0,n_prds), cor ) %>% `rownames<-`( ID ) # "n_prds" predictors from multivariate standard normal distribution
+  u <- mvrnorm( N, c(0,0), diag( c(.05^2,.05^2) ) ) %>% `row.names<-`( ID ) # patient-specific intercepts and slopes
+  
+  # prepare a data set combining pre-defined data structure (struct) and generative regression parameters
+  d <- struct %>% mutate( b0 = b0, b1 = b1, # population-level slope
+                          c0 = sapply( 1:nrow(struct), function(i) u[ struct$id[i], 1 ] ), # patient-specific intercept
+                          c1 = sapply( 1:nrow(struct), function(i) u[ struct$id[i], 2 ] ) # patient-specific slope
+                          )
+  
+  # add patients' cognitive profile
+  for ( i in 1:ncol(t) ) d[ , paste0("p",i) ] <- sapply( 1:nrow(d), function(j) t[ d$id[j], i ] )
   
   # generate the outcome
-  if ( length(eff) == 1 ) o <- rnorm( N, sum(t[ , 1] * eff), 1 ) # exactly one non-zero effect
-  else o <- rnorm( N, rowSums(t[ , 1:length(eff) ] * eff), 1 ) # none or more than one non-zero effects
+  if ( length(eff) == 1 ) d$o <- with( d, rnorm( N, ( b0 + c0 )  + ( b1 + c1 ) * time + d[ , "p1"] * eff[1] * time, 1 ) ) # exactly one non-zero effect
+  else d$o <- with( d, rnorm( N, ( b0 + c0 )  + ( b1 + c1 ) * time + rowSums( sapply( 1:n_prds, function(i) d[ , paste0("p",i) ] * eff[i] * d$time ) ), 1 ) ) # none or more than one non-zero effects
   
   # pre-select predictors
-  sel <- sapply( 1:n_prds, function(i) ifelse( cor.test( t[ , i], o )$p.value < thres, 1, 0 ) )
+  sel <- sapply( paste0("p",1:n_prds), function(i) ifelse( summary( lmer( as.formula( paste0( "o ~ 1 + time * ", i, "+ (1 + time | id)") ), data = d ) )[["coefficients"]][3,5] < thres, 1, 0 ) )
   
   # compute final multiple linear regression for the two-step procedure
   # use only pre-selected variables
-  if( sum(sel) == 0 ) reg <- lm( o ~ 1 ) # intercept only if no variable was selected
-  else reg <- lm( o ~ t[ , which(sel == 1) ] )
+  if( sum(sel) == 0 ) reg <- lmer( o ~ 1 + time + (1 + time | id ), data = d ) # intercept only if no variable was selected
+  else reg <- lmer( as.formula( paste0( "o ~ 1 + ", paste("time", names(sel)[sel == 1], sep = " * ", collapse = " + "), " + (1 + time | id )" ) ), data = d )
   
   # extract p-values
   if ( sum(sel) == 0 ) p <- NULL # there ain't no p-value if no variable was pre-selected
-  else p <- as.vector( summary(reg)$coefficients[ 2:(sum(sel)+1), 4 ] )
+  else p <- as.vector( summary(reg)$coefficients[ paste0("time:",names(sel)[sel == 1]) , 5 ] )
   
   # fit the Bayesian Lasso
-  lasso <- brm( as.formula( paste0( "o ~ ", paste( paste0("t",1:n_prds), collapse = " + " ) ) ), # linear model
+  lasso <- brm( as.formula( paste0( "o ~ 1 + ", paste( "time", paste0("p",1:n_prds), sep = " * ", collapse = " + " ), " + (1 + time | id)" ) ), # linear model
                 family = gaussian(), prior = prior( lasso(1), class = b ), # likelihood and priors
-                data =  cbind.data.frame(o, t) %>% `colnames<-`( c("o", paste0("t",1:n_prds) ) ) # observed variables
+                data = d # observed variables
                 )
   
   # extract probability of direction and recalculate to a p-value equivalent
-  pd <- pd_to_p( p_direction(lasso)$pd, direction = "two-sided" )[ 2:(n_prds+1) ]
+  pd <- pd_to_p( with( p_direction(lasso), pd[ Parameter %in% paste0("b_time:p",1:n_prds)] ), direction = "two-sided" )
   
   # sum-up the results and print them
-  res <- data.frame( var = paste0("V", 1:n_prds), two_step = rep(1, n_prds), lasso = pd ) # prepare ones (for those that were not tested, technically p = 1, easier to work with than NAs)
+  res <- data.frame( var = paste0("p", 1:n_prds), two_step = rep(1, n_prds), lasso = pd ) # prepare ones (for those that were not tested, technically p = 1, easier to work with than NAs)
   res$two_step[ which(sel == 1) ] <- p
   return(res) # return the results
   
@@ -121,9 +143,9 @@ for ( i in forms ) ggsave( paste0("figures/Fig S1 simulation correlation matrix"
 
 # ---- simulating the null ----
 
-# prepare a table that shows how false positive error rates depend on the threshold for case with N = 126 (the sample size of our
-# study) and K = 23 tests
-# first read d0 if there is already something computed
+# short description will be here
+
+# as the code is fitting few hundreds of Stan models, it crashes every so often, so we will put some insurances in place
 if ( file.exists("models/sims.rds") ) for ( i in names(readRDS("models/sims.RDS")) ) assign( i, readRDS("models/sims.RDS")[[i]] )
 
 # if it ain't there, start from a scratch
@@ -131,133 +153,140 @@ if ( !exists("d0") ) {
   
   d0 <- list() # prepare a list
   
-  for ( i in c("nocov","yocov") ) {
+  # loop through two diffetent time slopes (b1 = 0 = null effect and b1 = -0.3 = small to moderate decline)
+  for ( i in 1:2 ) {
     
-    # simulate the data
-    d0[[i]] <- lapply( 1:1e2,
-                       function(j)
-                         # add. a column denoting the number of the simulation (nominal variable) and simulate
-                         cbind.data.frame( data.frame( sim = rep(j,23) ), sim( N = 126, n_prds = 23, eff = rep(0,23), cor = get(i), thres = .2 ) )
-                       
-                       # after simulating, tidy up the table
-                       ) %>% do.call( rbind.data.frame, . ) %>% add_column( cov = i, .before = 1 )
+    b <- case_when( i == 1 ~ 0, i == 2 ~ -.3 ) # prepare the slope
+    d0[[i]] <- list() # prepare a list
     
-    # save after each iteration
+    # loop through covariance structures for test-level inference
+    for ( j in c("nocov","yocov") ) {
+      
+      # simulate the data
+      d0[[i]][[paste0(j,23)]] <- lapply(
+        # loop one hundred times
+        1:1e2, function(k)
+          # add a column denoting the number of the simulation (nominal variable) and simulate
+          cbind.data.frame(
+            data.frame( sim = rep(k,23) ), # column labeling single simulations 
+            sim( b0 = 0, b1 = b, n_prds = 23, eff = rep(0,23), cor = get(j), thres = .2, struct = struct ) # synthetic data analysis results
+          )
+      ) %>%
+      # after simulating, tidy up the table
+      do.call( rbind.data.frame, . ) %>%
+        add_column( decl = b, .before = 1 ) %>%
+        add_column( type = paste0(j,23), .before = 1 )
+      
+      # save after each iteration
+      saveRDS( list( d0 = d0 ), "models/sims.rds" )
+      
+    }
+    
+    # add null model of the factor scores (i.e., seven independent predictors)
+    d0[[i]]$nocov7 <- lapply(
+      # loop one hundred times
+      1:1e2, function(j)
+        # add a column denoting the number of the simulation (nominal variable) and simulate
+        cbind.data.frame(
+          data.frame( sim = rep(j,7) ), # column labeling single simulations
+          sim( b0 = 0, b1 = b, n_prds = 7, eff = rep(0,7), cor = nocov_fun(7), thres = .2, struct = struct ) # synthetic data analysis results
+        )
+    ) %>%
+    # after simulating, tidy up the table
+    do.call( rbind.data.frame, . ) %>%
+      add_column( decl = -(i-1)/10, .before = 1 ) %>%
+      add_column( type = "nocov7", .before = 1 )
+    
+    # save once again
     saveRDS( list( d0 = d0 ), "models/sims.rds" )
     
   }
-}
-
-# ---- simulating effects ----
-
-# as the code is fitting few hundreds of Stan models, it crashes every so often, so we will put some insurances in place
-
-# fit one to five medium-size predictors (r = .3) in two settings: a lot (K = 23) and medium amount (K = 7) tests
-# if it there are no simulations of this type (see l. 135), start from a scratch
-if ( !exists("d1") ) {
-  
-  d1 <- list() # prepare a list
-  
-  # loop through the possibilities
-  for ( i in c("lot","med") ) {
-    
-    d1[[i]] <- list()
-    K <- case_when( i == "lot" ~ 23, i == "med" ~ 7 ) # number of potential predictors
-    
-    # loop through 1-5 to-be true/false positives
-    for ( j in 1:5 ) {
-      
-      # simulate the data
-      d1[[i]][[j]] <- lapply( 1:1e2,
-                              function(l)
-                                # add. a column denoting the number of the simulation (nominal variable) and simulate
-                                cbind.data.frame( data.frame( sim = rep(l,K) ), sim( N = 126, n_prds = K, eff = rep(.3,j), cor = nocov_fun(K=K), thres = .2 ) )
-
-                         # after simulating, tidy up the table
-                         ) %>%
-        do.call( rbind.data.frame, . ) %>%
-        add_column( true_positives = j, .before = 1 ) %>%
-        add_column( no_preds = K, .before = 1 )
-      
-      # save after each iteration
-      saveRDS( list( d0 = d0, d1 = d1 ), "models/sims.rds" )
-      
-      }
-    }
 
 # otherwise continue from the next data set after the last one with already computed simulations
 } else {
   
-  # loop through all the levels, this time no need for creating new lists as they already exist (read from "models/sims.RDS")
-  for ( i in c("lot","med") ) {
+  # loop through several time slopes, this time no need for creating new lists as they already exist (read from "models/sims.RDS")
+  for ( i in 1:2 ) {
     
-    if( !exists( i, where = d1 ) ) d1[[i]] <- list()
+    l <- length(d0[[i]]) # number of already simulated data sets
     
-    K <- case_when( i == "lot" ~ 23, i == "med" ~ 7 ) # number of potential predictors
-    l <- length(d1[[i]]) # number of already simulated true positives
-    
-    for ( j in 1:5) {
+    # compute only settings that are not computed yet
+    if ( i > l ) {
       
-      # compute only settings that are not computed yet
-      if ( j > l ) {
+      b <- case_when( i == 1 ~ 0, i == 2 ~ -.3 ) # prepare the slope
+      d0[[i]] <- list() # prepare a list
+      
+      # loop through covariance structures for test-level inference
+      for ( j in c("nocov","yocov") ) {
         
         # simulate the data
-        d1[[i]][[j]] <- lapply( 1:1e2,
-                                function(k)
-                                  # add. a column denoting the number of the simulation (nominal variable) and simulate
-                                  cbind.data.frame( data.frame( sim = rep(k,K) ), sim( N = 126, n_prds = K, eff = rep(.3,j), cor = nocov_fun(K=K), thres = .2 ) )
-                                
-                                # after simulating, tidy up the table
-                                ) %>%
-          do.call( rbind.data.frame, . ) %>%
-          add_column( true_positives = j, .before = 1 ) %>%
-          add_column( no_preds = K, .before = 1 )
+        d0[[i]][[paste0(j,23)]] <- lapply(
+          # loop one hundred times
+          1:1e2, function(k)
+            # add. a column denoting the number of the simulation (nominal variable) and simulate
+            cbind.data.frame(
+              data.frame( sim = rep(k,23) ), # column labeling single simulations 
+              sim( b0 = 0, b1 = b, n_prds = 23, eff = rep(0,23), cor = get(j), thres = .2, struct = struct ) # synthetic data analysis results
+            )
+        ) %>%
+        # after simulating, tidy up the table
+        do.call( rbind.data.frame, . ) %>%
+          add_column( decl = b, .before = 1 ) %>%
+          add_column( type = paste0(j,23), .before = 1 )
         
         # save after each iteration
-        saveRDS( list( d0 = d0, d1 = d1 ), "models/sims.rds" )
-          
+        saveRDS( list( d0 = d0 ), "models/sims.rds" )
+        
       }
+      
+      # add null model of the factor scores (i.e., seven independent predictors)
+      d0[[i]]$nocov7 <- lapply(
+        # loop one hundred times
+        1:1e2, function(j)
+          # add a column denoting the number of the simulation (nominal variable) and simulate
+          cbind.data.frame(
+            data.frame( sim = rep(j,7) ), # column labeling single simulations
+            sim( b0 = 0, b1 = b, n_prds = 7, eff = rep(0,7), cor = nocov_fun(7), thres = .2, struct = struct ) # synthetic data analysis results
+          )
+      ) %>%
+      # after simulating, tidy up the table
+      do.call( rbind.data.frame, . ) %>%
+        add_column( decl = b, .before = 1 ) %>%
+        add_column( type = "nocov7", .before = 1 )
+      
+      # save once again
+      saveRDS( list( d0 = d0 ), "models/sims.rds" )
+      
     }
   }
 }
+
+
 
 
 # ---- prepare summaries ----
 
 # summary of false positives conditional on null hypothesis
-t0 <- do.call( rbind.data.frame, d0 ) %>%
-  # re-format such that we have a column for all variables to be pushed to ggplot
-  pivot_longer( cols = c("two_step","lasso"), names_to = "meth", values_to = "p" ) %>% # prepare a single column of p-values
-  mutate( sig = ifelse(p < .05, 1, 0 ) ) %>% # flag findings significant on 5% level
-  pivot_wider( id_cols = c("type","sim","meth"), values_from = sig, names_from = var ) %>% # pivot again such that each potential predictor has its own column with indicator of a "hit" per simulation/method pairs
-  mutate( false_positives = rowSums( across( starts_with("V") ) ) ) %>% # calculate number of "hits"/false positives across variables for each simulation/method pair
-  dplyr::select( type, meth, false_positives ) %>% # keep only variables of interest for the plot
-  table() %>% as.data.frame() %>% # prepare a table of frequencies of false hits per method
-  # prepare names
-  mutate(
-    Method = case_when( meth == "two_step" ~ "Two-step procedure", meth == "lasso" ~ "Bayesian Lasso" ),
-    Covariance = case_when( type == "nocov" ~ "Independent predictors", type == "yocov" ~ "Covaried predictors" ) %>% factor( levels = c("Independent predictors","Covaried predictors"), ordered = T )
-  )
+t0 <- lapply(1:2, function(i)
+  do.call( rbind.data.frame, d0[[i]] ) %>%
+    # re-format such that we have a column for all variables to be pushed to ggplot
+    pivot_longer( cols = c("two_step","lasso"), names_to = "meth", values_to = "p" ) %>% # prepare a single column of p-values
+    mutate( sig = ifelse(p < .05, 1, 0 ) ) %>% # flag findings significant on 5% level
+    pivot_wider( id_cols = c("decl","type","sim","meth"), values_from = sig, names_from = var ) %>% # pivot again such that each potential predictor has its own column with indicator of a "hit" per simulation/method pairs
+    mutate( false_positives = rowSums( across( starts_with("p") ), na.rm = T ) ) %>% # calculate number of "hits"/false positives across variables for each simulation/method pair
+    dplyr::select( decl, type, meth, false_positives ) %>% # keep only variables of interest for the plot
+    table() %>% as.data.frame() %>% # prepare a table of frequencies of false hits per method
+    # prepare names
+    mutate(
+      Method = case_when( meth == "two_step" ~ "Two-step procedure", meth == "lasso" ~ "Bayesian Lasso" ),
+      Covariance = case_when( type == "nocov23" ~ "Independent predictors (k = 23)",
+                              type == "yocov23" ~ "Covaried predictors (k = 23)",
+                              type == "nocov7" ~ "Independent predictors (k = 7)") %>%
+        factor( levels = c( paste0("Independent predictors (k = ", c(7,23),")" ),"Covaried predictors (k = 23)"), ordered = T )
+    )
+) %>% do.call( rbind.data.frame, . ) %>%
+  mutate( Decline = paste0( ifelse( decl == "-0.3", "Small to moderate", "No"), " decline (b1 = ", decl, ")" ) )
 
-# summary of false negatives under no covariance
-t1 <- lapply( names(d1), function(i)
-  
-  # looping through levels of nocov simulations with true predictors present
-  lapply( 1:length(d1[[i]]), function(j)
-    
-    # for each combination of d1 individually count false positives and false negatives
-    d1[[i]][[j]] %>%
-      pivot_longer( cols = c("two_step","lasso"), names_to = "meth", values_to = "p" ) %>% # prepare a single column of p-values
-      mutate( sig = ifelse(p < .05, 1, 0 ) ) %>% # flag findings significant on 5% level
-      pivot_wider( id_cols = c("no_preds","true_positives","sim","meth"), values_from = sig, names_from = var ) %>%
-      mutate(
-        false_positives = rowSums( across( paste0( "V", (j+1):case_when( i == "lot" ~ 23, i == "med" ~ 7 ) ) ) ),
-        false_negatives = j - rowSums( across( paste0( "V", 1:j ) ) )
-      )
-    
-  ) %>% do.call( rbind.data.frame, . ) %>% dplyr::select( -starts_with("V") ) # keep only the outcomes so that it's easier to bind the data sets
-
-) %>% do.call( rbind.data.frame, . ) # collapse to a single long data sets
 
 
 # ---- plotting ----
@@ -272,42 +301,10 @@ t0 %>%
   scale_x_discrete( name = "False positives per one hundred simulations" ) +
   scale_fill_manual( values = cbPal[c(2,1)] ) + # colors
   theme( legend.position = "bottom" ) +
-  facet_wrap( ~Covariance ) # prepare subplots
+  facet_grid( Decline ~ Covariance ) # prepare subplots
 
 # save it
-for ( i in forms ) ggsave( paste0("figures/Fig S2 simulation false positives under null",i ), dpi = 300, width = 12.8, height = 7.79 )
-
-# plot the results of nocov 1-5 effects simulations
-for (i in c(23,7) ) {
-  
-  # pre-process the table for plotting
-  t1 %>%
-    dplyr::filter( no_preds == i ) %>% # select only model results with "i" total predictors
-    pivot_longer( starts_with("false"), names_to = "err_type", values_to = "Count" ) %>% # collapse false negatives with false positives
-    dplyr::select( true_positives, meth, err_type, Count ) %>% # keep only variables relevant for the plot
-    table() %>% as.data.frame() %>% # calculate summaries
-    mutate(
-      # prepare labelling for procedures (two-step vs lasso) and type of error (false negatives vs positives)
-      Method = case_when( meth == "two_step" ~ "Two-step procedure", meth == "lasso" ~ "Bayesian Lasso" ),
-      Error = case_when( err_type == "false_negatives" ~ "False negatives", err_type == "false_positives" ~ "False positives" ),
-      # prepare labeling of true positives alternatives 
-      True = paste0( english( as.numeric(true_positives) ), " true positive", ifelse( true_positives == 1, "", "s") ) %>%
-        factor( levels = paste0( english(1:5), " true positive", c( "", rep("s",4) ) ), ordered = T )
-    ) %>%
-    # plot it
-    ggplot( aes(x = Count, y = Freq+1, fill = Method ) ) +
-    geom_bar( stat = "identity", position = position_dodge( width = .5), width = .5 ) + # bars
-    geom_text( aes(label = Freq), vjust = -1.0, size = 4, position = position_dodge(width = .5 ) ) + # counts
-    scale_y_continuous( limits = c(0,110), breaks = seq(1,101,25), labels = seq(0,100,25), name = "Count" ) +
-    scale_x_discrete( name = "Frequentist errors per one hundred simulations" ) +
-    scale_fill_manual( values = cbPal[c(2,1)] ) + # colors
-    theme( legend.position = "bottom" ) +
-    facet_grid( True ~ Error )
-  
-  # save it
-  for ( j in forms ) ggsave( paste0("figures/Fig S", case_when( i == 23 ~ 3, i == 7 ~ 4), " simulation of ", i, " nocov predictors", j ), width = 12.8, height = 14.4, dpi = 300 )
-  
-}
+for ( i in forms ) ggsave( paste0("figures/Fig S2 simulation false positives under null",i ), dpi = 300, width = 13.1, height = 7.79 )
 
 
 # ---- session info ----
