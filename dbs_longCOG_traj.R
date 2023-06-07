@@ -1,8 +1,9 @@
-# set working directory (works only in RStudio)
-setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
+# This is a script that computes generalized mixed models to describe post-surgery cognitive decline for the longitudinal cognition
+# in DBS study.
 
 # list required packages into a character object
-pkgs <- c( "dplyr", "tidyverse", # for data wrangling
+pkgs <- c( "rstudioapi", # setting working directory via RStudio API
+           "dplyr", "tidyverse", # for data wrangling
            "brms", "tidybayes", # for Bayesian analyses 
            "ggplot2", "patchwork" # for plotting
            )
@@ -12,6 +13,9 @@ for ( i in pkgs ) {
   if ( i %in% rownames( installed.packages() ) == F ) install.packages(i) # install if it ain't installed yet
   if ( i %in% names( sessionInfo()$otherPkgs ) == F ) library( i , character.only = T ) # load if it ain't loaded yet
 }
+
+# set working directory (works only in RStudio)
+setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
 
 # set some values for later
 s = 87542 # seed for reproducibility
@@ -31,10 +35,13 @@ ad = .99 # adapt_delta parameter
 sapply( c("models", "figures", "tables", "sessions"), function(i) if( !dir.exists(i) ) dir.create(i) )
 
 # set ggplot theme
-theme_set( theme_minimal(base_size = 14) )
+theme_set( theme_minimal(base_size = 18) )
 
 # prepare colors to use in graphs (a colorblind-friendly palette)
 cbPal <- c( "#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7" )
+
+# formats in which figures are to be saved
+forms <- c(".jpg",".png",".tiff")
 
 # read the data set
 d0 <- read.csv( "data/20220508_dbs_longCOG_data.csv" , sep = "," )
@@ -85,15 +92,13 @@ p <- NULL
 
 # ---- models fitting ----
 
-# prepare a list for single models
-m <- list()
-
 # conduct model fitting
-for ( i in names(f) ) m[[i]] <- brm( formula = f[[i]], family = student(), prior = p,
-                                     data = df, sample_prior = T, seed = s, chains = ch,
-                                     iter = it, warmup = wu, control = list( adapt_delta = ad ),
-                                     file = paste0( "models/",i,".rds" ), save_model = paste0("models/",i,".stan")
-                                     )
+m <- lapply( setNames( names(f), names(f) ),
+             function(i) brm( formula = f[[i]], family = student(), prior = p,
+                              data = df, sample_prior = T, seed = s, chains = ch,
+                              iter = it, warmup = wu, control = list( adapt_delta = ad ),
+                              file = paste0( "models/",i,".rds" ), save_model = paste0("models/",i,".stan")
+                              ) )
 
 
 # ---- soft model checking ----
@@ -102,10 +107,9 @@ for ( i in names(f) ) m[[i]] <- brm( formula = f[[i]], family = student(), prior
 for ( i in names(m) ) m[[i]] <- add_criterion( m[[i]] , criterion = c("loo","waic") )
 
 # check the highest Rhat for chains convergence and Pareto-k for influential outliers
-cbind.data.frame(
-  R_hat = sapply( names(m) , function(i) max( rhat(m[[i]]), na.rm = T ) ) %>% round(3),
-  Pareto_k = sapply( names(m) , function(i) max( loo(m[[i]])$diagnostics$pareto_k, na.rm = T ) ) %>% round(3)
-)
+cbind.data.frame( R_hat = sapply( names(m) , function(i) max( rhat(m[[i]]), na.rm = T ) ) %>% round(3),
+                  Pareto_k = sapply( names(m) , function(i) max( loo(m[[i]])$diagnostics$pareto_k, na.rm = T ) ) %>% round(3)
+                  )
 
 # check Pareto-k visually as well
 par( mfrow = c(1,2) )
@@ -113,18 +117,18 @@ for ( i in names(m) ) plot( loo(m[[i]]), main = i )
 par( mfrow = c(1,1) )
 
 
-# ---- fig 2 linear vs non-linear fit ----
+# ---- fig 3 linear vs non-linear fit ----
 
 # prepare data to be predicted
 d_seq <- data.frame( time_y = seq(-2,12,length.out = 50), id = NA ) %>% mutate( time = time_y + scl$Md$time )
 
 # add predictions of expectation (epreds, based on fixed-effects only) from both linear and non-linear models
-preds <- lapply( names(m) , function(i)
+preds <- lapply( names(m) ,function(i)
   d_seq %>%
     add_epred_draws( m[[i]], re_formula = NA ) %>%
     mutate( .epred = .epred * scl$SD$drs + scl$M$drs ) %>%
     median_hdi( .width = .95 ) %>%
-    add_column( Model = factor( ifelse(i == "m0_linear", "Linear", "Smooths"), levels = c("Smooths","Linear"), ordered = T ) )
+    add_column( Model = factor( ifelse(i == "m0_linear", "Linear", "Non-linear"), levels = c("Non-linear","Linear"), ordered = T ) )
 )
 
 # collapse the linear and spline predictions for plotting purposes to a single file
@@ -141,10 +145,8 @@ preds %>%
   scale_fill_manual( values = cbPal[c(1,8)] ) +
   theme( legend.position = c(0.15,0.21), legend.key.width = unit(2.6,"cm"), legend.key.height = unit(1.5,"cm") )
 
-# save as Fig 2
-ggsave( "figures/Fig 2 linear vs non-linear fit.tiff", dpi = 300, width = 9.64, height = 6.54 )
-ggsave( "figures/Fig 2 linear vs non-linear fit.png", dpi = 600, width = 9.64, height = 6.54 )
-ggsave( "figures/Fig 2 linear vs non-linear fit.jpg", dpi = 600, width = 9.64, height = 6.54 )
+# save as Fig 3
+for ( i in forms ) ggsave( paste0( "figures/Fig 3 linear vs non-linear fit", i ), dpi = 300, width = 13.1, height = 7.79 )
 
 
 # ---- stats for in-text reporting ----
@@ -174,6 +176,9 @@ spread_draws( m$m0_linear, `b_.*` , regex = T ) %>% # extract parameter estimate
   select( starts_with("b_") ) %>% mutate_all( function(x) x = sprintf( "%.2f", round(x, 2) ) ) %>%
   matrix( nrow = 2, ncol = 3, byrow = T, dimnames = list( c("intercept","slope"), c("b","PPI_low","PPI_upp") ) ) %>%
   as.data.frame() %>% mutate( `b [95% PPI]` = paste0(b," [",PPI_low,", ",PPI_upp,"]") ) %>% select( `b [95% PPI]`)
+
+# extract correlation between patient-level Intercepts and slopes
+spread_draws( m$m0_linear,  `cor_.*` , regex = T ) %>% median_hdi( .width = .95 )
 
 
 # ---- session info ----

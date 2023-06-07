@@ -1,8 +1,9 @@
-# set working directory (works only in RStudio)
-setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
+# This is a script that computes generalized mixed models to predict post-surgery cognitive decline from pre-surgery cognitive profile
+# with covariates for the longitudinal cognition in DBS study.
 
 # list required packages into a character object
-pkgs <- c( "dplyr", "tidyverse", # for data wrangling
+pkgs <- c( "rstudioapi", # setting working directory via RStudio API
+           "dplyr", "tidyverse", # for data wrangling
            "brms", "tidybayes", # for Bayesian analyses 
            "ggplot2", "patchwork" # for plotting
            )
@@ -12,6 +13,9 @@ for ( i in pkgs ) {
   if ( i %in% rownames( installed.packages() ) == F ) install.packages(i) # install if it ain't installed yet
   if ( i %in% names( sessionInfo()$otherPkgs ) == F ) library( i , character.only = T ) # load if it ain't loaded yet
 }
+
+# set working directory (works only in RStudio)
+setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
 
 # set some values for later
 imp = 100 # number of multiple imputations to account for missing pre-surgery data
@@ -37,6 +41,9 @@ theme_set( theme_classic(base_size = 24) )
 
 # prepare colors to use in graphs (a colorblind-friendly palette)
 cbPal <- c( "#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7" )
+
+# formats in which figures are to be saved
+forms <- c(".jpg",".png",".tiff")
 
 # read the files needed (raw data, imputed data sets, scaling values, test and domain names)
 for( i in names( readRDS( "data/longitudinal_df.rds" ) ) ) assign( i , readRDS( "data/longitudinal_df.rds" )[[i]] )
@@ -86,16 +93,14 @@ p <- c(
 
 # ---- models fitting ----
 
-# prepare a list for single models
-m <- list()
-
 # conduct model fitting
-for ( i in names(f.drs) ) m[[i]] <- brm_multiple( formula = f.drs[[i]] + f.bdi + f.led, prior = p,
-                                                  data = df, sample_prior = T, seed = s, chains = ch,
-                                                  iter = it, warmup = wu, control = list( adapt_delta = ad ),
-                                                  file = paste0( "models/",i,".rds" ),
-                                                  save_model = paste0("models/",i,".stan")
-                                                  )
+m <- lapply( setNames( names(f.drs), names(f.drs) ),
+             function(i) brm_multiple( formula = f.drs[[i]] + f.bdi + f.led, prior = p,
+                                       data = df, sample_prior = T, seed = s, chains = ch,
+                                       iter = it, warmup = wu, control = list( adapt_delta = ad ),
+                                       file = paste0( "models/",i,".rds" ),
+                                       save_model = paste0("models/",i,".stan")
+                                       ) )
 
 
 # ----------- soft model checking -----------
@@ -113,12 +118,19 @@ draws <- list()
 
 # loop through the models to fill-in the draws list
 for ( i in c("m1_lasso_doms","m2_lasso_tests","m3_doms_cov","m4_tests_cov") ) {
+  
+  # read the model in question
   m <- readRDS( paste0(getwd(), "/models/", i, ".rds") )
+  
+  # extract posterior draws
   draws[[i]] <- as_draws_df(m) %>%
     `colnames<-` ( gsub("_drs","",names(.) ) ) %>% # rename parameters in covariate models to appropriate format
     select( starts_with( c("b_","bsp_") ) & !starts_with( c("b_bdi","b_led","bsp_bdi") ) ) # keep only fixed-effects
+  
+  # clean environment
   rm(m)
   gc()
+  
 }
 
 # pull all posteriors into a single file
@@ -143,22 +155,21 @@ post <- lapply( names(draws), function(i)
   mutate(
     # re-code model to a nicer and consistent form (will serve to color density plots)
     `Predicted by:` = case_when(
-      grepl("m1_lasso_doms", `Predicted by:`) ~ "Cognitive functions",
-      grepl("m2_lasso_tests", `Predicted by:`) ~ "Cognitive tests",
-      grepl("m3_doms_cov", `Predicted by:`) ~ "Cognitive functions (with covariates)",
-      grepl("m4_tests_cov", `Predicted by:`) ~ "Cognitive tests (with covariates)"
+      grepl("m1_lasso_doms", `Predicted by:`) ~ "factor scores",
+      grepl("m2_lasso_tests", `Predicted by:`) ~ "test scores",
+      grepl("m3_doms_cov", `Predicted by:`) ~ "factor scores (with covariates)",
+      grepl("m4_tests_cov", `Predicted by:`) ~ "test scores (with covariates)"
       ),
     # add labels for effects grouping (will serve to split facets of the plot)
     Group = ifelse( Parameter == "b_Intercept", "alpha",
                     ifelse( grepl( "time|bdi:time|led:time", Parameter ), "delta", "beta" )
-                    )
-    )
+                    ) )
 
-# prepare a list for subplots of Fig. S5 (cognitive functions) and Fig. S6 (cognitive tests)
+# prepare a list for subplots of Fig. S3 (factor scores) and Fig. S4 (test scores)
 fig <- list()
 
 # loop through type of predictor (functions vs. tests)
-for ( i in c("functions","tests") ) fig[[i]] <- lapply(
+for ( i in c("factor","test") ) fig[[i]] <- lapply(
   
   # loop through the parameter type
   # (need to use lapply instead of for loop here to ensure the correct Greek symbols are printed,
@@ -176,17 +187,18 @@ for ( i in c("functions","tests") ) fig[[i]] <- lapply(
       Parameter = case_when(
         j == "delta" ~ sub( "time:", "", Parameter ) %>% sapply( ., function(x) var_nms[x, ] ),
         j != "delta" ~ Parameter %>% sapply( ., function(x) var_nms[x, ] ) )
-    ) %>%
+      ) %>%
     
     # plotting proper
-    ggplot( aes( x = reorder(Parameter, b, decreasing = T), y = b, ymin = PPI1, ymax = PPI2, fill = `Predicted by:` ) ) +
-    geom_pointrange( shape = 21, size = 3, fatten = 2, position = position_dodge( width = .7 ), color = cbPal[1] ) +
-    geom_hline( yintercept = 0, size = 1.5, linetype = "dashed", color = "red" ) +
+    ggplot( aes( x = reorder(Parameter, b, decreasing = T), y = b, ymin = PPI1, ymax = PPI2 ) ) +
+    geom_linerange( aes( color = `Predicted by:`), size = 2, position = position_dodge( width = case_when( i == "factor" ~ .4, i == "test" ~ .6 ) ) ) +
+    geom_point( aes( color = `Predicted by:`), size = 8, position = position_dodge( case_when( i == "factor" ~ .4, i == "test" ~ .6 ) ) ) +
+    geom_hline( yintercept = 0, size = 2.5, linetype = "dashed", color = case_when( i == "factor" ~ "black", i == "test" ~ "red" ) ) +
     
     # scale the axes and colors
     scale_x_discrete( labels = ifelse( j == "alpha", parse( text = "alpha"), function(x) parse( text = paste0( j, "[", x, "]" ) ) ) ) +
     scale_y_continuous( limits = case_when( j == "alpha" ~ c( 139,142 ) ) ) +
-    scale_fill_manual( values =  case_when( i == "functions" ~ cbPal[c(7,2)], i == "tests" ~ cbPal[c(6,3)] ) ) +
+    scale_color_manual( values =  case_when( i == "factor" ~ cbPal[c(7,2)], i == "test" ~ cbPal[c(6,3)] ) ) +
     
     # label and flip axes, position legend and add title
     labs( x = NULL, y = ifelse( j == "delta", "DRS-2 (points per year)", "DRS-2" ) ) +
@@ -197,14 +209,12 @@ for ( i in c("functions","tests") ) fig[[i]] <- lapply(
 ) %>% `names<-`(c("alpha","beta","delta") ) # after the lapply loop is finished, name each plot accordingly
 
 # arrange and print the cognitive tests plot
-with( fig$tests, (alpha / beta / delta ) + plot_layout( heights = c(1,23,27), guides = "collect" ) & theme( legend.position = "bottom") )
-ggsave( "figures/Fig S3 cognitive tests covariate check.tiff" , dpi = 300, width = 1.2*9.64, height = 4.2*6.54 )
-ggsave( "figures/Fig S3 cognitive tests covariate check.png" , dpi = 600, width = 1.2*9.64, height = 4.2*6.54 )
+with( fig$test, (alpha / beta / delta ) + plot_layout( heights = c(1,23,27), guides = "collect" ) & theme( legend.position = "bottom") )
+for ( i in forms ) ggsave( paste0( "figures/Fig S2 test scores covariate check", i ), dpi = 300, width = 13.1, height = 2.7 * 14.4 )
 
 # arrange and print the cognitive functions plot
-with( fig$functions, (alpha / beta / delta ) + plot_layout( heights = c(1,7,11), guides = "collect" ) & theme( legend.position = "bottom") )
-ggsave( "figures/Fig S4 cognitive functions covariate check.tiff" , dpi = 300, width = 1.2*9.64, height = 3.3*6.54 )
-ggsave( "figures/Fig S4 cognitive functions covariate check.png" , dpi = 600, width = 1.2*9.64, height = 3.3*6.54 )
+with( fig$factor, (alpha / beta / delta ) + plot_layout( heights = c(1,7,11), guides = "collect" ) & theme( legend.position = "bottom") )
+for ( i in forms ) ggsave( paste0( "figures/Fig S3 factor scores covariate check", i ), dpi = 300, width = 13.1, height = 1.8 * 14.4 )
 
 
 # ---- session info ----

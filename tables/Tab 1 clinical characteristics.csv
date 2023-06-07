@@ -2,7 +2,7 @@ Characteristic,N,Md,Min.Max,M,SD
 Baseline characteristics,,,,,
 	Age at surgery (years),126,58,40-76,57.25,7.96
 	Education (years),117,13,10-23,14.26,2.91
-	Sex (males),126,,83 (66 %),,
+	Sex (males),83 (66 %),,,,
 	Disease duration at surgery (years),125,11,4-30,11.67,4.05
 	LEDD (mg),114,1614,400-4138,1696.88,672.33
 	Levodopa test (% response),93,54,20-81,52.64,12.81

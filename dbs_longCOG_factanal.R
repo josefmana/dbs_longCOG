@@ -1,8 +1,8 @@
-# set working directory (works only in RStudio)
-setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
+# This is a script that calculates exploratory factor analysis (EFA) of pre-surgery battery for the longitudinal cognition in DBS study.
 
 # list required packages into a character object
-pkgs <- c( "dplyr", "tidyverse", # for data wrangling
+pkgs <- c( "rstudioapi", # setting working directory via RStudio API
+           "dplyr", "tidyverse", # for data wrangling
            "missMDA", "psych", # for factor analyses 
            "ggplot2", "patchwork" # for plotting
            )
@@ -13,6 +13,9 @@ for ( i in pkgs ) {
   if ( i %in% names( sessionInfo()$otherPkgs ) == F ) library( i , character.only = T ) # load if it ain't loaded yet
 }
 
+# set working directory (works only in RStudio)
+setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
+
 # set some values for later
 imp = 100 # number of multiple imputations to account for missing pre-surgery data
 s = 87542 # seed for reproducibility
@@ -22,10 +25,13 @@ s = 87542 # seed for reproducibility
 sapply( c("models", "figures", "tables", "sessions"), function(i) if( !dir.exists(i) ) dir.create(i) )
 
 # set ggplot theme
-theme_set( theme_classic(base_size = 14) )
+theme_set( theme_classic(base_size = 18) )
 
 # prepare colors to use in graphs (a colorblind-friendly palette)
 cbPal <- c( "#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7" )
+
+# formats in which figures are to be saved
+forms <- c(".jpg",".png",".tiff")
 
 # read the data set
 d <- read.csv( "data/20220508_dbs_longCOG_data.csv", sep = "," ) %>% filter( included == 1 & ass_type == "pre" )
@@ -96,12 +102,12 @@ doms_sum["nms", , ] <- t( read.csv( "data/dbs_longCOG_efa_labels.csv" , sep = ",
 # fill-in signs of each factor in each imputation to know which scores should be reversed
 doms_sum["sgn", , ] <- apply( doms_sum["nms", , ] , 2 , function(x) startsWith( x , "-") ) %>%
   t() %>% as.data.frame() %>% # formatting
-  mutate( across( everything() , ~ ifelse( . == T , -1 , 1 ) ) ) %>% t()
+  mutate( across( everything() , ~ifelse( . == T , -1 , 1 ) ) ) %>% t()
 
 # get rid of the minus sign in labels table
 doms_sum["nms", , ] <- doms_sum["nms", , ] %>%
   t() %>% as.data.frame() %>%
-  mutate( across( everything() , ~ gsub( "-" , "" , . ) ) ) %>% t()
+  mutate( across( everything() , ~gsub( "-" , "" , . ) ) ) %>% t()
 
 # list all the domains
 doms <- c("exec_fun", # loaded on primarily by PST, the first factor in 82% data sets
@@ -111,7 +117,7 @@ doms <- c("exec_fun", # loaded on primarily by PST, the first factor in 82% data
           "set_shift", # loaded on primarily by TMT and RAVLT-B, the fifth factor in 28% data sets
           "anxiety", # loaded on primarily by STAI, the sixth factor in 60% data sets
           "visp_wm" # loaded on primarily by SS, the seventh factor in 49% data sets
-)
+          )
 
 # switch signs where appropriate in EFA loadings and scores, and rename and sort columns
 for ( i in 1:imp ) {
@@ -142,7 +148,7 @@ if ( !dir.exists("data/imputed") ) dir.create( "data/imputed" )
 for ( i in 1:imp ) write.table( x = cbind.data.frame( id = d$id, d.imp$res.MI[[i]] ), # the data
                                 file = paste0("data/imputed/imputed_df_",i,".csv"), # the file
                                 sep = ",", row.names = F
-)
+                                )
 
 
 # ---- extracting performance indexes  ----
@@ -201,9 +207,7 @@ fat_perc <- list(
 )
 
 # calculate the percentages
-for ( i in names(fat_perc) ) fat_perc[[i]] <- sapply(
-  names(fat_perc[[i]]), function(j) 100 * sum( complete.cases( fat_perc[[i]][[j]] ) ) / imp
-)
+for ( i in names(fat_perc) ) fat_perc[[i]] <- sapply( names(fat_perc[[i]]), function(j) 100 * sum( complete.cases( fat_perc[[i]][[j]] ) ) / imp )
 
 # bind the percentages to the FA summary table (t.s1)
 t.s1 <- t.s1 %>% left_join(
@@ -219,14 +223,14 @@ colnames(t.s1)[4:5] <- c( "RMSEA 90% CI (upper bound)", "Total variance accounte
 write.table( t.s1, file = "tables/Tab S1 factor analysis performance indexes.csv", sep = ",", row.names = F, quote = F)
 
 
-# ---- fig s2 factor analyses performance indexes  ----
+# ---- fig s1 factor analyses performance indexes  ----
 
-# set-up a list to contain Fig S2 component figures
-f.s2 <- list()
+# set-up a list to contain Fig S1 component figures
+f.s1 <- list()
 
 # loop through TLI and upper 90% CI RMSEA
 for ( i in c("TLI","RMSEA_90_CI_upp") ) {
-  f.s2[[i]] <- fat[ , i , ] %>%
+  f.s1[[i]] <- fat[ , i , ] %>%
     # re-format the table for plotting
     t() %>% as.data.frame() %>%
     pivot_longer( everything() , names_to = "Model" , values_to = i ) %>%
@@ -247,14 +251,12 @@ for ( i in c("TLI","RMSEA_90_CI_upp") ) {
                         ))
 }
 
-# arrange Fig S2 for printing
-f.s2$TLI / f.s2$RMSEA_90_CI_upp + plot_layout( guides = "collect" ) +
+# arrange Fig S1 for printing
+f.s1$TLI / f.s1$RMSEA_90_CI_upp + plot_layout( guides = "collect" ) +
   plot_annotation( tag_levels = "A" ) & theme( plot.tag = element_text(face = "bold") )
 
-# save as Fig S2
-ggsave( "figures/Fig S2 factor analysis performance indexes.tiff", dpi = 300, width = 9.64, height = 6.54 )
-ggsave( "figures/Fig S2 factor analysis performance indexes.png", dpi = 600, width = 9.64, height = 6.54 )
-ggsave( "figures/Fig S2 factor analysis performance indexes.jpg", dpi = 600, width = 9.64, height = 6.54 )
+# save as Fig S1
+for ( i in forms ) ggsave( paste0("figures/Fig S1 factor analysis performance indexes",i ), dpi = 300, width = 13.1, height = 7.79 )
 
 
 # ---- tab 3 factor loadings ----
@@ -275,10 +277,9 @@ for( i in 1:imp ) loads[ , , i ] <- efa[[i]][[nf-2]]$loadings %>%
   ) %>% as.matrix()
 
 # write a summary of loadings across all imputed data sets
-t3 <- matrix(
-  data = NA, nrow = nrow(loads[ , , 1]), ncol = ncol(loads[ , , 1]),
-  dimnames = list( rownames(loads[ , , 1 ]) , colnames(loads[ , , 1]) )
-) %>% as.data.frame()
+t3 <- matrix( data = NA, nrow = nrow(loads[ , , 1]), ncol = ncol(loads[ , , 1]),
+              dimnames = list( rownames(loads[ , , 1 ]) , colnames(loads[ , , 1]) )
+              ) %>% as.data.frame()
 
 # fill-in averages and SDs across all imputations 
 for ( i in rownames(t3) ) {
