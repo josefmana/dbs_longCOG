@@ -210,11 +210,11 @@ for ( i in c("factor","test") ) fig[[i]] <- lapply(
 
 # arrange and print the cognitive tests plot
 with( fig$test, (alpha / beta / delta ) + plot_layout( heights = c(1,23,27), guides = "collect" ) & theme( legend.position = "bottom") )
-for ( i in forms ) ggsave( paste0( "figures/Fig S2 test scores covariate check", i ), dpi = 300, width = 13.1, height = 2.7 * 14.4 )
+for ( i in forms ) ggsave( paste0( "figures/Fig S3 test scores covariate check", i ), dpi = 300, width = 13.1, height = 2.7 * 14.4 )
 
 # arrange and print the cognitive functions plot
 with( fig$factor, (alpha / beta / delta ) + plot_layout( heights = c(1,7,11), guides = "collect" ) & theme( legend.position = "bottom") )
-for ( i in forms ) ggsave( paste0( "figures/Fig S3 factor scores covariate check", i ), dpi = 300, width = 13.1, height = 1.8 * 14.4 )
+for ( i in forms ) ggsave( paste0( "figures/Fig S4 factor scores covariate check", i ), dpi = 300, width = 13.1, height = 1.8 * 14.4 )
 
 
 # ---- session info ----

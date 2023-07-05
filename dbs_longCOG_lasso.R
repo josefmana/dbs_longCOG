@@ -296,8 +296,8 @@ d %>% mutate( drs = drs_tot ) %>%
   theme_classic( base_size = 7 ) +
   theme( legend.position = "bottom" )
 
-# save as Fig S4
-for ( i in forms ) ggsave( paste0( "figures/Fig S4 posterior predictive check", i ), dpi = 300, width = 13.1, height = 14.4 )
+# save as Fig S2
+for ( i in forms ) ggsave( paste0( "figures/Fig S2 posterior predictive check", i ), dpi = 300, width = 13.1, height = 14.4 )
 
 
 # ---- models' posteriors ----
