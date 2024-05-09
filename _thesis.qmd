@@ -1,0 +1,397 @@
+---
+title: "Cognitive predictors of cognitive decline in Parkinson's disease treated by subthalamic deep brain stimulation"
+subtitle: "DISSERTATION THESIS"
+author: "Mgr. Josef Mana"
+bibliography: references.bib
+format:
+  pdf:
+    toc: true
+    table-of-contents: true
+    number-sections: true
+    number-depth: 3
+warning: false
+echo: false
+---
+
+```{r}
+#| label: init
+
+rm( list = ls() )
+
+library(here) # reading & saving files
+library(tidyverse) # data wrangling
+library(gt) # tables formatting
+
+```
+
+# Introduction
+
+## Parkinson's disease
+
+### Motor and nonmotor symptoms
+
+### Neuropsychologic evaluation in PD
+
+### Theories of cognitive deficit in PD
+
+## Deep brain stimulation
+
+### DBS for treatment of motor symptoms
+
+### Non-motor side effects of DBS
+
+### Cognitive performance in DBS treated patients
+
+## Measuring cognitive functions
+
+### Clasical test theory
+
+### Item response theory
+
+### Causal versus descriptive targets of inference
+
+# Research Aims
+
+The primary aim of this thesis is to describe pre-surgery cognitive profile of STN DBS treated patients with PD that is prognostic of faster long-term post-surgery rate of cognitive decline. In other words, the thesis ought to indicate which cognitive functions are likely to be impaired already at pre-surgery neuropsychologic assessment in patients that go on to show relatively faster post-surgery cognitive decline. As the answer to this research question is symmetric, this thesis should also indicate which cognitive functions are likely to be relatively unimpaired at pre-surgery assessment in patients that enjoy good long-term post-surgery cognitive performance.
+
+Secondary aims are to enhance our description of pre-surgery cognitive profile prognostic of post-surgery cognitive decline in STN DBS treated PD patients by describing pre-surgery magnetic resonance imaging associated with post-surgery cognitive decline, and to breach the gap between cognitive deficit measured in laboratory settings and its impact on everyday life by examining how PD patients' performance of daily living change after initiating STN DBS treatment.
+
+To achieve these research goals, we begin by showing that psychologically meaningful differences between patients with and without cognitive impairment can be even in principle observed by studying differences in verbal and non-verbal memory learning curves of PD patients with and without diagnosed PD-MCI [@havlik2020]. Next, we present a longitudinal study that includes data of 126 PD patients repeatedly screened for cognitive deficit while being treated by STN DBS [@mana2024]. Discussion of this study will comprise the majority of the thesis as it directly addresses its primary research aim. Finally, we build upon this study by addressing the secondary aims of exploring pre-surgery structural connectivity profile in MRI of patients who experience more severe post-surgery cognitive decline [@filip2024], and relating the objective post-surgery cognitive performance assessed in laboratory settings to patients' subjective difficulty in performing cognitively demanding instrumental activities of daily living [@bezdicek2022].
+
+## Study 1: Learning Curve in Verbal and Non-verbal Memory of Patients with Parkinson's Disease
+
+Declarative memory is one of the cognitive domains that may be impaired even in non-demented PD patients [@bezdicek2018; @domellof2015; @curtis2019]. When taking into account potential mechanisms causing memory deficits in PD which may be either executive (such as retrieval deficit hypothesis) or associative (such as the associative binding hypothesis) [@bezdicek2019; @bronnick2011; @chiaravalloti2014], we can expect there to be differences in immediate recall (i.e., *retention*) and learning over trials (i.e., *slope* or *learning curve*) PD-related deficits. To improve our understanding of these distinctions, Study 1 aims to address following research questions: *RQ1.1)* How do PD patients with and without diagnosis of MCI differ from healthy adults in their visual and verbal memory retention, *RQ1.2)* How do PD patients with and without diagnosis of MCI differ from healthy adults in their visual and verbal memory learning curves? And *RQ1.3)* Do differences in retention and learning curve between PD patients with and without diagnosis of MCI and healthy adults vary according to sensory domain? 
+
+## Study 2: Preoperative Cognitive Profile Predictive of Cognitive Decline after Subthalamic Deep Brain Stimulation in Parkinson's Disease
+
+STN DBS in PD patients has been associated with heterogenous cognitive outcomes with prior studies reporting findings ranging from small to moderate post-surgery decline in verbal fluency to equivocal results for other cognitive domains [@combs2015; @mehanna2017; @parsons2006]. The ability to predict which patients are likely to develop post-surgery cognitive decline can thus prove useful for patient selection and for guiding post-surgery patient monitoring. The majority of prior studies predicting longitudinal post-surgery cognitive decline employed pre-surgery/post-surgery design with change scores as their dependent variable [@gruber2019; @kim2014] which have a drawback of confounding true change with measurement error [@singer2003]. Furthermore, the focus on change scores allows researchers to estimate group-level post-surgery changes describing their sample but ignores patient-level variability which is necessary to generalize findings beyond the sample [@yarkoni2020]. In Study 2, we aim to predict cognitive true score changes after STN-DBS leveraging a data set that includes three or more observations in large enough number of patients to estimate both group-level post-surgery cognitive decline to describe our sample as well as patient-level variability to provide predictions for other similar samples. To this end, we asked the following research questions: *RQ2.1)* What is the size of expected long-term rate of cognitive decline after STN DBS in PD patients? *RQ2.2)* What is the pre-surgery cognitive profile that is predictive of long-term post-surgery cognitive decline in STN DBS treated PD patients?
+
+## Study 3: Structural and microstructural predictors of cognitive decline in deep brain stimulation of subthalamic nucleus in Parkinson’s disease
+
+Another, increasingly popular modality for predicting post-surgery cognitive decline is pre-surgery profile of anatomy and structural or functional connectivity of patients' brain in MRI [@blume2017; @costentin2019; @planche2018]. Consequently, we follow our results of Study 2 up with longitudinal examination of STN DBS treated patients with PD that also underwent diffusion weighted imaging (DWI) and structural MRI before surgery. The research question was *RQ3.1)* What is the pre-surgery profile of structural integrity and microstructural connectivity in MRI that is predictive of long-term post-surgery cognitive decline in STN DBS treated PD patients?
+
+## Study 4: The Instrumental Activities of Daily Living in Parkinson’s Disease Patients Treated by Subthalamic Deep Brain Stimulation
+
+Whereas studies 1-3 focus on describing patients' in-laboratory cognitive performance, Study 4 aims to bridge the gap between cognitive deficit detectable by objective cognitive testing and patients' subjective assessment of its impact on everyday living. Activities of daily living (ADL) play a crucial role in this aspect as absence or presence of cognitively caused ADL deficit differentiates between PD-MCI and PDD [@dubois2007; @litvan2012]. Specifically, cognitively demanding instrumental ADL (IADL) such as following instructions or doing more than one thing at a time may be impaired in PD indicating progression of cognitive decline [@brennan2016]. In Study 4 we aim to document post-surgery IADL changes of PD patients and estimate causal effect of dopaminergic medication level as a potentially easy-to-intervene-on factor to moderate post-surgery IADL. Following research questons were addressed in this study: *RQ4.1)* What is the size of change in self-reported IADL one year after STN DBS compared to pre-surgery IADL level in PD patients? *RQ4.2)* What is the size of one year post-surgery self-reported IADL change that can be attributed to time and STN DBS effects rather than other post-surgery factors? *RQ4.3)* How does one year post-surgery self-reported IADL change in response to adjusting levels of dopaminergic medication?
+
+# Methods
+
+## Learning curve in verbal and non-verbal memory of patients with Parkinson's disease
+
+### Participants
+
+The study involved 60 patients with PD recruited from the Movement Disorders Center, Department of Neurology at First Faculty of Medicine and General University Hospital in Prague, and 60 age and sex matched healthy adults recruited for the National Normative Study of Cognitive Determinants of Healthy Aging [@stepankova2015]. The exclusion criteria were as follows: PDD according to Movement Disorder Society criteria [@dubois2007; @emre2007], atypical or secondary parkinsonism, severe or unstable depression, psychotic symptoms (hal- lucinations or delusions) including those caused by medication, anticholinergic medications, and other medical or neurological conditions potentially resulting in cognitive impairment (e.g., history of seizure, stroke, or head trauma). All patients were examined in the “on” motor state. Patients were further divided to patients with normal cognition (PD-NC) and patients with mild cognitive impairment (PD-MCI) according to their performance on test battery described below.
+
+### Measures
+
+All participants were examined with the Montreal cognitive assessment (MoCA) screening test for signs of overall cognitive deterioration [@kopecek2017; @nasreddine2005]. The healthy control group was further examined via a complex test battery [@stepankova2015]  whereas PD patients underwent a standardized battery for PD-MCI according to the Movement Disorder Society Task Force Level II criteria [@bezdicek2017; @bezdicek2017b; @litvan2012]. For the purposes of the current study, only the Czech versions of Brief Visuospatial Memory Test (BVMT-R) [@benedict1997] and Rey Auditory Verbal Learning Test (RAVLT) [@bezdicek2014] were analysed.
+
+The BVMT-R is a test of visual and spatial declarative memory consisting of a grid of six figures for the participant to remember and draw after 10 seconds of exposure. The stimulus sheet is presented to the participant three times resulting in three 0-12 scores (maximum two point per figure) representing visuospatial *retention* (the first trial) as well as visuospatial *learning curve* (difference between succesive further trials). The test further includes delayed free recall and delayed recognition trials [@benedict1997] which were not analysed in this thesis.
+
+The RAVLT is a test of verbal declarative memory consisting of a list of 15 words presented in five consecutive trials always followed by the immediate recall. Consequently, the data consist of five 0-15 scores (one point for each word correctly recalled) representing verbal *retention* (the first trial) as well as verbal *learning curve* (difference between succesive further trials). The test further includes interfering list recall, post-interference recall, delayed free recall, delayed recognition, and delayed recognition with forced-choice [@bezdicek2014; @frydrychova2018] which were not analysed in this thesis.
+
+### Statistical analyses
+
+RAVLT and BVMT-R data were analyzed using Bayesian generalized linear mixed models (GLMMs) [@tuerlinckx2006; @gelman2006; @mcelreath2020]. Single trial scores were used as outcomes for separate RAVLT and BVMT-R GLMMs with two level of predictors: (i) natural logarithm of trial order, group (HC, PD-NC and PD-MCI) and their interaction on a group level, and (ii) varying participant-specific intercepts at the participant level. Outcome variables as well as trial order were treated as continuous. To account for expected asymmetry in the data, we used skewed Gaussian measurement error model for both outcome variables. Improper flat priors over reals were set-up for population-level parameters and half student-t priors with 3 degrees of freedom for group-level parameters.
+
+To evaluate the memory profile of PD patients in RAVLT and BVMT-R, we first estimated difference between group-specific marginal means across trials (main effects contrasts). Although difference in these marginal means indicates potential memory deficit in some of the groups, it does not indicate whether the deficit is due to impaired *retention* or impaired *learning curve*. We thus also compared between-group differences in marginal means of the first trial performance (simple effect contrasts) as a measure of *retention*, and between-group differences in marginal trends of the logarithmic trial order parameter (interaction contrasts) as a mesure of *learning curve*. All estimates were described by their 89% highest density posterior intervals (HDPI) and compared via the Probability of Direction (*pd*) as an index of effect existence. Marginal means were also compared via percentage in region of practical equivalence (*ROPE*) as an index of effect significance. *ROPE* was set to an interval ranging from −0.1 to 0.1 of the standard deviation of the outcome variable according to the Czech normative data. The results were interpreted following reporting guidelines for Bayesian analyses as articulated by @makowski2019.
+
+All GLMMs were fitted using via Stan’s (version `r rstan::stan_version()`) build-in Hamiltonian Monte Carlo (HMC) sampler accessed via R software for statistical computing version `r with( version, paste(major,minor,sep=".") )` using package “brms” [@bürkner2017; @rsoft; @stan]. Four parallel chains were run each for 2,000 iterations for each GLMM. The first 1,000 iterations served as a warm-up and were discarded. Convergence was checked numerically by inspection of the $\hat{R}s$ and visually by inspection of trace plots. Full analysis code is available at [https://github.com/josefmana/pd_learCUR.git](https://github.com/josefmana/pd_learCUR.git).
+
+## Preoperative Cognitive Profile Predictive of Cognitive Decline after Subthalamic Deep Brain Stimulation in Parkinson's Disease
+
+### Participants
+
+```{r}
+#| label: long-cog-desc
+
+library(english) # number to text conversion
+
+# clear environment
+rm( list = ls() )
+
+# read the data set and prepare subsets for individual analyses
+d0 <- read.csv( here("_data","20220508_dbs_longCOG_data.csv") , sep = "," )
+d1 <- d0[ d0$included == 1 , ] # only STN-DBS treated patients with pre- and post-surgery data
+d2 <- d1[ d1$ass_type == "pre" , ] # only pre-surgery assessments of included patients
+
+# read a file containing mapping of variables' names used in the script to variables' names for the manuscript
+v <- read.csv( here("_data","var_nms.csv") , sep = ";" , row.names = 1 , encoding = "UTF-8")
+
+
+# IN-HOUSE FUNCTIONS ----
+
+# printing rounded number
+rprint <- function( x, dec=2 ) sprintf( paste0("%.",dec,"f"), round( x , dec) )
+
+# upper bound
+ubound <- function( x, dec=2 ) ifelse( round(x,dec) > x, rprint(x,dec), rprint( x+1/(10^dec), dec ) )
+
+# IN-TEXT STATS ----
+
+itstats <-
+  
+  with(
+    
+    d1, list(
+      
+      # number of patients
+    n = c( tot = length( unique(d0$id) ), incl = length( unique(id) ) ),
+    
+    # duration of follow-up
+    fudur =
+      
+      sapply(
+        c("mean","sd","median","min","max"), # stats to compute
+        function(i)
+          do.call( i, list( time_y[ complete.cases(drs_tot) & ass_type != "pre" ] ) ) %>%
+          rprint(2)
+      ),
+    
+    # number of assessments per patient
+    nass =
+      
+      sapply(
+        c("median","min","max"),
+        function(i) do.call( i, list( table( id[ complete.cases(drs_tot) ] ) ) )
+      )
+      
+    )
+  )
+
+```
+
+The study involved `r itstats[['n']][['incl']]` patients with idiopathic PD following United Kingdom Parkinson’s Disease Society Brain Bank Criteria [@hughes1992] that underwent surgery for STN DBS treatment at the Movement Disorders Center, Department of Neurology at First Faculty of Medicine and General University Hospital in Prague between years 2000 and 2020 and were repeatedly screened for overall cognitive performance in ensuing years. Exclusion criteria were contingent upon patients being suitable candidates for STN DBS treatment and followed the Core assessment program for surgical interventional therapies in Parkinson’s disease (CAPSIT) protocol [@defer1999], consequently, patients with atypical parkinsonian syndromes, dementia, depression at the time of pre-surgery assessment, recurrent psychotic conditions or a gait disorder despite optimal dopaminergic therapy during pre-surgery assessment were not implanted and were thus not included into the study.
+
+### Neropsychological examination
+
+Pre-surgery neuropsychological assessment examined the following cognitive domains: (i) attention via Trail Making Test, part A (TMT-A) [@bezdicek2012; @bezdicek2017a; @partington1949] and dot color naming condition from Prague Stroop Test (PST-D) [@bezdicek2015a] for sustained visual attention; (ii) executive functions via Trail Making Test, part B (TMT-B) [@bezdicek2012; @bezdicek2017a; @partington1949] for set shifting, Tower of London task (TOL) [@michalec2017; @shallice1982] for planning, Prague Stroop Test, naming color of neutral words (PST-W) and interference condition (i.e., naming color of contrasting color words, PST-C) for sensitivity to interference [@bezdicek2015a], and Controlled Oral Word Association Test (COWAT, letters K + P) [@nikolai2015] for mental flexibility; (iii) language via Similarities (Sim.) from Wechsler Adult Intelligence Scale, third revision (WAIS-III) [@wechsler2010] for conceptualization, and category verbal fluency test (CFT, category Animals) [@nikolai2015] for speeded word production; (iv) working memory via Digit Span (DS) from WAIS-III [@wechsler2010] as well as letter-number sequencing (LNS) [@wechsler2011] and Spatial Span (SS) from Wechsler Memory Scale, third edition (WMS-III) [@wechsler2011] for auditory and spatial working memory respectively; and (v) memory via Rey Auditory Verbal Learning Test (RAVLT) [@bezdicek2014; @frydrychova2018] for explicit verbal learning and memory, and WMS-III Family Pictures (FP) for visuo-spatial memory [@wechsler2011]. Furthermore, anxiety was assessed with the State-Trait Anxiety Inventory for the state (STAI-X1) and trait (STAI-X2) anxiety [@spielberger1983].
+
+Patients’ longitudinal cognitive state was assessed pre-surgery and at several times post-surgery using Mattis Dementia Rating Scale, second edition (DRS-2) [@bezdicek2015; @jurica2001]. Moreover, subjective depressive symptoms were assessed with Beck Depression Inventory, second edition (BDI-II) [@beck1996; @ciharova2020] at each assessment. BDI-II was not used for pre-surgery exclusion due to depression which was instead ascertained by an independent neuropsychiatric evaluation. Finally, The levodopa equivalent daily dose (LEDD) was calculated at each assessment time-point according to @tomlinson2010.
+
+### Estimands
+
+Theoretical estimands linked to each research question of this study and their mapping to statistical estimators according to framework of @lundberg2021 are presented in @tbl-long-cog-estimands. Regarding our *RQ2.1*, we aimed to estimate the expected cognitive decline on two levels of generalisation: (i) the current sample and (ii) a population of patients selected for DBS treatment via the CAPSIT-protocol criteria [@defer1999]. Whereas virtually all previous studies examining long-term cognitive changes after STN DBS constraint their conclusions to sample-level estimates as even studies employing GLMMs elected to report fixed-effects only [@boel2016; @pal2022], in this study we leveraged the hierarchical structure of GLMMs to provide both sample- and population-level estimates. To allow for this generalisation, we assume exchangeability between patients selected via CAPSIT criteria to the extend that can be quantified by patient-level variance estimated from our sample [see @yarkoni2020]. Empirical estimands were the same unit-specific quantities as those presented in @tbl-long-cog-estimands, conditional on patient being selected for the study (based on geographical and exclusion criteria described above). Importantly, all three estimands are descriptive, not causal.
+
+
+ Research question                                                                                                                        |                                                                                                                                                   Estimand (unit specific quantity)                                                                                                                                                   |      Estimand (population)     |                                Statistical estimator                               |
+|------------------------------------------------------------------------------------------------------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:------------------------------:|:----------------------------------------------------------------------------------:|
+| What is the size of expected long-term rate of cognitive decline after STN DBS in PD patients?                                           |                                                                                                            Difference between expected post-surgery cognitive performance and expected cognitive performance *k* years before                                                                                                           |         Current sample         |                              $\mu_i$ = $\alpha$ + $\delta_{time}time_i$                             |
+|                                                                                                                                          |                                                                                                                                                                                                                                                                                                                                       | CAPSIT-based selected patients |       $\mu_i$ = $\alpha$ + $\delta_{time}time_i$ \+ $\alpha_{id[i]}$ + $\delta_{id[i]}time_i$        |
+| What is the pre-surgery cognitive profile that is predictive of long-term post-surgery cognitive decline in STN DBS treated PD patients? | Difference between expected post-surgery cognitive decline of a patient with fixed level of pre-surgery performance across all cognitive factors and expected post-surgery cognitive decline of patients with performance that is one unit smaller in a single cognitive factor but equal to this patient’s performance otherwise |         Current sample         | $\mu_i$ = $\alpha$ + $\delta_{time}time_i$ \+ $\sum_jfactor_{[j]i}$($\beta_{factor[j]}$ + $\delta_{factor[j]}time_i$) |
+
+: Mapping of research questions to estimands to qunatities to be estimated in the study. {#tbl-long-cog-estimands}
+
+### Statistical analyses
+
+Pre-surgery cognitive battery was pre-processed via via an exploratory factor analysis (EFA) with varimax rotation using ordinary least squares to find the minimum residual solution [@harman1966]. All pre-surgery cognitive tests were entered into EFA as input variables. Missing observations were multiply imputed using a parametric bootstrap via the “missMDA” R package to create one hundred imputed data sets. We then computed EFA with three up to eight factors via the “psych” R package [@rsoft; @missMDA; @psych] using each imputed data set. Within each imputed data set, factor scores for each patient were calculated using the regression method [@thomson1951]. The number of extracted factors was based on a combination of the root-mean-square error approximation (RMSEA), Tucker-Lewis Index (TLI), and consistency of each factor model across imputations. TLI is a measure of a goodness-of-fit such that higher values of TLI imply better fit and values exceeding 0.90 are considered to indicate a good model fit. On the other hand, RMSEA is a measure of badness-of-fit such that lower values imply better fit with values less than 0.08 indicating an adequate model fit [@browne1992]. A model was considered consistent if it identified similar factors across imputed data sets.
+
+To describe the rate of post-surgery cognitive decline, we estimated a GLMM with longitudinal DRS-2 performance as an outcome predicted by the time after surgery on the group-level and correlated patient-specific intercepts and slopes on the patient-level. The group-level slope of this model constituted statistical estimate of the sample version of our *RQ2.1* estimand (i.e., the expected annual cognitive decline in the sample). To arrive at statistical estimate of the population version of our *RQ2.1* estimand (i.e., the expected annual cognitive decline in a population of patients selected for surgery using CAPSIT-protocol criteria) we used the model to predict expected post-surgery cognitive decline at one year post-surgery intervals compared to a pre-surgery assessment using both group- and patient-level parameters.
+
+To evaluate predictive utility of pre-surgery cognitive profile, we estimated further two GLMMs. Longitudinal DRS-2 performance was predicted on a group-level by post-surgery time slopes varying by either patients’ pre-surgery cognitive tests’ scores (the “test scores” model) or patients’ pre-surgery latent cognitive factors’ scores extracted from the EFA reported above (the “factor scores” model). Both models further included correlated patient-level intercepts and slopes. Since DRS-2 scores may include significant outliers, we used Studdent-t instead of Gaussian measurement error model. Furthermore, because the outcome DRS-2 has a maximum of 144 points which is achieved by a large proportion of healthy people [@bezdicek2015], the right-censored version of Student-t was used to account for the ceiling effect. Estimands relating to *RQ2.2* comprised of the two sets of interaction coefficients representing the expected prognostic value of single pre-surgery cognitive tests and latent cognitive factors. We specified equivalent prior distributions for model parameters of both the “test scores” and the “factor scores” models, most importantly the Bayesian Lasso priors for were used all group-level parameters barring the intercept [@park2008].
+
+Estimates were described by full posterior distributions, medians and 95% highest density posterior probability intervals (HDPIs) of corresponding model parameters or predictions as appropriate. When presenting results for the second version of *RQ2.1* estimand, we report medians and 90% equal-tailed posterior probability intervals (ETIs) instead. A 90% ETI can be interpreted such that a given parameter or prediction lies with 5% probability above its upper bound and with 5% probability below its lower bound.
+
+All GLMMs were fitted using via Stan’s (version `r rstan::stan_version()`) build-in HMC sampler accessed via R version `r with( version, paste(major,minor,sep=".") )` using package “brms” [@bürkner2017; @rsoft; @stan]. Four parallel chains were run each for 2,500 iterations for each GLMM. The first 500 iterations served as a warm-up and were discarded. Convergence was checked numerically by inspection of the $\hat{R}s$ and visually by inspection of trace plots. We used R packages “tidyverse” and “dplyr” for data operations, “tidybayes” for operations with model posteriors, and "ggridges," and “patchwork” for plotting [@ggplot2; @ggridges; @patchwork]. Full analysis code is available at [https://github.com/josefmana/dbs_cogPRED.git](https://github.com/josefmana/dbs_cogPRED.git).
+
+## Structural and microstructural predictors of cognitive decline in deep brain stimulation of subthalamic nucleus in Parkinson’s disease
+
+### Participants
+
+The study involved 72 patients with PD diagnosed according to the criteria for clinically established PD defined by the Movement Disorders Society [@postuma2015] that were indicated for STN DBS. Exclusion criteria were general contraindications to MRI examination (see Study 2), substantial vascular or space occupying brain lesions or a neurological or psychiatric disorder other than PD and its related complications. The examination of cognition (via DRS-2) was performed before the STN DBS implantation and then in the years 1, 3 and 5 after the surgery with the last available assessment, i.e. with the longest follow-up duration, being used to calculate the DRS-2 change per year ($\Delta$DRS-2 = $\frac{\text{DRS-2}_{post} - \text{DRS-2}_{pre}}{\text{Years post-surgery}}$ ). Patients with $\Delta$DRS-2 of --2 or less were labelled as cognitive decline (CD) group, the remaining patients were considered cognitively stable (CS).^[This choice was based on the reasoning that patient that would scored at maximal 144/144 points before sugery would with 2 points/year decline reach the optimal threshold for PD-MCI according to the Czech normative study [@bezdicek2015] at three-year post-surgery mark.]
+
+Pre-surgery MRI acquisition was performed using a 3T MAGNETOM Skyra scanner (Siemens, Erlangen, Germany). A T1-weighted (T1w) scan was acquired with magnetisation-prepared rapid gradient echo (MPRAGE) sequence, 1.0-mm isotropic resolution, repetition time (TR) = 2,200 ms, inversion time (TI) = 900 ms, echo time (TE) = 2.43 ms, and flip angle (FA) = $8^\circ$. The protocol further included DWI with voxel size 2.0 × 2.0 × 2.0 mm^3^, TR = 9,000 ms, TE = 94 ms, FA =  $90^\circ$, single b-value of 1100 s/mm^2^, and 30 directions with 5 additional b0 images, acquired with antero-posterior phase encoding direction. Post-surgery T1w scan with MPRAGE sequence, 1.0 mm isotropic resolution, TR = 2,140 ms, TI = 1,100 ms, TE = 3.93 ms, and FA == 15° acquired using a 1.5 T MAGNETOM Avanto scanner (Siemens, Erlangen, Germany) was utilised to estimate the position of the DBS electrode.
+
+### MRI data processing
+
+For a full MRI data processing pipeline, see the source article [@filip2024]. Shortly, the goal of MRI processing was to (i) transform the raw T1w images from their native space to standardized Montreal Neurilogical Institute (MNI) space [@grabner2006] to guide connectivity analyses and estimate subcortical grey matter volumes, (ii) extract anatomical connectivity metrics from DWI images, and (iii) extract cortical thickness estimates. Pre-processing steps followed the minimal preprocessing pipelines for the Human Connectome Project leading to set of standard Connectivity Informatics Technology Initiative (CIFTI) files in grayordinate space [@glasser2013]. This process resulted in extracting following predictor of interest: (i) fractional anisotropy (FA) and mean diffusivity (MD) as proxies of microstructural connectivity, and (ii) cortical thickness and subcortical grey matter (based on 69 subcortical regions of interest) as proxies of macrostructural integrity. Lastly, Lead-DBS software version 2.5.3 [@horn2015; @horn2019] was utilized to determine the position of DBS leads and active contacts with DISTAL subcortical atlas for STN compartmentalization [@ewert2018]. The overlap of volume of affected tissue at the time of last recorded cognitive assessment (VAT) and the entire STN as well as its motor, associative, and limbic components separately was calculated, providing four overlap volumes for each side.
+
+### Statistical analyses
+
+Outcome data were descibed separately for CS and CD groups. Means of continuous variables were compared between groups using two-sample, two-tailed T-tests whereas frequency tables of nominal variables were were compared using Fisher's exact test. Differences were considered statistically significant if their *q*-value was lower than .05 after adjusting for 5% False Discovery Rate (FDR)[@benjamini1995; @benjamini2001]. To analyse microstructural and macrostructural correlates of pre-surgery cognitive state and post-surgery cognitive decline, two sets of General Linear Models (GLMs) were fitted with region-specific microstructural (FA and MD) and macrostructural (cortical thickness and subcortical grey matter volume) measures as outcomes, pre-surgery DRS-2 score or group (CD versus CS) as primary predictors, and age, sex and disease duration as covariates. Statistical significance of resulting regression coefficients of primary predictors was decided based on non-parametric analysis as implemented in the Permutation Analysis of Linear Models package with 10,000 permutations and FDR correction over the number of parcels separately for each modality [@winkler2014]. Results were considered significant at adjusted *q*-value < .05 and parcel cluster size equal or above 2 to eliminate singleton cortical parcels.
+
+## The Instrumental Activities of Daily Living in Parkinson’s Disease Patients Treated by Subthalamic Deep Brain Stimulation
+
+### Participants
+
+### Assessments
+
+### Causal assumptions
+
+```{r}
+#| label: postop-iadl-dag
+
+library(ggdag)
+
+# prepare the DAG
+dag <- dagify(
+    
+    P_post ~ P_pre + pat + it + D_post + B_post + L_post + DBS,
+    P_pre ~ pat + it + D_pre + B_pre + L_pre,
+    D_post ~ D_pre + B_post + L_post + DBS,
+    D_pre ~ B_pre + L_pre,
+    B_post ~ B_pre + L_post + DBS,
+    B_pre ~ L_pre,
+    B_pre ~~ DBS,
+    L_post ~ L_pre + DBS,
+    DBS ~ P_pre + D_pre + L_pre,
+    
+    coords = data.frame(
+        name = c("P_pre","P_post","pat","it","D_pre","D_post","B_pre","B_post","L_pre","L_post","DBS"),
+        x = c(0,2,1,1,-1,3,-1,3,0,2,1),
+        y = c(0,0,1,2,-1,-1,-3,-3,-4,-4,-2)
+    )
+    
+) %>%
+    
+  tidy_dagitty() %>%
+  arrange(name)
+  
+# prepare the raw DAG
+dagfig0 <-
+  
+  dag %>%
+  ggplot( aes( x = x, y = y, xend = xend, yend = yend) ) +
+  geom_dag_point( colour = "grey85", size = 20 ) +
+  geom_dag_edges() +
+  geom_dag_text(
+    parse = T,
+    size = 3.6,
+    colour = "black",
+    label = c(
+      expression(BDI[post]), expression(BDI[pre]), "DBS",
+      expression(DRS[post]), expression(DRS[pre]),
+      expression(LEDD[post]), expression(LEDD[pre]),
+      expression(PDAQ[post]), expression(PDAQ[pre]),
+      "Item", "Patient"
+    )
+  ) +
+  theme_dag()
+
+# prepare the DAG with adjustment set for direct time/DBS effect
+dagfig1 <-
+  
+  dag %>%
+  ggdag_adjustment_set( exposure = c("P_pre","DBS"), outcome = "P_post", effect = "direct", type = "minimal", shadow = T ) +
+  geom_dag_point( colour = "grey89", size = 20 ) +
+  geom_dag_text(
+    parse = T,
+    size = 3.6,
+    colour = "black",
+    label = c(
+      expression(BDI[post]), expression(BDI[pre]), "DBS",
+      expression(DRS[post]), expression(DRS[pre]),
+      expression(LEDD[post]), expression(LEDD[pre]),
+      expression(PDAQ[post]), expression(PDAQ[pre]),
+      "Item", "Patient"
+    )
+  ) +
+  theme_dag() +
+  theme( legend.position = "none" )
+
+```
+
+### Statistical analyses
+
+# Results
+
+## Learning curve in verbal and non-verbal memory of patients with Parkinson's disease
+
+### Sample characteristics
+
+In total, 60 HC participants and 60 patients with PD were out of which 25 were diagnosed with PD-MCI were included into the study. Demographic and clinical characteristics of the sample are presented in @tbl-lcurve-desc.
+
+```{r}
+#| label: tbl-lcurve-desc
+#| tbl-cap: Demographic characteristics of normative and control sample.
+
+data.frame(
+  
+  Variable = c("Age (years)","Education (years)","Sex (% male)","PD duration (years)","LEDD (mg)","MoCA (range 0-30)","UPDRS III (range 0-132)"),
+  HC = c("61.92 (3.98)","14.07 (2.57)","43.33","-","-","26.32 (2.30)","-"),
+  PDNC = c("59.43 (8.62)","15.87 (3.13)","60.00","6.43 (6.22)","840.88 (805.11)","26.31 (1.64)","21.09 (12.03)"),
+  PDMCI = c("62.00 (9.71)","13.40 (2.89)","56.00","8.64 (6.10)","1061.67 (653.08)","24.16 (3.10)","25.96 (13.97)")
+  
+) %>%
+  
+  rename( "HC (N = 60)" = "HC", "PD-NC (N = 35)" = "PDNC", "PD-MCI (N = 25)" = "PDMCI") %>%
+  
+  gt() %>%
+    cols_align( align = "center", columns = -1 ) %>%
+    tab_source_note(
+        source_note = "BDI-II: Beck Depression Rating Scale, second edition; HC: healthy control group; LEDD: levodopa equivalent daily dose; MoCA: Montreal Cognitive Assessment; N: number of observations; PD: Parkinson's Disease; PD-MCI: Mild Cognitive Impairment in Parkinson's Disease; PD-NC: Normal Cognition in Parkinson's Disease; UPDRS III: Unified Parkinson’s Disease Rating Scale, motor part; all values represent mean (standard deviation) for continuous and percentages for nominal variables."
+    )
+
+```
+
+## Preoperative Cognitive Profile Predictive of Cognitive Decline after Subthalamic Deep Brain Stimulation in Parkinson's Disease
+
+### Sample characteristics
+
+Baseline demographic and clinical characteristics as well as stimulation parameters of the sample are presented in @tbl-long-cog-clinchar whereas average pre-surgery cognitive profile of the sample is presented in @tbl-long-cog-basepsych. Mean duration of a follow-up after the surgery was `r itstats[['fudur']][['mean']]` years (SD = `r itstats[['fudur']][['sd']]`, median = `r itstats[['fudur']][['median']]`, range = `r itstats[['fudur']][['min']]`–`r itstats[['fudur']][['max']]`) with a median number of `r itstats[['nass']][['median']]` assessments per patient (range = `r itstats[['nass']][['min']]`–`r itstats[['nass']][['max']]`) (see also @fig-long-cog-dist).
+
+```{r}
+#| label: tbl-long-cog-clinchar
+#| tbl-cap: Clinical characteristics of the sample of included patients
+
+read.csv( here("tabs","demo_clinchar.csv"), sep = "," ) %>%
+  
+  gt( rowname_col = "Characteristic", groupname_col = "Type" ) %>%
+  cols_align( align = "center", columns = -1 ) %>%
+  tab_footnote(
+    footnote = "Each measurement of each electrode considered independently. For stimulation parameters, column N indicate number of patients with current/voltage mode of stimulation.",
+    locations = cells_row_groups( groups = "Stimulation parameters" )
+  ) %>%
+  tab_source_note(
+    source_note = "N: number of observations; Md: median; M: mean; SD: standard deviation; MDS-UPDRS III: Movement Disorder Society Unified Parkinson’s Disease Rating Scale, motor part; LEDD: levodopa equivalent daily dose; Levodopa test: a percentage change of the MDS-UPDRS III score from medication OFF to medication ON state during the levodopa test as described in the main text; V: Volts; mA: milliampere; μs: microseconds; Hz: Hertz."
+  )
+
+```
+
+```{r}
+#| label: tbl-long-cog-basepsych
+#| tbl-cap: Pre-surgery neuropsychological measures of included patients
+
+read.csv( here("tabs","demo_basepsych.csv"), sep = "," ) %>%
+  
+  gt( rowname_col = "Characteristic" ) %>%
+  cols_align( align = "center", columns = -1 ) %>%
+  tab_source_note(
+    source_note = "N: number of observations; Md: median; M: mean; SD: standard deviation; DRS-2: Dementia Rating Scale, second edition; BDI-II: Beck Depression Rating Scale, second edition; STAI-X1: State-Trait Anxiety Inventory, the state version; STAI-X2: State-Trait Anxiety Inventory, the trait version; TMT-A: Trail Making Test, part A; TMT-B: Trail Making Test, part B; DS-F: Digit Span forward; DS-B: Digit Span backward; LNS: letter-number sequencing; SS-F: Spatial Span forward; SS-B: Spatial Span backward; TOL: Tower of London task; PST-D: Prague Stroop Test, dot color naming; PST-W: Prague Stroop Test, word color naming; PST-C: Prague Stroop Test, interference condition; COWAT: Controlled Oral Word Association Test; CFT: category fluency test; Sim.: Similarities; RAVLT-IR: Rey Auditory Verbal Learning Test, immediate recall; RAVLT-B: Rey Auditory Verbal Learning Test, recall of the interference set; RAVLT-DR: Rey Auditory Verbal Learning Test, delayed recall; RAVLT- Rec50: Rey Auditory Verbal Learning Test, delayed recognition from 50 items (15 correct answers + 35 distractors); RAVLT-Rec15: Rey Auditory Verbal Learning Test, delayed recognition, number of correctly identified from 15 items; FP-IR: Family Pictures, immediate recall; FP-DR: Family Pictures, delayed recall; Secs: seconds; Total words: word count in two minutes (one minute per each letter P and K); words/min.: word count in one minute time limit."
+  )
+
+```
+
+![Distribution of assessments. Distribution of (A) follow-up years and (B) number of assessments per patient for N = 126 patients. Negative values on horizontal axis in (A) represent pre-surgery assessments, number of assessments in (B) includes one pre-surgery and various number of post-surgery assessments.](../figs/demo_assessments.jpg){#fig-long-cog-dist}
+
+## Structural and microstructural predictors of cognitive decline in deep brain stimulation of subthalamic nucleus in Parkinson’s disease
+
+## The Instrumental Activities of Daily Living in Parkinson’s Disease Patients Treated by Subthalamic Deep Brain Stimulation
+
+# Discussion
+
+## Learning curve in verbal and non-verbal memory of patients with Parkinson's disease
+
+## Preoperative Cognitive Profile Predictive of Cognitive Decline after Subthalamic Deep Brain Stimulation in Parkinson's Disease
+
+## Structural and microstructural predictors of cognitive decline in deep brain stimulation of subthalamic nucleus in Parkinson’s disease
+
+## The Instrumental Activities of Daily Living in Parkinson’s Disease Patients Treated by Subthalamic Deep Brain Stimulation
+
+## General Discussion
+
+# Conclusions
+
+# Summary
+
+# Souhrn
+
+# References
+
+# List of Publications
+
+## Publications Related to the Thesis
+
+## Publications Unrelated to the Thesis
+
+# Supplement
