@@ -111,7 +111,7 @@ library(english) # number to text conversion
 rm( list = ls() )
 
 # read the data set and prepare subsets for individual analyses
-d0 <- read.csv( here("_data","20220508_dbs_longCOG_data.csv") , sep = "," )
+d0 <- read.csv( here("_data","cogPRED_data.csv") , sep = "," )
 d1 <- d0[ d0$included == 1 , ] # only STN-DBS treated patients with pre- and post-surgery data
 d2 <- d1[ d1$ass_type == "pre" , ] # only pre-surgery assessments of included patients
 
@@ -192,7 +192,7 @@ To evaluate predictive utility of pre-surgery cognitive profile, we estimated fu
 
 Estimates were described by full posterior distributions, medians and 95% highest density posterior probability intervals (HDPIs) of corresponding model parameters or predictions as appropriate. When presenting results for the second version of *RQ2.1* estimand, we report medians and 90% equal-tailed posterior probability intervals (ETIs) instead. A 90% ETI can be interpreted such that a given parameter or prediction lies with 5% probability above its upper bound and with 5% probability below its lower bound.
 
-All GLMMs were fitted using via Stan’s (version `r rstan::stan_version()`) build-in HMC sampler accessed via R version `r with( version, paste(major,minor,sep=".") )` using package “brms” [@bürkner2017; @rsoft; @stan]. Four parallel chains were run each for 2,500 iterations for each GLMM. The first 500 iterations served as a warm-up and were discarded. Convergence was checked numerically by inspection of the $\hat{R}s$ and visually by inspection of trace plots. We used R packages “tidyverse” and “dplyr” for data operations, “tidybayes” for operations with model posteriors, and "ggridges," and “patchwork” for plotting [@ggplot2; @ggridges; @patchwork]. Full analysis code is available at [https://github.com/josefmana/dbs_cogPRED.git](https://github.com/josefmana/dbs_cogPRED.git).
+All GLMMs were fitted using via Stan’s (version `r rstan::stan_version()`) build-in HMC sampler accessed via R version `r with( version, paste(major,minor,sep=".") )` using package “brms” [@bürkner2017; @rsoft; @stan]. Four parallel chains were run each for 2,500 iterations for each GLMM. The first 500 iterations served as a warm-up and were discarded. Convergence was checked numerically by inspection of the $\hat{R}s$ and visually by inspection of trace plots. R package “tidyverse” was used for data operations, “tidybayes” was used for operations with model posteriors, and "ggridges," and “patchwork” were used for plotting [@tidyverse; @tidybayes; @ggplot2; @ggridges; @patchwork]. Full analysis code is available at [https://github.com/josefmana/dbs_cogPRED.git](https://github.com/josefmana/dbs_cogPRED.git).
 
 ## Structural and microstructural predictors of cognitive decline in deep brain stimulation of subthalamic nucleus in Parkinson’s disease
 
@@ -214,16 +214,24 @@ Outcome data were descibed separately for CS and CD groups. Means of continuous 
 
 ### Participants
 
+The study involved 32 patients with PD diagnosed according to the criteria for clinically established PD defined by the Movement Disorders Society [@postuma2015] that were indicated for STN DBS with identical exclusion criteria as in Study 2 and Study 3 (except for the MRI-specific exclusion criteria of Study 3). All PD patients were under dopaminergic therapy (i.e., levodopa, dopamine agonist, or a combination of them), and levodopa’s equivalent daily dose (LEDD) for each patient was calculated before and after surgery [@tomlinson2010].
+
 ### Assessments
 
+Both pre-surgery and post-surgery neuropsychological assessment was performed in accordance with published reccomendations [@kubu2018] and included cognitive screening via Mattis Dementia Rating Scale, second edition (DRS-2) [@bezdicek2015; @jurica2001], screening of depressive symptoms via Beck Depression Inventory, second edition (BDI-II) [@beck1996; @ciharova2020], and the Penn Parkinson’s Daily Activities Questionnaire (PDAQ) as a measure of instrumental activities of daily living (IADL).The PDAQ is a brief self-report tool consisting of fifteen items selected by Item Response Theory (IRT)-based statistics from a larger pool of items asking patients about the level of diffucilties they experience with cognitively demanding IADL on a five point Likert scale ranging from 0 (“cannot do”) to 4 (“no difficulty”) [@brennan2016; @brennan2016b]. Finally, during the comprehensive pre-surgery assessment for STN DBS patient selection and post-surgery control assessment, motor function was evaluated via MDS-UPDRS III administered by a trained movement disorders neurologist, and psychiatric symptoms were evaluated by a neuropsychiatrist with specialisation in movement disorders to assess risky neuropsychiatric complications.
+
 ### Causal assumptions
+
+The causal assumptions of Study 4 are represented in the form of a directed acyclic graph (DAG) depicted in @fig-postop-iadl-dag (panel A). Full description of this graphical model is presented in the source article [@bezdicek2022]. Briefly, the assumptions are that post-surgery responses to PDAQ are determined by their pre-surgery level, time-locked clinical characteristics (DRS-2, BDI-II, LEDD), patient- and item-specific characteristics, and DBS itself which is in turn determined by pre-surgery patient's cognitive, affective and medication profiles, all of which are used by clinicians to decide whether to treat the patient with STN DBS. The double-headed arrow between $\text{BDI}_{\text{pre}}$and DBS idicates common cause of these nodes, namely underlying depressive syndrome can both inform the psychiatrist about contraindication to DBS treatment and increase BDI-II score.^[Note that the decision for exclusion from STN DBS treatment for current depression is not based on BDI-II (which is adminstered by neuropsychologists in our institution), but by an independent neuropsychiatric evaluation at our institution.] The only difference between the model presented in @fig-postop-iadl-dag and the source paper is that here we added further edges from the patient node to DBS node as well as all clinical characteristics on top of its edge to PDAQ. This change is meant to represent that we assume patient-specific time-invariant characteristics (such as disease type or genetic profile) to affect not only PDAQ responses but also all the other variables in our model. Nonetheless, adding edges from the patient node did not change the adjustment sets needed to answer our research questions in any way compared to the source article.
+
+Importantly, to answer *RQ4.2* and *RQ4.3*, we can use the DAG presented in @fig-postop-iadl-dag to use the back-door criterion to derive *adjustment sets*, i.e., the set of covariates that, if conditioned on, allow for interpretation of statistical modelling resuls as causal [@pearl2009; @mcelreath2020; @cinelli2022]. Applying the back-door criterion, we arrive at adjustment sets presented in panels B and C of @fig-postop-iadl-dag for *RQ4.2* and *RQ4.3* respectively. Variables to be adjusted for are represent by squares and the backdoors being closed by this adjustment are depicted as light grey edges in the figure. Although panel C in @fig-postop-iadl-dag do not include item node into the adjustment set, item-level parameters were still included into analysis because they represent competing causes and their inclusion thus will not lead to bias while potentially improving statistical efficiency [see Model 8 in @cinelli2022].
+
 
 ```{r}
 #| label: postop-iadl-dag
 
 library(ggdag)
 library(ggraph)
-library(patchwork)
 
 # prepare labels
 lab <- c(
@@ -276,46 +284,42 @@ adjdag_post <- dag %>% ggdag_adjustment_set( exposure = c("P_pre","DBS"), outcom
 adjdag_ledd <- dag %>% ggdag_adjustment_set( exposure = "L_post", outcome = "P_post", effect = "total", type = "minimal" )
 
 # prepare the DAG with adjustment set for direct time/DBS effect
-dagfig1 <-
+dagfig <-
   
-  adjdag_post$data %>%
+  dag %>%
+  mutate( adjusted = "unadjusted", set = "A" ) %>%
+  full_join( adjdag_post$data %>% mutate( set = "B" ) ) %>%
+  full_join( adjdag_ledd$data %>% filter( set == "{DBS, L_pre, pat}" ) %>% mutate( set = "C" ) ) %>%
+    
   ggplot() +
   aes( x = x, y = y, xend = xend, yend = yend, shape = adjusted ) +
   geom_dag_point( colour = "grey85", size = 20 ) +
   geom_dag_edges( aes(edge_colour = adjusted) ) +
   scale_edge_colour_manual( values = c( unadjusted = "black", adjusted = "grey87" ) ) +
   scale_shape_manual( values = c( unadjusted = 19, adjusted = 15 ) ) +
-  geom_dag_text( label = lab, parse = T, size = 3.6, colour = "black" ) +
+  geom_dag_text( label = rep(lab,3), parse = T, size = 3.6, colour = "black" ) +
+  facet_wrap( ~set, nrow = 3 ) +
   theme_dag() +
-  theme( legend.position = "none" )
-
-# prepare DAG for LEDDpost total effect
-dagfig2 <-
-  
-  adjdag_ledd$data %>%
-  filter( set == "{DBS, L_pre, pat}" ) %>%
-  ggplot() +
-  aes( x = x, y = y, xend = xend, yend = yend, shape = adjusted ) +
-  geom_dag_point( colour = "grey85", size = 20 ) +
-  geom_dag_edges( aes(edge_colour = adjusted) ) +
-  scale_edge_colour_manual( values = c( unadjusted = "black", adjusted = "grey87" ) ) +
-  scale_shape_manual( values = c( unadjusted = 19, adjusted = 15 ) ) +
-  geom_dag_text( label = lab, parse = T, size = 3.6, colour = "black" ) +
-  theme_dag() +
-  theme( legend.position = "none" )
+  theme( legend.position = "none", strip.text.x = element_text(hjust = 0.025, size = 20) )
 
 # pull them together and save it
 ggsave(
-  plot = ( dagfig0 / dagfig1 / dagfig2 ) + plot_annotation( tag_levels = "A" ),
+  plot = last_plot(),
   file = here("figs","iadl_dags.jpg"),
   dpi = 300,
-  width = 7,
-  height = 16.6
+  width = 6.7,
+  height = 16
 )
 
 ```
 
+![Directed acyclic graph representing causal assumptions of relationships between variables of interest in the current study. The panels represent base causal model (A) as well as model after adjusting for covariates to extract estimate of direct post-surgery change (B), and total effect of post-surgery LEDD on post-surgery IADL.](figs/iadl_dags.jpg){#fig-postop-iadl-dag}
+
 ### Statistical analyses
+
+The data were analyzed using a set of GLMMs with responses to each item of PDAQ as an outcome, patient-specific and item-specific varying predictors, and a structure of group-level parameters dependend on research question. For *RQ4.1*, only the time of assessment (pre- vs post-surgery) was used to predict mean group-level responses. Following panel B of @fig-postop-iadl-dag, the time of assessment as well as DRS-2, BDI-II, LEDD and their interactions with the time of assessment were used to predict group-level responses in model for *RQ4.2*. Finally, following panel C of @fig-postop-iadl-dag, the time of assessment, LEDD and their interaction were used to predict group-level responses in model for *RQ4.3*. Across all models, the response variable, i.e., the answer to each single PDAQ item on 5-point Likert scale, was modeled using the *ordered-logit* response function [also called *cummulative logit model* or *graded response model* in the literature, @samejima1995; @liddell2018; @bürkner2019; @mcelreath2020]. Student- t priors with zero mean, a scale of 2.5, and three degrees of freedom were used for Intercepts and varying predictors parameters variance, and regularising Normal priors with zero mean and standard deviation of 0.5 were used for group-level parameters. The results were presented as marginalised averages and posterior predictions of each GLMM decribed by their medians and 95% HDPIs.
+
+All GLMMs were fitted using via Stan’s (version `r rstan::stan_version()`) build-in HMC sampler accessed via R version `r with( version, paste(major,minor,sep=".") )` using package “brms” [@bürkner2017; @rsoft; @stan]. Four parallel chains were run each for 1,500 iterations for each GLMM with the first 500 iterations being discarded as a warm-up. Convergence was checked numerically by inspection of the $\hat{R}s$ and visually by inspection of trace plots. R packages “tidyverse,” “tidybayes,” "ggridges," and “patchwork” were used in the same roles as for Study 2 [@tidyverse; @tidybayes; @ggplot2; @ggridges; @patchwork]. Full analysis code is available at [https://github.com/josefmana/dbs_postopIADL.git](https://github.com/josefmana/dbs_postopIADL.git).
 
 # Results
 
