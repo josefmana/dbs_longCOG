@@ -222,24 +222,36 @@ Outcome data were descibed separately for CS and CD groups. Means of continuous 
 #| label: postop-iadl-dag
 
 library(ggdag)
+library(ggraph)
+library(patchwork)
+
+# prepare labels
+lab <- c(
+      expression(BDI[post]), expression(BDI[pre]), "DBS",
+      expression(DRS[post]), expression(DRS[pre]),
+      expression(LEDD[post]), expression(LEDD[pre]),
+      expression(PDAQ[post]), expression(PDAQ[pre]),
+      "Item", "Patient"
+    )
 
 # prepare the DAG
 dag <- dagify(
     
     P_post ~ P_pre + pat + it + D_post + B_post + L_post + DBS,
     P_pre ~ pat + it + D_pre + B_pre + L_pre,
-    D_post ~ D_pre + B_post + L_post + DBS,
-    D_pre ~ B_pre + L_pre,
-    B_post ~ B_pre + L_post + DBS,
-    B_pre ~ L_pre,
+    D_post ~ D_pre + B_post + L_post + DBS + pat,
+    D_pre ~ B_pre + L_pre + pat,
+    B_post ~ B_pre + L_post + DBS + pat,
+    B_pre ~ L_pre + pat,
     B_pre ~~ DBS,
-    L_post ~ L_pre + DBS,
-    DBS ~ P_pre + D_pre + L_pre,
+    L_post ~ L_pre + DBS + pat,
+    L_pre ~ pat,
+    DBS ~ P_pre + D_pre + L_pre + pat,
     
     coords = data.frame(
         name = c("P_pre","P_post","pat","it","D_pre","D_post","B_pre","B_post","L_pre","L_post","DBS"),
         x = c(0,2,1,1,-1,3,-1,3,0,2,1),
-        y = c(0,0,1,2,-1,-1,-3,-3,-4,-4,-2)
+        y = c(0,0,-1,1,-2,-2,-4,-4,-5,-5,-3)
     )
     
 ) %>%
@@ -253,41 +265,53 @@ dagfig0 <-
   dag %>%
   ggplot( aes( x = x, y = y, xend = xend, yend = yend) ) +
   geom_dag_point( colour = "grey85", size = 20 ) +
-  geom_dag_edges() +
-  geom_dag_text(
-    parse = T,
-    size = 3.6,
-    colour = "black",
-    label = c(
-      expression(BDI[post]), expression(BDI[pre]), "DBS",
-      expression(DRS[post]), expression(DRS[pre]),
-      expression(LEDD[post]), expression(LEDD[pre]),
-      expression(PDAQ[post]), expression(PDAQ[pre]),
-      "Item", "Patient"
-    )
-  ) +
-  theme_dag()
+  geom_dag_edges( aes( edge_colour = "grey33") ) +
+  scale_edge_colour_manual( values = "grey33" ) +
+  geom_dag_text( label = lab, parse = T, size = 3.6, colour = "black" ) +
+  theme_dag() +
+  theme( legend.position = "none" )
+
+# extract adjustment sets for post-surgery change and LEDD_post
+adjdag_post <- dag %>% ggdag_adjustment_set( exposure = c("P_pre","DBS"), outcome = "P_post", effect = "direct", type = "minimal" )
+adjdag_ledd <- dag %>% ggdag_adjustment_set( exposure = "L_post", outcome = "P_post", effect = "total", type = "minimal" )
 
 # prepare the DAG with adjustment set for direct time/DBS effect
 dagfig1 <-
   
-  dag %>%
-  ggdag_adjustment_set( exposure = c("P_pre","DBS"), outcome = "P_post", effect = "direct", type = "minimal", shadow = T ) +
-  geom_dag_point( colour = "grey89", size = 20 ) +
-  geom_dag_text(
-    parse = T,
-    size = 3.6,
-    colour = "black",
-    label = c(
-      expression(BDI[post]), expression(BDI[pre]), "DBS",
-      expression(DRS[post]), expression(DRS[pre]),
-      expression(LEDD[post]), expression(LEDD[pre]),
-      expression(PDAQ[post]), expression(PDAQ[pre]),
-      "Item", "Patient"
-    )
-  ) +
+  adjdag_post$data %>%
+  ggplot() +
+  aes( x = x, y = y, xend = xend, yend = yend, shape = adjusted ) +
+  geom_dag_point( colour = "grey85", size = 20 ) +
+  geom_dag_edges( aes(edge_colour = adjusted) ) +
+  scale_edge_colour_manual( values = c( unadjusted = "black", adjusted = "grey87" ) ) +
+  scale_shape_manual( values = c( unadjusted = 19, adjusted = 15 ) ) +
+  geom_dag_text( label = lab, parse = T, size = 3.6, colour = "black" ) +
   theme_dag() +
   theme( legend.position = "none" )
+
+# prepare DAG for LEDDpost total effect
+dagfig2 <-
+  
+  adjdag_ledd$data %>%
+  filter( set == "{DBS, L_pre, pat}" ) %>%
+  ggplot() +
+  aes( x = x, y = y, xend = xend, yend = yend, shape = adjusted ) +
+  geom_dag_point( colour = "grey85", size = 20 ) +
+  geom_dag_edges( aes(edge_colour = adjusted) ) +
+  scale_edge_colour_manual( values = c( unadjusted = "black", adjusted = "grey87" ) ) +
+  scale_shape_manual( values = c( unadjusted = 19, adjusted = 15 ) ) +
+  geom_dag_text( label = lab, parse = T, size = 3.6, colour = "black" ) +
+  theme_dag() +
+  theme( legend.position = "none" )
+
+# pull them together and save it
+ggsave(
+  plot = ( dagfig0 / dagfig1 / dagfig2 ) + plot_annotation( tag_levels = "A" ),
+  file = here("figs","iadl_dags.jpg"),
+  dpi = 300,
+  width = 7,
+  height = 16.6
+)
 
 ```
 
@@ -362,7 +386,7 @@ read.csv( here("tabs","demo_basepsych.csv"), sep = "," ) %>%
 
 ```
 
-![Distribution of assessments. Distribution of (A) follow-up years and (B) number of assessments per patient for N = 126 patients. Negative values on horizontal axis in (A) represent pre-surgery assessments, number of assessments in (B) includes one pre-surgery and various number of post-surgery assessments.](../figs/demo_assessments.jpg){#fig-long-cog-dist}
+![Distribution of assessments. Distribution of (A) follow-up years and (B) number of assessments per patient for N = 126 patients. Negative values on horizontal axis in (A) represent pre-surgery assessments, number of assessments in (B) includes one pre-surgery and various number of post-surgery assessments.](figs/demo_assessments.jpg){#fig-long-cog-dist}
 
 ## Structural and microstructural predictors of cognitive decline in deep brain stimulation of subthalamic nucleus in Parkinson’s disease
 
