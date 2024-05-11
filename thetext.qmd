@@ -16,11 +16,38 @@ echo: false
 ```{r}
 #| label: init
 
-rm( list = ls() )
+rm( list = ls() ) # clear environment
 
+# packages
 library(here) # reading & saving files
 library(tidyverse) # data wrangling
 library(gt) # tables formatting
+library(english) # number to text conversion
+library(ggdag) # directed acyclic graphs
+library(ggraph) # help with DAGs plotting
+library(brms) # modeling
+library(tidybayes) # posterior manipulations
+library(emmeans) # contrasts for learning curve analysis
+library(bayestestR) #
+library(ggridges) # density plots
+
+conflicted::conflicts_prefer(ggdag::filter)
+
+# in-house functions
+rprint <- function( x, dec=2 ) sprintf( paste0("%.",dec,"f"), round( x , dec) ) # printing rounded number
+zerolead <- function(x) sub( "0.", ".", x, fixed = T )
+ubound <- function( x, dec=2 ) ifelse( round(x,dec) > x, rprint(x,dec), rprint( x+1/(10^dec), dec ) ) # upper bound
+msd <- function( x, dec=2 ) paste0( rprint( mean(x,na.rm=T), dec )," ± ", rprint( sd(x,na.rm=T), dec ) ) # descriptives
+
+# folders
+sapply( c("figs","tabs","mods"), function(i) if( !dir.exists(i) ) dir.create(i) )
+
+# HMC settings (for lear-curve chapter)
+options( mc.cores = parallel::detectCores() ) # use all parallel CPU cores
+ch = 4 # number of chains
+it = 2000 # iterations per chain
+wu = 1000 # warm-up iterations
+s = 87542 # seed for reproducibility
 
 ```
 
@@ -92,9 +119,9 @@ The RAVLT is a test of verbal declarative memory consisting of a list of 15 word
 
 ### Statistical analyses
 
-RAVLT and BVMT-R data were analyzed using Bayesian generalized linear mixed models (GLMMs) [@tuerlinckx2006; @gelman2006; @mcelreath2020]. Single trial scores were used as outcomes for separate RAVLT and BVMT-R GLMMs with two level of predictors: (i) natural logarithm of trial order, group (HC, PD-NC and PD-MCI) and their interaction on a group level, and (ii) varying participant-specific intercepts at the participant level. Outcome variables as well as trial order were treated as continuous. To account for expected asymmetry in the data, we used skewed Gaussian measurement error model for both outcome variables. Improper flat priors over reals were set-up for population-level parameters and half student-t priors with 3 degrees of freedom for group-level parameters.
+RAVLT and BVMT-R data were analyzed using Bayesian generalized linear mixed models (GLMMs) [@tuerlinckx2006; @gelman2006; @mcelreath2020]. Single trial scores were used as outcomes for separate RAVLT and BVMT-R GLMMs with two level of predictors: (i) natural logarithm of trial order, group (HC, PD-NC and PD-MCI) and their interaction on a group level, and (ii) correlated varying participant-specific intercepts and slopes based on natural logarithm of trial order at the participant level. Outcome variables as well as trial order were treated as continuous and modeled with Gaussian measurement error model for both outcome variables. Improper flat priors over reals were set-up for population-level parameters, half student-t priors with 3 degrees of freedom for global intercept and group-level parameters, and non-regularising LKJ(1) [@lewandowsi2009] prior for participant-level correlation matrices.
 
-To evaluate the memory profile of PD patients in RAVLT and BVMT-R, we first estimated difference between group-specific marginal means across trials (main effects contrasts). Although difference in these marginal means indicates potential memory deficit in some of the groups, it does not indicate whether the deficit is due to impaired *retention* or impaired *learning curve*. We thus also compared between-group differences in marginal means of the first trial performance (simple effect contrasts) as a measure of *retention*, and between-group differences in marginal trends of the logarithmic trial order parameter (interaction contrasts) as a mesure of *learning curve*. All estimates were described by their 89% highest density posterior intervals (HDPI) and compared via the Probability of Direction (*pd*) as an index of effect existence. Marginal means were also compared via percentage in region of practical equivalence (*ROPE*) as an index of effect significance. *ROPE* was set to an interval ranging from −0.1 to 0.1 of the standard deviation of the outcome variable according to the Czech normative data. The results were interpreted following reporting guidelines for Bayesian analyses as articulated by @makowski2019.
+To evaluate the memory profile of PD patients in RAVLT and BVMT-R, we first estimated difference between group-specific marginal means across trials (main effects contrasts). Although difference in these marginal means indicates potential memory deficit in some of the groups, it does not indicate whether the deficit is due to impaired *retention* or impaired *learning curve*. We thus also compared between-group differences in marginal means of the first trial performance (simple effect contrasts) as a measure of *retention*, and between-group differences in marginal trends of the logarithmic trial order parameter (interaction contrasts) as a mesure of *learning curve*. All estimates were described by their 95% highest density posterior intervals (HDPI) and compared via the Probability of Direction (*pd*) as an index of effect existence. Marginal means were also compared via percentage in region of practical equivalence (*ROPE*) as an index of effect significance. *ROPE* was set to an interval ranging from −0.1 to 0.1 of the standard deviation of the outcome variable according to the Czech normative data. The results were interpreted following reporting guidelines for Bayesian analyses as articulated by @makowski2019.
 
 All GLMMs were fitted using via Stan’s (version `r rstan::stan_version()`) build-in Hamiltonian Monte Carlo (HMC) sampler accessed via R software for statistical computing version `r with( version, paste(major,minor,sep=".") )` using package “brms” [@bürkner2017; @rsoft; @stan]. Four parallel chains were run each for 2,000 iterations for each GLMM. The first 1,000 iterations served as a warm-up and were discarded. Convergence was checked numerically by inspection of the $\hat{R}s$ and visually by inspection of trace plots. Full analysis code is available at [https://github.com/josefmana/pd_learCUR.git](https://github.com/josefmana/pd_learCUR.git).
 
@@ -105,11 +132,6 @@ All GLMMs were fitted using via Stan’s (version `r rstan::stan_version()`) bui
 ```{r}
 #| label: long-cog-desc
 
-library(english) # number to text conversion
-
-# clear environment
-rm( list = ls() )
-
 # read the data set and prepare subsets for individual analyses
 d0 <- read.csv( here("_data","cogPRED_data.csv") , sep = "," )
 d1 <- d0[ d0$included == 1 , ] # only STN-DBS treated patients with pre- and post-surgery data
@@ -117,15 +139,6 @@ d2 <- d1[ d1$ass_type == "pre" , ] # only pre-surgery assessments of included pa
 
 # read a file containing mapping of variables' names used in the script to variables' names for the manuscript
 v <- read.csv( here("_data","var_nms.csv") , sep = ";" , row.names = 1 , encoding = "UTF-8")
-
-
-# IN-HOUSE FUNCTIONS ----
-
-# printing rounded number
-rprint <- function( x, dec=2 ) sprintf( paste0("%.",dec,"f"), round( x , dec) )
-
-# upper bound
-ubound <- function( x, dec=2 ) ifelse( round(x,dec) > x, rprint(x,dec), rprint( x+1/(10^dec), dec ) )
 
 # IN-TEXT STATS ----
 
@@ -230,9 +243,6 @@ Importantly, to answer *RQ4.2* and *RQ4.3*, we can use the DAG presented in @fig
 ```{r}
 #| label: postop-iadl-dag
 
-library(ggdag)
-library(ggraph)
-
 # prepare labels
 lab <- c(
       expression(BDI[post]), expression(BDI[pre]), "DBS",
@@ -307,8 +317,8 @@ ggsave(
   plot = last_plot(),
   file = here("figs","iadl_dags.jpg"),
   dpi = 300,
-  width = 6.7,
-  height = 16
+  width = 6,
+  height = 14.7
 )
 
 ```
@@ -325,24 +335,51 @@ All GLMMs were fitted using via Stan’s (version `r rstan::stan_version()`) bui
 
 ## Learning curve in verbal and non-verbal memory of patients with Parkinson's disease
 
+```{r}
+#| label: lear-curve-init
+
+# raw data
+d <-
+  read.csv( here("_data","learCUR.csv"), sep = "," ) %>%
+  mutate( logtrial = log(Trial) ) %>%
+  mutate( group = case_when(
+    Group0kontroly1PD == 0 ~ "HC (N = 60)",
+    Group0kontroly1PD == 1 & MCI_Control == 1 ~ "PD-NC (N = 35)",
+    Group0kontroly1PD == 1 & MCI_Control == 2 ~ "PD-MCI (N = 25)"
+  ) ) %>%
+  mutate( grp = sub(" .*", "", group ) )
+
+# demographics
+d0 <- subset( d, Test == "RAVLT" & Trial == 1 )
+
+# number of participants
+nums <- sapply( c("HC","PD","PD-NC","PD-MCI"), function(i) nrow( subset( d0, grepl(i,group) ) ) )
+
+```
+
 ### Sample characteristics
 
-In total, 60 HC participants and 60 patients with PD were out of which 25 were diagnosed with PD-MCI were included into the study. Demographic and clinical characteristics of the sample are presented in @tbl-lcurve-desc.
+In total, `r nums[["HC"]]` HC participants and `r nums[["PD"]]` patients with PD were included out of which `r nums[["PD-MCI"]]` were diagnosed with PD-MCI were included into the study. Demographic and clinical characteristics of the sample are presented in @tbl-lear-curve-desc.
 
 ```{r}
-#| label: tbl-lcurve-desc
+#| label: tbl-lear-curve-desc
 #| tbl-cap: Demographic characteristics of normative and control sample.
 
-data.frame(
+d0 %>%
   
-  Variable = c("Age (years)","Education (years)","Sex (% male)","PD duration (years)","LEDD (mg)","MoCA (range 0-30)","UPDRS III (range 0-132)"),
-  HC = c("61.92 (3.98)","14.07 (2.57)","43.33","-","-","26.32 (2.30)","-"),
-  PDNC = c("59.43 (8.62)","15.87 (3.13)","60.00","6.43 (6.22)","840.88 (805.11)","26.31 (1.64)","21.09 (12.03)"),
-  PDMCI = c("62.00 (9.71)","13.40 (2.89)","56.00","8.64 (6.10)","1061.67 (653.08)","24.16 (3.10)","25.96 (13.97)")
-  
-) %>%
-  
-  rename( "HC (N = 60)" = "HC", "PD-NC (N = 35)" = "PDNC", "PD-MCI (N = 25)" = "PDMCI") %>%
+  group_by(group) %>%
+  summarise(
+    `Age (years)` = msd(vek_r), `Education (years)` = msd(vzd_r),
+    `Sex (% male)` = rprint( 100 * ( length(pohlavi) - sum(pohlavi) ) / length(pohlavi) ),
+    `PD duration (years)` = msd(PD_trvani_r), `LEDD (mg)` = msd(ldopa),
+    `MoCA (range 0-30)` = msd(MOCA), `UPDRS III (range 0-132)` = msd(updrs_III_on)
+  ) %>%
+    
+  column_to_rownames("group") %>%
+  t() %>%
+  as.data.frame() %>%
+  mutate( across( everything(), ~ ifelse( grepl("NaN",.x), "-", .x ) ) ) %>%
+  relocate( `PD-MCI (N = 25)`, .after = `PD-NC (N = 35)` ) %>%
   
   gt() %>%
     cols_align( align = "center", columns = -1 ) %>%
@@ -352,14 +389,231 @@ data.frame(
 
 ```
 
+### Learning curve analysis
+
+```{r}
+#| label: lear-curve-modeling
+
+# fit the models
+m <-
+  
+  lapply(
+    
+    setNames( unique(d$Test), unique(d$Test) ),
+    function(i)
+      
+      brm(
+        formula = Score ~ 1 + grp * logtrial + (1 + logtrial | id),
+        family = gaussian(), prior = NULL, data = subset( d, Test == i ),
+        seed = s, chains = ch, iter = it, warmup = wu,
+        file = here( "mods", paste0("learCUR_",i,".rds") ),
+        save_model = here( "mods", paste0("learCUR_",i,".stan") )
+      )
+    
+  )
+
+# prepare posterior summaries for plotting
+post_sum <-
+  
+  lapply(
+    
+    names(m),
+    function(i) {
+      
+      # data
+      d_seq <-
+        expand.grid( Trial = 1:ifelse(i == "BVMT", 3, 5), grp = unique(d$grp), id = "sub000" ) %>%
+        mutate( logtrial = log(Trial) )
+      
+      # posteriors
+      post <-
+        
+        lapply(
+          
+          setNames( c("group","pop"), c("group","pop") ),
+          function(j)
+            
+            add_epred_draws( object = m[[i]], newdata = d_seq , allow_new_levels = T, if ( j == "group" ) { re_formula = NA }, seed = 87542 ) %>%
+            ungroup() %>%
+            select( Trial, grp, .draw, .epred ) %>%
+            mutate( pred = case_when(
+              .epred > 15 & i == "RAVLT" ~ 15,
+              .epred > 12 & i == "BVMT" ~ 12,
+              .epred < 0 ~ 0,
+              .default = .epred
+            ) ) %>%
+            group_by( grp, Trial ) %>%
+            summarise( md = median(pred), hdi_low = hdci(pred)[1], hdi_hig = hdci(pred)[2] ) %>%
+            mutate( level = j, Test = i )
+          
+        )
+      
+      # add predictions
+      post$pred <-
+        
+        add_predicted_draws( object = m[[i]], newdata = d_seq , allow_new_levels = T, seed = 87542 ) %>%
+        ungroup() %>%
+        select( Trial, grp, .draw, .prediction ) %>%
+        mutate( pred = case_when(
+          .prediction > 15 & i == "RAVLT" ~ 15,
+          .prediction > 12 & i == "BVMT" ~ 12,
+          .prediction < 0 ~ 0,
+          .default = .prediction
+        ) ) %>%
+        group_by( grp, Trial ) %>%
+        summarise( md = median(pred), hdi_low = hdci(pred)[1], hdi_hig = hdci(pred)[2] ) %>%
+        mutate( level = "pred", Test = i )
+      
+      # prepare posterior summary
+      post <-
+        do.call( rbind.data.frame, post ) %>%
+        pivot_wider( names_from = level, values_from = c("md","hdi_low","hdi_hig") ) %>%
+        rename( "Score" = "md_group" )
+      
+      # return the results
+      return(post)
+      
+    }
+
+  ) %>%
+  
+  do.call( rbind.data.frame, . ) %>%
+  ungroup() %>%
+  mutate( `Group: ` = factor( grp, levels = c("HC","PD-NC","PD-MCI"), ordered = T ) )
+
+# plot it
+f_learCUR <-
+  
+  # prepare data
+  d %>%
+  mutate( `Group: ` = factor( grp, levels = c("HC","PD-NC","PD-MCI"), ordered = T ) ) %>%
+  
+  # start plotting
+  ggplot() +
+  aes( x = Trial, y = Score, colour = `Group: ` ) +
+  geom_jitter( width = 0.2, height = 0, alpha = .33 ) +
+  
+  # learning curves
+  geom_line( data = post_sum, aes( x = Trial, y = Score, group = `Group: ` ), linewidth = 1.5, position = position_dodge(width = .3 ) ) +
+  
+  # predictive intervals
+  geom_linerange( data = post_sum, aes( x = Trial, y = Score, group = `Group: `, ymin = hdi_low_group, ymax = hdi_hig_group ), size = 3, position = position_dodge(width = .3 ) ) +
+  geom_linerange( data = post_sum, aes( x = Trial, y = Score, group = `Group: `, ymin = hdi_low_pop, ymax = hdi_hig_pop ), size = 1.2, position = position_dodge(width = .3 ) ) +
+  geom_errorbar( data = post_sum, aes( x = Trial, y = Score, group = `Group: `, ymin = hdi_low_pred, ymax = hdi_hig_pred ), size = .5, width = .3, position = position_dodge(width = .3 ) ) +
+  
+  # model expactations
+  geom_point( data = post_sum, aes( x = Trial, y = Score, group = `Group: ` ), size = 4, position = position_dodge(width = .3 ), colour = "black" ) +
+  
+  # make final adjustments
+  facet_wrap( ~ Test, ncol = 2, scales = "free", labeller = as_labeller( c( BVMT = "BVMT-R", RAVLT = "RAVLT" ) ) ) +
+  scale_y_continuous( breaks = seq( 0, 15, 3) ) +
+  scale_x_continuous( breaks = 1:5 ) +
+  scale_colour_manual( values = c("#54A021","#E76618","#C42F1A") ) +
+  theme_bw( base_size = 22 ) +
+  theme( legend.position = "bottom" )
+
+# save it
+ggsave( plot = f_learCUR, file = here("figs","lear_curves.jpg"), dpi = 300, width = 14, height = 7 )
+
+```
+
+The data as well as model fits with uncertainty estimates on group-level, group- and participant-level, and full model with added measurement error are presented in @fig-lear-curve. Inference statistics related to research questions of Study 1 are presented in @tbl-lear-curve. In both, BVMT-R and RAVLT, there was evidence of main effect existence (*pd* > .975) practically significant (< 2.5% in ROPE) implying that patients with PD-MCI experience overall memory deficit in both visuospatial and verbal modalities. Upon closer look, our data and models imply that this deficit is due to *retention* impairment with relatively unimpaired *learning curve* in visuospatial modality while the reverse is true for the verbal domain whereby PD-MCI patients show only slight impairment in *retention*, however, there is clear *learning curve* impairment present (@tbl-lear-curve).
+
+```{r}
+#| label: tbl-lear-curve
+#| tbl-cap: "Analysis of visuospatial and verbal learning curves"
+
+t_post_learCUR <-
+  
+  lapply(
+    
+    names(m),
+    function(i) {
+      
+      rope <- case_when( i == "RAVLT" ~ c(-0.223, 0.223), i == "BVMT" ~ c(-0.210, 0.210) ) # ROPE
+      
+      contr <- list(
+        main = pairs( emmeans( m[[i]], ~ grp ) ), # main effect/recall
+      simple = pairs( ref_grid( m[[i]], at = list(logtrial = 0, cov.reduce = grp ~ logtrial) ) ), # simple effect/retention
+      inter = contrast( emtrends( m[[i]], ~ grp | logtrial, var = "logtrial" ), interaction = "pairwise") # interaction/learning curve
+      )
+      
+      res <-
+        lapply(
+          names(contr),
+          function(j)
+            describe_posterior(
+              contr[[j]], centrality = "median", dispersion = F, ci = .95, ci_method = "hdi",
+              test = c("p_direction", "rope"), rope_range = rope, rope_ci = 1
+            ) %>%
+            as.data.frame() %>%
+            mutate( test = i, effect = j, .before = 1 )
+        ) %>%
+        do.call( rbind.data.frame, . )
+      
+    }
+
+  ) %>%
+  
+  do.call( rbind.data.frame, . ) %>%
+  mutate(
+    effect = case_when(
+      effect == "main" ~ "Recall (Main effect)",
+      effect == "simple" ~ "Retention (Simple effect on the first trial)",
+      effect == "inter" ~ "Learning curve (Interaction effect)"
+    ),
+    Contrast = case_when(
+      grepl("HC",Parameter) & grepl("NC",Parameter) ~ "HC-minus-(PD-NC)",
+      grepl("HC",Parameter) & grepl("MCI",Parameter) ~ "HC-minus-(PD-MCI)",
+      grepl("NC",Parameter) & grepl("NC",Parameter) ~ "(PD-MCI)-minus-(PD-NC)"
+    ),
+    Median = rprint(Median,2),
+    hdpi = paste0( "[", rprint(CI_low,2), ", ", rprint(CI_high,2), "]" ),
+    pd = zerolead( rprint(pd,3) ),
+    roperc = ifelse( ROPE_Percentage < .01, "< 1", rprint( 100 * ROPE_Percentage, 2 ) )
+  ) %>%
+  
+  select( test, effect, Contrast, Median, hdpi, pd, roperc ) %>%
+  pivot_wider( names_from = test, values_from = c("Median","hdpi",pd,"roperc") ) %>%
+  relocate( hdpi_BVMT, .before = Median_RAVLT ) %>%
+  relocate( pd_BVMT, .before = Median_RAVLT ) %>%
+  relocate( roperc_BVMT, .before = Median_RAVLT )
+
+# write it
+write.table( t_post_learCUR, file = here("tabs","lear_curves.csv"), sep = ";", row.names = F, quote = F )
+
+# sho it
+t_post_learCUR %>%
+  
+  gt( groupname_col = "effect", rowname_col = "Contrast" ) %>%
+    cols_align( columns = -1, align = "center" ) %>%
+    cols_align( columns = "Contrast", align = "left" ) %>%
+    tab_spanner( columns = ends_with("BVMT"), label = "BVMT-R", gather = F ) %>%
+    tab_spanner( columns = ends_with("RAVLT"), label = "RAVLT", gather = F ) %>%
+    
+    cols_label(
+        starts_with("Median") ~ "Median",
+        starts_with("hdpi") ~ "95% HDPI",
+        starts_with("pd") ~ "pd",
+        starts_with("roperc") ~ "% in ROPE"
+    ) %>%
+    
+    tab_footnote( locations = cells_column_labels( starts_with("rope") ), footnote = "region of practical equivalence was set to one-tenth of normative standard deviation for a median trial, i.e., −0.210–0.210 for BVMT-R and −0.223–0.223 for RAVLT" ) %>%
+    
+    tab_source_note( source_note = "BVMT-R: Brief Visuospatial Memory Test - Revised; HC: healthy adult control participants; HDPI: highest density posterior interval; pd: probability of direction; PD-MCI: Parkinson’s disease patients with mild cognitive impairment; PD-NC: Parkinson’s disease patients without mild cognitive impairment; RAVLT: Rey Auditory Visual Learning Test; ROPE: region of practical equivalence; comparisons in bold can be regarded as evidence of the existence of an effect (pd >.975)." )
+
+```
+
+![Visuospatial and verbal learning curves of control participants and Parkinson’s Disease patients. Lines and black points represent median posterior predictions with 95% highest density posterior intervals from group-level predictions (thick vertical lines), group- and participant-level predictions (thin vertical lines), and full model with added mesurement error (error bars). Coloured points represent observed data-points jittered horizontally for visualisation purposes; BVMT-R: Brief Visuospatial Memory Test – Revised; RAVLT: Rey Auditory Visual Learning Test; HC: healthy controls; PD-NC: Parkinson’s Disease with normal cognition; PD-MCI: Parkinson’s Disease with Mild Cognitive Impairment.](figs/lear_curves.jpg){#fig-lear-curve}
+
 ## Preoperative Cognitive Profile Predictive of Cognitive Decline after Subthalamic Deep Brain Stimulation in Parkinson's Disease
 
 ### Sample characteristics
 
-Baseline demographic and clinical characteristics as well as stimulation parameters of the sample are presented in @tbl-long-cog-clinchar whereas average pre-surgery cognitive profile of the sample is presented in @tbl-long-cog-basepsych. Mean duration of a follow-up after the surgery was `r itstats[['fudur']][['mean']]` years (SD = `r itstats[['fudur']][['sd']]`, median = `r itstats[['fudur']][['median']]`, range = `r itstats[['fudur']][['min']]`–`r itstats[['fudur']][['max']]`) with a median number of `r itstats[['nass']][['median']]` assessments per patient (range = `r itstats[['nass']][['min']]`–`r itstats[['nass']][['max']]`) (see also @fig-long-cog-dist).
+Baseline demographic and clinical characteristics as well as stimulation parameters of the sample are presented in @tbl-cog-pred-clinchar whereas average pre-surgery cognitive profile of the sample is presented in @tbl-cog-pred-basepsych. Mean duration of a follow-up after the surgery was `r itstats[['fudur']][['mean']]` years (SD = `r itstats[['fudur']][['sd']]`, median = `r itstats[['fudur']][['median']]`, range = `r itstats[['fudur']][['min']]`–`r itstats[['fudur']][['max']]`) with a median number of `r itstats[['nass']][['median']]` assessments per patient (range = `r itstats[['nass']][['min']]`–`r itstats[['nass']][['max']]`) (see also @fig-cog-pred-dist).
 
 ```{r}
-#| label: tbl-long-cog-clinchar
+#| label: tbl-cog-pred-clinchar
 #| tbl-cap: Clinical characteristics of the sample of included patients
 
 read.csv( here("tabs","demo_clinchar.csv"), sep = "," ) %>%
@@ -377,7 +631,7 @@ read.csv( here("tabs","demo_clinchar.csv"), sep = "," ) %>%
 ```
 
 ```{r}
-#| label: tbl-long-cog-basepsych
+#| label: tbl-cog-pred-basepsych
 #| tbl-cap: Pre-surgery neuropsychological measures of included patients
 
 read.csv( here("tabs","demo_basepsych.csv"), sep = "," ) %>%
@@ -391,6 +645,46 @@ read.csv( here("tabs","demo_basepsych.csv"), sep = "," ) %>%
 ```
 
 ![Distribution of assessments. Distribution of (A) follow-up years and (B) number of assessments per patient for N = 126 patients. Negative values on horizontal axis in (A) represent pre-surgery assessments, number of assessments in (B) includes one pre-surgery and various number of post-surgery assessments.](figs/demo_assessments.jpg){#fig-long-cog-dist}
+
+### Pre-surgery cognitive profile
+
+```{r}
+#| label: cog-pred-factanal
+
+fa <- readRDS( here("mods","cogPRED_factanal.rds") )
+
+# prepare the figure
+# NEED TO PUT THE TEST IN A BETTER ORDER AND RENAME ROWS AND COLUMNS
+fig_factanal <-
+  
+  lapply(
+    1:100,
+    function(i)
+        loadings(fa$efa[[1]][[5]]) %>%
+        as.data.frame() %>%
+        rownames_to_column("test") %>%
+        pivot_longer( cols = -test, names_to = "factor", values_to = "load" )
+) %>%
+    
+    do.call( rbind.data.frame, . ) %>%
+    mutate( load = ifelse( grepl("pst|tmt",test), -load, load ) ) %>%
+    
+    ggplot() +
+    aes( x = load, y = test, fill = after_stat( abs(x) > .3  ) ) +
+    geom_density_ridges_gradient( scale = 1.5, rel_min_height = 0.001 ) +
+    scale_fill_manual( values = c("grey89","#E69F00") ) +
+    labs( x = "Factor loading", y= NULL ) +
+    #geom_vline( xintercept = 0, linewidth = .75, linetype = "dashed", color = "black" ) +
+    facet_wrap( ~ factor( factor, levels = colnames( loadings(fa$efa[[1]][[5]]) ) ), nrow = 1 ) +
+    theme_bw( base_size = 12 ) +
+    theme( legend.position = "none" )
+
+
+```
+
+### Post-surgery cognitive change description
+
+### Post-surgery cognitive change prediction
 
 ## Structural and microstructural predictors of cognitive decline in deep brain stimulation of subthalamic nucleus in Parkinson’s disease
 
