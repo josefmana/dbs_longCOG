@@ -28,7 +28,7 @@ library(ggraph) # help with DAGs plotting
 library(brms) # modeling
 library(tidybayes) # posterior manipulations
 library(emmeans) # contrasts for learning curve analysis
-library(bayestestR) #
+library(bayestestR) # pd and ROPE convenience functions
 library(ggridges) # density plots
 
 conflicted::conflicts_prefer(ggdag::filter)
@@ -71,11 +71,13 @@ s = 87542 # seed for reproducibility
 
 ## Measuring cognitive functions
 
-### Clasical test theory
+### Clasical test theory and item response theory
 
-### Item response theory
+### Inference and prediction
 
-### Causal versus descriptive targets of inference
+[@yarkoni2020; @zhang2023]
+
+### Causal and descriptive targets of inference
 
 # Research Aims
 
@@ -130,7 +132,7 @@ All GLMMs were fitted using via Stan’s (version `r rstan::stan_version()`) bui
 ### Participants
 
 ```{r}
-#| label: long-cog-desc
+#| label: cog-pred-init
 
 # read the data set and prepare subsets for individual analyses
 d0 <- read.csv( here("_data","cogPRED_data.csv") , sep = "," )
@@ -412,6 +414,9 @@ m <-
     
   )
 
+# diagnostics
+rhatmax <- ubound( max( sapply( names(m), function(i) max( rhat(m[[i]]) ) ) ) )
+
 # prepare posterior summaries for plotting
 post_sum <-
   
@@ -517,7 +522,7 @@ ggsave( plot = f_learCUR, file = here("figs","lear_curves.jpg"), dpi = 300, widt
 
 ```
 
-The data as well as model fits with uncertainty estimates on group-level, group- and participant-level, and full model with added measurement error are presented in @fig-lear-curve. Inference statistics related to research questions of Study 1 are presented in @tbl-lear-curve. In both, BVMT-R and RAVLT, there was evidence of main effect existence (*pd* > .975) practically significant (< 2.5% in ROPE) implying that patients with PD-MCI experience overall memory deficit in both visuospatial and verbal modalities. Upon closer look, our data and models imply that this deficit is due to *retention* impairment with relatively unimpaired *learning curve* in visuospatial modality while the reverse is true for the verbal domain whereby PD-MCI patients show only slight impairment in *retention*, however, there is clear *learning curve* impairment present (@tbl-lear-curve).
+Both models converged to a stationary posterior distribution within specified number of iterations ($\hat{R}$s < `r rhatmax`). The data as well as model fits with uncertainty estimates on group-level, group- and participant-level, and full model with added measurement error are presented in @fig-lear-curve. Inference statistics related to research questions of Study 1 are presented in @tbl-lear-curve. In both, BVMT-R and RAVLT, there was evidence of main effect existence (*pd* > .975) practically significant (< 2.5% in ROPE) implying that patients with PD-MCI experience overall memory deficit in both visuospatial and verbal modalities. Upon closer look, our data and models imply that this deficit is due to *retention* impairment with relatively unimpaired *learning curve* in visuospatial modality while the reverse is true for the verbal domain whereby PD-MCI patients show only slight impairment in *retention*, however, there is clear *learning curve* impairment present (@tbl-lear-curve).
 
 ```{r}
 #| label: tbl-lear-curve
@@ -644,7 +649,7 @@ read.csv( here("tabs","demo_basepsych.csv"), sep = "," ) %>%
 
 ```
 
-![Distribution of assessments. Distribution of (A) follow-up years and (B) number of assessments per patient for N = 126 patients. Negative values on horizontal axis in (A) represent pre-surgery assessments, number of assessments in (B) includes one pre-surgery and various number of post-surgery assessments.](figs/demo_assessments.jpg){#fig-long-cog-dist}
+![Distribution of assessments. Distribution of (A) follow-up years and (B) number of assessments per patient for N = 126 patients. Negative values on horizontal axis in (A) represent pre-surgery assessments, number of assessments in (B) includes one pre-surgery and various number of post-surgery assessments.](figs/demo_assessments.jpg){#fig-cog-pred-dist}
 
 ### Pre-surgery cognitive profile
 
@@ -653,36 +658,148 @@ read.csv( here("tabs","demo_basepsych.csv"), sep = "," ) %>%
 
 fa <- readRDS( here("mods","cogPRED_factanal.rds") )
 
+# list order of tests used for the plot
+o <- c("PST-W","PST-D","PST-C","TOL","COWAT","CFT","TMT-B","TMT-A","RAVLT-IR","RAVLT-DR","RAVLT-Rec50","RAVLT-Rec15",
+       "DS-F","DS-B","Sim.","LNS","RAVLT-B","FP-IR","FP-DR","STAI-X1","STAI-X2","SS-F","SS-B")
+
+# variance accounted for
+vaccount <- 
+  
+  sapply(
+    
+    c("mean","sd"), # loop through summary stats of interest
+    function(i)
+      
+      ( # extract all total cumulative variability accounted for by 7-factor model & calculate summaries
+        do.call(
+          i,
+          list( sapply( 1:length(fa), function(j) max( fa$efa[[j]][[5]]$Vaccounted[ "Cumulative Var", ] ) ) )
+          ) * 100 # make it percentages
+        ) %>%
+      
+      rprint(1) %>%
+      paste0(.," %")
+        
+  )
+
 # prepare the figure
-# NEED TO PUT THE TEST IN A BETTER ORDER AND RENAME ROWS AND COLUMNS
 fig_factanal <-
   
   lapply(
     1:100,
     function(i)
-        loadings(fa$efa[[1]][[5]]) %>%
-        as.data.frame() %>%
-        rownames_to_column("test") %>%
-        pivot_longer( cols = -test, names_to = "factor", values_to = "load" )
-) %>%
+      loadings(fa$efa[[i]][[5]]) %>%
+      as.data.frame() %>%
+      rownames_to_column("test") %>%
+      pivot_longer( cols = -test, names_to = "factor", values_to = "load" )
+  ) %>%
+  
+  do.call( rbind.data.frame, . ) %>%
+  mutate( load = ifelse( grepl("pst|tmt",test), -load, load ) ) %>%
+  mutate( test = sapply( 1:nrow(.), function(i) v[ test[i], "name" ] ) ) %>%
+  mutate( test = factor( test, levels = rev(o), ordered = T ) ) %>%
     
-    do.call( rbind.data.frame, . ) %>%
-    mutate( load = ifelse( grepl("pst|tmt",test), -load, load ) ) %>%
-    
-    ggplot() +
-    aes( x = load, y = test, fill = after_stat( abs(x) > .3  ) ) +
-    geom_density_ridges_gradient( scale = 1.5, rel_min_height = 0.001 ) +
-    scale_fill_manual( values = c("grey89","#E69F00") ) +
-    labs( x = "Factor loading", y= NULL ) +
-    #geom_vline( xintercept = 0, linewidth = .75, linetype = "dashed", color = "black" ) +
-    facet_wrap( ~ factor( factor, levels = colnames( loadings(fa$efa[[1]][[5]]) ) ), nrow = 1 ) +
-    theme_bw( base_size = 12 ) +
-    theme( legend.position = "none" )
+  ggplot() +
+  aes( x = load, y = test, fill = after_stat( abs(x) > .3  ) ) +
+  geom_density_ridges_gradient( scale = 1.5, rel_min_height = 0.001 ) +
+  scale_fill_manual( values = c("grey93","#E69F00") ) +
+  labs( x = "Factor loading", y= NULL ) +
+  theme_bw( base_size = 14 ) +
+  theme( legend.position = "none" ) +
+  facet_wrap(
+    ~ factor( factor, levels = colnames( loadings(fa$efa[[1]][[5]]) ) ),
+    nrow = 1,
+    labeller = as_labeller(
+      c( exec_fun = "EF/Att.", epis_mem = "EM", verb_wm = "VWM", visp_mem = "VM", set_shift = "SS", anxiety = "An.", visp_wm = "VWM")
+    )
+  )
 
+# save it
+ggsave( plot = fig_factanal, file = here("figs","cogpred_factnal.jpg"), dpi = 300, width = 11.7, height = 10.32  )
 
 ```
 
+In the exploratory factor analyses, we examined from three up to eight factor solutions for pre-surgery cognitive profile. According to TLI and RMSEA, there was a clear improvement when increasing the number from six to seven factors whereby good TLI (i.e., TLI > .9) increased from 76 to 97, and good RMSEA (i.e., RMSEA < .05) increased from 96 to 99 out of 100 imputed data sets. Moreover, the seven factor solution showed the most consistency of factors across imputations. Finally, even though the eight factor solution had better fit statistics than the seven factor solution, it resulted in factors loaded on substantially (i.e., with a factor loading above 0.3) by only a single cognitive test score which impedes theoretical interpretation of such factors. Consequently, the seven factor solution was retained for further analyses. Summary of factor loadings across imputations is presented in @fig-cog-pred-factanal. On average, the seven factors accounted for a total of `r vaccount['mean']` of variance (SD = `r vaccount['sd']`) and corresponded to seven cognitive functions: 1) executive functions/attention (EF/Att.) was loaded on primarily by PST tasks, TMT tasks, verbal fluency tests and TOL, 2) episodic memory (EM) was loaded on primarily by indexes of RAVLT except for the recall of interference list (RAVLT-B), 3) verbal working memory (VWM) was loaded on primarily by Digit Span tasks, LNS and Similarities, 4) visuospatial memory (VM) was loaded on primarily by indexes of the Family Pictures test, 5) set shifting (SS) was loaded on primarily by TMT tasks and RAVLT-B, 6) anxiety (An.) was loaded on primarily by STAI, and 7) spatial working memory (SWM) was loaded on primarily by Spatial Span tasks.
+
+![Factor loadings for the selected exploratory factor analysis represented as density plots across across 100 imputations.](figs/cogpred_factnal.jpg){#fig-cog-pred-factanal}
+
 ### Post-surgery cognitive change description
+
+```{r}
+#| label: cog-pred-desc
+
+m0 <- readRDS( here("mods","cogPRED_linear.rds") ) # model
+rhatmax <- ubound( max( rhat(m0) ) ) # max Rhat
+
+scl <- read.csv( here("tabs","cogpred_scaling.csv"), sep = "," ) %>% column_to_rownames("variable")
+
+# get pre-surgery and slope predictions
+tcontr <-
+  
+  lapply(
+    
+    c("group","pop"),
+    function(i)
+      
+      # prepare data
+      data.frame( id = "sub000", time_y = c( -scl["Time","central_tendency"] , -scl["Time","central_tendency"] + 1) ) %>%
+      mutate( time = time_y + scl["Time","central_tendency"] ) %>%
+      
+      # extract predictions
+      add_epred_draws(
+        object = m0,
+        newdata = . ,
+        allow_new_levels = T,
+        if ( i == "group" ) { re_formula = NA },
+        seed = 87542
+      ) %>%
+      
+      # post-process
+      mutate( pred = scl["DRS","central_tendency"] + scl["DRS","standard_deviation"] * .epred ) %>%
+      mutate( pred = case_when( pred > 144 ~ 144, pred < 0 ~ 0, .default = pred) ) %>%
+      ungroup() %>%
+      select( id, time, .draw, pred ) %>%
+      pivot_wider( names_from = time, names_prefix = "Y", values_from = pred ) %>%
+      mutate( slope = Y1 - Y0) %>%
+      pivot_longer( cols = -c("id",".draw"), names_to = "contrast" ) %>%
+      group_by(contrast) %>%
+      summarise( md = median(value), hdi_low = hdci(value,.width=.95)[1], hdi_hig = hdci(value,.width=.95)[2] ) %>%
+      mutate( level = i, .before = 1 )
+    
+  )
+
+# extract predictive contrast of one year post-minus-pre assessments
+tcontr$pred <-
+  
+  data.frame( id = "sub000", time_y = c( -scl["Time","central_tendency"] , -scl["Time","central_tendency"] + 1) ) %>%
+  mutate( time = time_y + scl["Time","central_tendency"] ) %>%
+  add_predicted_draws( object = m0, newdata = . , allow_new_levels = T, seed = 87542 ) %>%
+  mutate( pred = scl["DRS","central_tendency"] + scl["DRS","standard_deviation"] * .prediction ) %>%
+  mutate( pred = case_when( pred > 144 ~ 144, pred < 0 ~ 0, .default = pred ) ) %>%
+  ungroup() %>%
+  select( id, time, .draw, pred ) %>%
+  pivot_wider( names_from = time, names_prefix = "Y", values_from = pred ) %>%
+  mutate( slope = Y1 - Y0) %>%
+  pivot_longer( cols = -c("id",".draw"), names_to = "contrast" ) %>%
+  group_by(contrast) %>%
+  summarise( md = median(value), hdi_low = hdci(value,.width=.95)[1], hdi_hig = hdci(value,.width=.95)[2] ) %>%
+  mutate( level = "pred", .before = 1 )
+
+# put it together
+tcontr <-
+  
+  tcontr %>%
+  do.call( rbind.data.frame, . ) %>%
+  mutate(
+    median = rprint(md,2),
+    absmedian = rprint(abs(md),2),
+    hdpi = paste0( "[",rprint(hdi_low,2),", ",rprint(hdi_hig,2),"]" )
+  ) %>%
+  select( level, contrast, median, absmedian, hdpi )
+
+```
+
+The descriptive longitudinal GLMM converged to a stationary posterior distribution within specified number of iterations ($\hat{R}$s < `r rhatmax`). On the group-level, there was an average post-surgery decline of `r with( tcontr, absmedian[ level == 'group' & contrast == 'slope' ] )` DRS-2 points/year (95% HDPI `r with( tcontr, hdpi[ level == 'group' & contrast == 'slope' ] )`) from an average pre-surgery DRS-2 performance of `r with( tcontr, absmedian[ level == 'group' & contrast == 'Y0' ] )` out of 144 points (95% HDPI `r with( tcontr, hdpi[ level == 'group' & contrast == 'Y0' ] )`). After accounting for not only group-level variability but also participant-level variability for generalisation of the inference of the true score change to the CAPSIT-based population of STN DBS treated patients with PD, the estimate reach annual decline of `r with( tcontr, absmedian[ level == 'pop' & contrast == 'slope' ] )` DRS-2 points/year (95% HDPI `r with( tcontr, hdpi[ level == 'pop' & contrast == 'slope' ] )`). Finally, when changing the level of analysis from inference to prediction by adding measurement error to the estimates, expected annual post-surgery cognitive decline was `r with( tcontr, absmedian[ level == 'pred' & contrast == 'slope' ] )` DRS-2 points/year (95% HDPI `r with( tcontr, hdpi[ level == 'pred' & contrast == 'slope' ] )`). 
 
 ### Post-surgery cognitive change prediction
 
