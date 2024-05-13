@@ -180,7 +180,7 @@ The study involved `r itstats[['n']][['incl']]` patients with idiopathic PD foll
 
 ### Neropsychological examination
 
-Pre-surgery neuropsychological assessment examined the following cognitive domains: (i) attention via Trail Making Test, part A (TMT-A) [@bezdicek2012; @bezdicek2017a; @partington1949] and dot color naming condition from Prague Stroop Test (PST-D) [@bezdicek2015a] for sustained visual attention; (ii) executive functions via Trail Making Test, part B (TMT-B) [@bezdicek2012; @bezdicek2017a; @partington1949] for set shifting, Tower of London task (TOL) [@michalec2017; @shallice1982] for planning, Prague Stroop Test, naming color of neutral words (PST-W) and interference condition (i.e., naming color of contrasting color words, PST-C) for sensitivity to interference [@bezdicek2015a], and Controlled Oral Word Association Test (COWAT, letters K + P) [@nikolai2015] for mental flexibility; (iii) language via Similarities (Sim.) from Wechsler Adult Intelligence Scale, third revision (WAIS-III) [@wechsler2010] for conceptualization, and category verbal fluency test (CFT, category Animals) [@nikolai2015] for speeded word production; (iv) working memory via Digit Span (DS) from WAIS-III [@wechsler2010] as well as letter-number sequencing (LNS) [@wechsler2011] and Spatial Span (SS) from Wechsler Memory Scale, third edition (WMS-III) [@wechsler2011] for auditory and spatial working memory respectively; and (v) memory via Rey Auditory Verbal Learning Test (RAVLT) [@bezdicek2014; @frydrychova2018] for explicit verbal learning and memory, and WMS-III Family Pictures (FP) for visuo-spatial memory [@wechsler2011]. Furthermore, anxiety was assessed with the State-Trait Anxiety Inventory for the state (STAI-X1) and trait (STAI-X2) anxiety [@spielberger1983].
+Pre-surgery neuropsychological assessment examined the following cognitive domains: (i) attention via Trail Making Test, part A (TMT-A) [@bezdicek2012; @bezdicek2017a; @partington1949] and dot color naming condition from Prague Stroop Test (PST-D) [@bezdicek2015a] for sustained visual attention; (ii) executive functions via Trail Making Test, part B (TMT-B) [@bezdicek2012; @bezdicek2017a; @partington1949] for set shifting, Tower of London task (TOL) [@michalec2017; @shallice1982] for planning, Prague Stroop Test, naming color of neutral words (PST-W) and interference condition (i.e., naming color of contrasting color words, PST-C) for sensitivity to interference [@bezdicek2015a], and Controlled Oral Word Association Test (COWAT, letters K + P) [@nikolai2015] for mental flexibility; (iii) language via Similarities (Sim.) from Wechsler Adult Intelligence Scale, third revision (WAIS-III) [@wechsler2010] for conceptualization, and category verbal fluency test (CFT, category Animals) [@nikolai2015] for speeded word production; (iv) working memory via Digit Span forward and backward (DS-F and DS-B) from WAIS-III [@wechsler2010] as well as letter-number sequencing (LNS) [@wechsler2011] and Spatial Span forward and backward (SS-F and SS-B) from Wechsler Memory Scale, third edition (WMS-III) [@wechsler2011] for auditory and spatial working memory respectively; and (v) memory via Rey Auditory Verbal Learning Test (RAVLT) [@bezdicek2014; @frydrychova2018] for explicit verbal learning and memory, and WMS-III Family Pictures (FP) for visuo-spatial memory [@wechsler2011]. Furthermore, anxiety was assessed with the State-Trait Anxiety Inventory for the state (STAI-X1) and trait (STAI-X2) anxiety [@spielberger1983].
 
 Patients’ longitudinal cognitive state was assessed pre-surgery and at several times post-surgery using Mattis Dementia Rating Scale, second edition (DRS-2) [@bezdicek2015; @jurica2001]. Moreover, subjective depressive symptoms were assessed with Beck Depression Inventory, second edition (BDI-II) [@beck1996; @ciharova2020] at each assessment. BDI-II was not used for pre-surgery exclusion due to depression which was instead ascertained by an independent neuropsychiatric evaluation. Finally, The levodopa equivalent daily dose (LEDD) was calculated at each assessment time-point according to @tomlinson2010.
 
@@ -213,7 +213,7 @@ All GLMMs were fitted using via Stan’s (version `r rstan::stan_version()`) bui
 
 ### Participants
 
-The study involved 72 patients with PD diagnosed according to the criteria for clinically established PD defined by the Movement Disorders Society [@postuma2015] that were indicated for STN DBS. Exclusion criteria were general contraindications to MRI examination (see Study 2), substantial vascular or space occupying brain lesions or a neurological or psychiatric disorder other than PD and its related complications. The examination of cognition (via DRS-2) was performed before the STN DBS implantation and then in the years 1, 3 and 5 after the surgery with the last available assessment, i.e. with the longest follow-up duration, being used to calculate the DRS-2 change per year ($\Delta$DRS-2 = $\frac{\text{DRS-2}_{post} - \text{DRS-2}_{pre}}{\text{Years post-surgery}}$ ). Patients with $\Delta$DRS-2 of --2 or less were labelled as cognitive decline (CD) group, the remaining patients were considered cognitively stable (CS).^[This choice was based on the reasoning that patient that would scored at maximal 144/144 points before sugery would with 2 points/year decline reach the optimal threshold for PD-MCI according to the Czech normative study [@bezdicek2015] at three-year post-surgery mark.]
+The study involved 72 patients with PD diagnosed according to the criteria for clinically established PD defined by the Movement Disorders Society [@postuma2015] that were indicated for STN DBS. Exclusion criteria were general contraindications to MRI examination (see Study 2), substantial vascular or space occupying brain lesions or a neurological or psychiatric disorder other than PD and its related complications. The examination of cognition (via DRS-2) was performed before the STN DBS implantation and then in the years 1, 3 and 5 after the surgery with the last available assessment, i.e. with the longest follow-up duration, being used to calculate the DRS-2 change per year ($\Delta$DRS-2 = $\frac{\text{DRS-2}_{post} - \text{DRS-2}_{pre}}{\text{Years post-surgery}}$ ). Patients with $\Delta$DRS-2 of --2 or less were labelled as cognitive decline (CD) group, the remaining patients were considered cognitively stable (CS).^[This choice was based on the reasoning that patient that would scored at maximal 144/144 points before sugery would with 2 points/year decline reach the optimal threshold for PD-MCI according to the Czech normative study [@bezdicek2015] at three-year post-surgery mark.] Furthermore, at each measurement occassion, patients' cognitive state was categorised as PD-MCI or PD-NC based on DRS-2 cutoff 139/140 derived from the Czech normative study as threshold with the best specificity and sensitivity (both ~ .80 ) [@bezdicek2015].
 
 Pre-surgery MRI acquisition was performed using a 3T MAGNETOM Skyra scanner (Siemens, Erlangen, Germany). A T1-weighted (T1w) scan was acquired with magnetisation-prepared rapid gradient echo (MPRAGE) sequence, 1.0-mm isotropic resolution, repetition time (TR) = 2,200 ms, inversion time (TI) = 900 ms, echo time (TE) = 2.43 ms, and flip angle (FA) = $8^\circ$. The protocol further included DWI with voxel size 2.0 × 2.0 × 2.0 mm^3^, TR = 9,000 ms, TE = 94 ms, FA =  $90^\circ$, single b-value of 1100 s/mm^2^, and 30 directions with 5 additional b0 images, acquired with antero-posterior phase encoding direction. Post-surgery T1w scan with MPRAGE sequence, 1.0 mm isotropic resolution, TR = 2,140 ms, TI = 1,100 ms, TE = 3.93 ms, and FA == 15° acquired using a 1.5 T MAGNETOM Avanto scanner (Siemens, Erlangen, Germany) was utilised to estimate the position of the DBS electrode.
 
@@ -383,11 +383,11 @@ d0 %>%
   mutate( across( everything(), ~ ifelse( grepl("NaN",.x), "-", .x ) ) ) %>%
   relocate( `PD-MCI (N = 25)`, .after = `PD-NC (N = 35)` ) %>%
   
-  gt() %>%
-    cols_align( align = "center", columns = -1 ) %>%
-    tab_source_note(
-        source_note = "BDI-II: Beck Depression Rating Scale, second edition; HC: healthy control group; LEDD: levodopa equivalent daily dose; MoCA: Montreal Cognitive Assessment; N: number of observations; PD: Parkinson's Disease; PD-MCI: Mild Cognitive Impairment in Parkinson's Disease; PD-NC: Normal Cognition in Parkinson's Disease; UPDRS III: Unified Parkinson’s Disease Rating Scale, motor part; all values represent mean (standard deviation) for continuous and percentages for nominal variables."
-    )
+  gt( rownames_to_stub = T ) %>%
+  cols_align( align = "center", columns = -1 ) %>%
+  tab_source_note(
+    source_note = "BDI-II: Beck Depression Rating Scale, second edition; HC: healthy control group; LEDD: levodopa equivalent daily dose; MoCA: Montreal Cognitive Assessment; N: number of observations; PD: Parkinson's Disease; PD-MCI: Mild Cognitive Impairment in Parkinson's Disease; PD-NC: Normal Cognition in Parkinson's Disease; UPDRS III: Unified Parkinson’s Disease Rating Scale, motor part; all values represent mean (standard deviation) for continuous and percentages for nominal variables."
+  )
 
 ```
 
@@ -591,21 +591,23 @@ write.table( t_post_learCUR, file = here("tabs","lear_curves.csv"), sep = ";", r
 t_post_learCUR %>%
   
   gt( groupname_col = "effect", rowname_col = "Contrast" ) %>%
-    cols_align( columns = -1, align = "center" ) %>%
-    cols_align( columns = "Contrast", align = "left" ) %>%
-    tab_spanner( columns = ends_with("BVMT"), label = "BVMT-R", gather = F ) %>%
-    tab_spanner( columns = ends_with("RAVLT"), label = "RAVLT", gather = F ) %>%
+  cols_align( columns = -1, align = "center" ) %>%
+  cols_align( columns = "Contrast", align = "left" ) %>%
+  tab_spanner( columns = ends_with("BVMT"), label = "BVMT-R", gather = F ) %>%
+  tab_spanner( columns = ends_with("RAVLT"), label = "RAVLT", gather = F ) %>%
     
-    cols_label(
-        starts_with("Median") ~ "Median",
-        starts_with("hdpi") ~ "95% HDPI",
-        starts_with("pd") ~ "pd",
-        starts_with("roperc") ~ "% in ROPE"
-    ) %>%
+  cols_label(
+    starts_with("Median") ~ "Median",
+    starts_with("hdpi") ~ "95% HDPI",
+    starts_with("pd") ~ "pd",
+    starts_with("roperc") ~ "% in ROPE"
+  ) %>%
     
-    tab_footnote( locations = cells_column_labels( starts_with("rope") ), footnote = "region of practical equivalence was set to one-tenth of normative standard deviation for a median trial, i.e., −0.210–0.210 for BVMT-R and −0.223–0.223 for RAVLT" ) %>%
+  tab_footnote( locations = cells_column_labels( starts_with("rope") ), footnote = "region of practical equivalence was set to one-tenth of normative standard deviation for a median trial, i.e., −0.210–0.210 for BVMT-R and −0.223–0.223 for RAVLT" ) %>%
+  
+  opt_footnote_marks(marks = "letters") %>%
     
-    tab_source_note( source_note = "BVMT-R: Brief Visuospatial Memory Test - Revised; HC: healthy adult control participants; HDPI: highest density posterior interval; pd: probability of direction; PD-MCI: Parkinson’s disease patients with mild cognitive impairment; PD-NC: Parkinson’s disease patients without mild cognitive impairment; RAVLT: Rey Auditory Visual Learning Test; ROPE: region of practical equivalence; comparisons in bold can be regarded as evidence of the existence of an effect (pd >.975)." )
+  tab_source_note( source_note = "BVMT-R: Brief Visuospatial Memory Test - Revised; HC: healthy adult control participants; HDPI: highest density posterior interval; pd: probability of direction; PD-MCI: Parkinson’s disease patients with mild cognitive impairment; PD-NC: Parkinson’s disease patients without mild cognitive impairment; RAVLT: Rey Auditory Visual Learning Test; ROPE: region of practical equivalence; comparisons in bold can be regarded as evidence of the existence of an effect (pd >.975)." )
 
 ```
 
@@ -615,36 +617,34 @@ t_post_learCUR %>%
 
 ### Sample characteristics
 
-Baseline demographic and clinical characteristics as well as stimulation parameters of the sample are presented in @tbl-cog-pred-clinchar whereas average pre-surgery cognitive profile of the sample is presented in @tbl-cog-pred-basepsych. Mean duration of a follow-up after the surgery was `r itstats[['fudur']][['mean']]` years (SD = `r itstats[['fudur']][['sd']]`, median = `r itstats[['fudur']][['median']]`, range = `r itstats[['fudur']][['min']]`–`r itstats[['fudur']][['max']]`) with a median number of `r itstats[['nass']][['median']]` assessments per patient (range = `r itstats[['nass']][['min']]`–`r itstats[['nass']][['max']]`) (see also @fig-cog-pred-dist).
+Baseline demographic and clinical and neuropsychological characteristics as well as stimulation parameters of the sample are presented in @tbl-cog-pred-demo. Mean duration of a follow-up after the surgery was `r itstats[['fudur']][['mean']]` years (SD = `r itstats[['fudur']][['sd']]`, median = `r itstats[['fudur']][['median']]`, range = `r itstats[['fudur']][['min']]`–`r itstats[['fudur']][['max']]`) with a median number of `r itstats[['nass']][['median']]` assessments per patient (range = `r itstats[['nass']][['min']]`–`r itstats[['nass']][['max']]`) (see also @fig-cog-pred-dist).
 
 ```{r}
-#| label: tbl-cog-pred-clinchar
-#| tbl-cap: Clinical characteristics of the sample of included patients
+#| label: tbl-cog-pred-demo
+#| tbl-cap: Clinical and neuropsychological characteristics of the sample of included patients.
 
 read.csv( here("tabs","demo_clinchar.csv"), sep = "," ) %>%
   
+  full_join(
+    read.csv( here("tabs","demo_basepsych.csv"), sep = "," ) %>%
+      rename( "Characteristic" = "Test" ) %>%
+      add_column( Type = "Pre-surgery cognitive profile", .after = "Characteristic" ) %>%
+      mutate_if( is.numeric, as.character )
+  ) %>%
+    
   gt( rowname_col = "Characteristic", groupname_col = "Type" ) %>%
   cols_align( align = "center", columns = -1 ) %>%
+  cols_label( Min.Max ~ "Min-Max") %>%
+  
   tab_footnote(
     footnote = "Each measurement of each electrode considered independently. For stimulation parameters, column N indicate number of patients with current/voltage mode of stimulation.",
     locations = cells_row_groups( groups = "Stimulation parameters" )
   ) %>%
-  tab_source_note(
-    source_note = "N: number of observations; Md: median; M: mean; SD: standard deviation; MDS-UPDRS III: Movement Disorder Society Unified Parkinson’s Disease Rating Scale, motor part; LEDD: levodopa equivalent daily dose; Levodopa test: a percentage change of the MDS-UPDRS III score from medication OFF to medication ON state during the levodopa test as described in the main text; V: Volts; mA: milliampere; μs: microseconds; Hz: Hertz."
-  )
-
-```
-
-```{r}
-#| label: tbl-cog-pred-basepsych
-#| tbl-cap: Pre-surgery neuropsychological measures of included patients
-
-read.csv( here("tabs","demo_basepsych.csv"), sep = "," ) %>%
   
-  gt( rowname_col = "Characteristic" ) %>%
-  cols_align( align = "center", columns = -1 ) %>%
+  opt_footnote_marks(marks = "letters") %>%
+  
   tab_source_note(
-    source_note = "N: number of observations; Md: median; M: mean; SD: standard deviation; DRS-2: Dementia Rating Scale, second edition; BDI-II: Beck Depression Rating Scale, second edition; STAI-X1: State-Trait Anxiety Inventory, the state version; STAI-X2: State-Trait Anxiety Inventory, the trait version; TMT-A: Trail Making Test, part A; TMT-B: Trail Making Test, part B; DS-F: Digit Span forward; DS-B: Digit Span backward; LNS: letter-number sequencing; SS-F: Spatial Span forward; SS-B: Spatial Span backward; TOL: Tower of London task; PST-D: Prague Stroop Test, dot color naming; PST-W: Prague Stroop Test, word color naming; PST-C: Prague Stroop Test, interference condition; COWAT: Controlled Oral Word Association Test; CFT: category fluency test; Sim.: Similarities; RAVLT-IR: Rey Auditory Verbal Learning Test, immediate recall; RAVLT-B: Rey Auditory Verbal Learning Test, recall of the interference set; RAVLT-DR: Rey Auditory Verbal Learning Test, delayed recall; RAVLT- Rec50: Rey Auditory Verbal Learning Test, delayed recognition from 50 items (15 correct answers + 35 distractors); RAVLT-Rec15: Rey Auditory Verbal Learning Test, delayed recognition, number of correctly identified from 15 items; FP-IR: Family Pictures, immediate recall; FP-DR: Family Pictures, delayed recall; Secs: seconds; Total words: word count in two minutes (one minute per each letter P and K); words/min.: word count in one minute time limit."
+    source_note = "N: number of observations; Md: median; M: mean; SD: standard deviation; MDS-UPDRS III: Movement Disorder Society Unified Parkinson’s Disease Rating Scale, motor part; LEDD: levodopa equivalent daily dose; Levodopa test: a percentage change of the MDS-UPDRS III score from medication OFF to medication ON state during the levodopa test as described in the main text; V: Volts; mA: milliampere; μs: microseconds; Hz: Hertz; DRS-2: Dementia Rating Scale, second edition; BDI-II: Beck Depression Rating Scale, second edition; STAI-X1: State-Trait Anxiety Inventory, the state version; STAI-X2: State-Trait Anxiety Inventory, the trait version; TMT-A: Trail Making Test, part A; TMT-B: Trail Making Test, part B; DS-F: Digit Span forward; DS-B: Digit Span backward; LNS: letter-number sequencing; SS-F: Spatial Span forward; SS-B: Spatial Span backward; TOL: Tower of London task; PST-D: Prague Stroop Test, dot color naming; PST-W: Prague Stroop Test, word color naming; PST-C: Prague Stroop Test, interference condition; COWAT: Controlled Oral Word Association Test; CFT: category fluency test; Sim.: Similarities; RAVLT-IR: Rey Auditory Verbal Learning Test, immediate recall; RAVLT-B: Rey Auditory Verbal Learning Test, recall of the interference set; RAVLT-DR: Rey Auditory Verbal Learning Test, delayed recall; RAVLT- Rec50: Rey Auditory Verbal Learning Test, delayed recognition from 50 items (15 correct answers + 35 distractors); RAVLT-Rec15: Rey Auditory Verbal Learning Test, delayed recognition, number of correctly identified from 15 items; FP-IR: Family Pictures, immediate recall; FP-DR: Family Pictures, delayed recall; Secs: seconds; Total words: word count in two minutes (one minute per each letter P and K); words/min.: word count in one minute time limit."
   )
 
 ```
@@ -799,11 +799,241 @@ tcontr <-
 
 ```
 
-The descriptive longitudinal GLMM converged to a stationary posterior distribution within specified number of iterations ($\hat{R}$s < `r rhatmax`). On the group-level, there was an average post-surgery decline of `r with( tcontr, absmedian[ level == 'group' & contrast == 'slope' ] )` DRS-2 points/year (95% HDPI `r with( tcontr, hdpi[ level == 'group' & contrast == 'slope' ] )`) from an average pre-surgery DRS-2 performance of `r with( tcontr, absmedian[ level == 'group' & contrast == 'Y0' ] )` out of 144 points (95% HDPI `r with( tcontr, hdpi[ level == 'group' & contrast == 'Y0' ] )`). After accounting for not only group-level variability but also participant-level variability for generalisation of the inference of the true score change to the CAPSIT-based population of STN DBS treated patients with PD, the estimate reach annual decline of `r with( tcontr, absmedian[ level == 'pop' & contrast == 'slope' ] )` DRS-2 points/year (95% HDPI `r with( tcontr, hdpi[ level == 'pop' & contrast == 'slope' ] )`). Finally, when changing the level of analysis from inference to prediction by adding measurement error to the estimates, expected annual post-surgery cognitive decline was `r with( tcontr, absmedian[ level == 'pred' & contrast == 'slope' ] )` DRS-2 points/year (95% HDPI `r with( tcontr, hdpi[ level == 'pred' & contrast == 'slope' ] )`). 
+The descriptive longitudinal GLMM converged to a stationary posterior distribution within specified number of iterations ($\hat{R}$s < `r rhatmax`). On the group-level, there was an average post-surgery decline of `r with( tcontr, absmedian[ level == 'group' & contrast == 'slope' ] )` DRS-2 points/year (95% HDPI `r with( tcontr, hdpi[ level == 'group' & contrast == 'slope' ] )`) from an average pre-surgery DRS-2 performance of `r with( tcontr, absmedian[ level == 'group' & contrast == 'Y0' ] )` out of 144 points (95% HDPI `r with( tcontr, hdpi[ level == 'group' & contrast == 'Y0' ] )`). After accounting for not only group-level variability but also patient-level variability for generalisation of the inference of the true score change to the CAPSIT-based population of STN DBS treated patients with PD, the estimate reached annual decline of `r with( tcontr, absmedian[ level == 'pop' & contrast == 'slope' ] )` DRS-2 points/year (95% HDPI `r with( tcontr, hdpi[ level == 'pop' & contrast == 'slope' ] )`). Finally, when changing the level of analysis from inference to prediction by adding measurement error to the estimates, expected annual post-surgery cognitive decline was `r with( tcontr, absmedian[ level == 'pred' & contrast == 'slope' ] )` DRS-2 points/year (95% HDPI `r with( tcontr, hdpi[ level == 'pred' & contrast == 'slope' ] )`). This three-level estimate of the rate of post-surgery cognitive decline is further presented in @fig-cog-pred-desc and @tbl-cog-pred-desc as expected median and 90% ETIs change scores of DRS-2 score after STN DBS surgery.
+
+```{r}
+#| label: tbl-cog-pred-desc
+#| tbl-cap: "Posterior predictions of cognitive change after STN DBS surgery."
+
+read.csv( here("tabs","cogpred_contrasts.csv"), sep = ";" ) %>%
+  
+  rename(
+    "Group-level" = "Group.level.parameters",
+    "Population-level" = "Group....Patient.level.parameters",
+    "Prediction" = "Full.Model"
+  ) %>%
+  
+  gt( groupname_col = "block" ) %>%
+  cols_align( -1, align = "center" ) %>%
+  cols_label( Contrast ~ "" ) %>%
+  
+  tab_spanner( label = "Inference", columns = ends_with("-level"), gather = F ) %>%
+  
+  tab_footnote(
+    locations = cells_column_spanners("Inference"),
+    footnote = "The columns represent estimation of true score changes before measurement error is added."
+  ) %>%
+    
+  tab_footnote(
+    locations = cells_column_labels("Group-level"),
+    footnote = md("Contrasts for the sample version *RQ1* estimand predicted by $\\mu_i$ ~ $\\alpha$ + $\\delta_{time}$*time~i~*")
+  ) %>%
+  
+  tab_footnote(
+    locations = cells_column_labels("Population-level"),
+    footnote = md("Contrasts for the population version *RQ1* estimand predicted by $\\mu_i$ ~ $\\alpha$ + $\\delta_{time}$*time~i~* + $\\alpha_{id[i]}$ + $\\delta_{id[i]}$*time~i~*")
+  ) %>%
+  
+  tab_footnote(
+    locations = cells_column_labels("Prediction"),
+    footnote = md("Contrasts for model's prediction of the raw score sampled from *t(* $\\vartheta$, $\\mu_i$, $\\sigma$*)*")
+  ) %>%
+  
+  tab_footnote(
+    locations = cells_row_groups( groups = "Yearly decline" ),
+    footnote = "The rows represents expactation of patients' performance at pre-surgery assessment, i.e., 0.3 years before surgery (Intercept), and expected annual Dementia Rating Scale decline (Slope)."
+  ) %>%
+  
+  opt_footnote_marks(marks = "letters") %>%
+  
+  tab_source_note(
+    source_note = "Yi: assessment i years post-surgery; values represent posterior prediction median [90% equal tailed interval (ETI)]; we used 90% ETI instead of the 95% highest density posterior predictive intervals (HDPIs) used elsewhere in the article because 90% ETI can be interpreted such that there is 5% probability of observing value smaller than its lower bound and 5% probability of observing value bigger than its upper bound which may not hold for PPIs; all values were calculated by first generating predcitions from the linear desciptive models using parameters specified above and then censoring values above 144 or below 0 before calculating medians and 90% ETIs."
+  )
+
+```
+
+![Post-surgery change scores estimates from the descriptive longitudinal model of Mattis Dementia Rating Scale (DRS-2) change in patients with Parkinson's disease treated by subthalamic deep brain stimulation. The plot represents estimated change in DRS-2 with respect to pre-surgery assessment (ordinate) at different time lags from five months to five years post-surgery (abscissa) on three levevls: point estimate (black line), inference at group- (dark pink) and population-level (medium pink), and prediction with added measurement error (light pink).](figs/cogpred_contrasts.jpg){#fig-cog-pred-desc}
 
 ### Post-surgery cognitive change prediction
 
+```{r}
+#| label: cog-pred-mods
+
+# chains convergence
+rhatmax <-
+  
+  sapply(
+    c("factors","tests"),
+    function(i)
+      max( readRDS( here( "mods", paste0("cogPRED_lasso",i,".rds") ) )$rhats, na.rm = T )
+  ) %>%
+  max() %>%
+  ubound(2)
+
+# tables
+tbl_cogpred <-
+  
+  lapply(
+    
+    setNames( c("factors","tests"), c("factors","tests") ),
+    function(i)
+      
+      read.csv( here( "tabs", paste0("cogpred_",i,"post.csv") ), sep = ";" ) %>%
+      rename( "Median" = "b", "95% HDPI" = "X95..PPI", "pd" = "pdir" ) %>%
+      mutate( pd = zerolead( rprint( ifelse( pd > .5, pd, 1- pd), 3 ) ) ) %>%
+      gt( groupname_col = "Group" ) %>%
+      cols_align( columns = -1, align = "center" ) %>%
+      text_transform(
+        locations = cells_row_groups(),
+        fn = function(x) case_when(
+          x == "alpha" ~ "Global intercept (α)",
+          x == "beta" ~ "Baseline correlates (β)",
+          x == "delta" ~ "Time-dependent parameters (𝛿)"
+        )
+      )
+    
+  )
+
+# prepare a table for in-text reporting
+intext_tbl <-
+  tbl_cogpred$factors %>%
+  as.data.frame() %>%
+  column_to_rownames("Parameter")
+
+```
+
+Both predictive longitudinal GLMMs converged to a stationary posterior distribution within specified number of iterations across all imputed data sets ($\hat{R}$s < `r rhatmax`). Group-level model parameters are presented in @tbl-cog-pred-tests and @tbl-cog-pred-factors for the "test scores" and "factor scores" models respectively. Cross-sectionally, pre-surgery DRS-2 performance was reliably (i.e., with high posterior probability, compare to @makowski2019) predicted by the verbal working memory factor score ($\beta_{VWM}$ = `r intext_tbl['VWM','Median']`, 95% HDPI `r intext_tbl['VWM','95% HDPI']`, *pd* = `r intext_tbl['VWM','pd']`) and to a lesser extent by the set shifting factor score  ($\beta_{SS}$ = `r intext_tbl['SS','Median']`, 95% HDPI `r intext_tbl['SS','95% HDPI']`, *pd* = `r intext_tbl['SS','pd']`). There was no cognitive test that would by itself statistically clearly indicate pre-surgery DRS-2 impairment. Post-surgery cognitive decline was associated with pre-surgery executive functions/attention score with high posterior probability ($\delta_{EF/Att.}$ = `r intext_tbl['EF/Att. × Time','Median']`, 95% HDPI `r intext_tbl['EF/Att. × Time','95% HDPI']`, *pd* = `r intext_tbl['EF/Att. × Time','pd']`). @fig-cog-pred-pred illustrates how the rate of post-surgery cognitive decline relates to pre-surgery cognitive profile operationalised by cognitive factor scores derived from EFA. Patients with pre-surgery EF/Att. factor scores high relatively to the rest of the sample (top-right panel) showed almost no to small long-term decline in DRS-2 after surgery compared. to patients with EF/Att. factor scores low relatively to the rest of the sample (top-left panels). There was no cognitive test that would by itself statistically clearly indicate post-surgery DRS-2 decline.
+
+```{r}
+#| label: tbl-cog-pred-tests
+#| tbl-cap: Summary of group-level parameters' posteriors from the “test scores” predictive generalized linear mixed model.
+
+# add footnotes
+tbl_cogpred$tests %>%
+
+  tab_footnote( footnote = "All cognitive predictors were scaled such that negative values mean negative effect of pre-surgery deficit on longitudinal cognitive trajectory." ) %>%
+  opt_footnote_marks(marks = "letters") %>%
+  tab_source_note( source_note = "Median: parameter value point estimate (posterior median); HDPI: highest density posterior probability interval; pd: probability of direction; ×: statistical interaction term; STAI-X1: State-Trait Anxiety Inventory, the state version; STAI-X2: State-Trait Anxiety Inventory, the trait version; TMT-A: Trail Making Test, part A; TMT-B: Trail Making Test, part B; DS-F: Digit Span forward; DS-B: Digit Span backward; LNS: letter-number sequencing; SS-F: Spatial Span forward; SS-B: Spatial Span backward; TOL: Tower of London task; PST-D: Prague Stroop Test, dot color naming; PST-W: Prague Stroop Test, word color naming; PST-C: Prague Stroop Test, interference condition; COWAT: Controlled Oral Word Association Test; CFT: category fluency test; Sim.: Similarities; RAVLT-IR: Rey Auditory Verbal Learning Test, immediate recall; RAVLT-B: Rey Auditory Verbal Learning Test, recall of the interference set; RAVLT-DR: Rey Auditory Verbal Learning Test, delayed recall; RAVLT-Rec50: Rey Auditory Verbal Learning Test, delayed recognition from 50 items (15 correct answers + 35 distractors); RAVLT-Rec15: Rey Auditory Verbal Learning Test, delayed recognition, number of correctly identified from 15 items; FP-IR: Family Pictures, immediate recall; FP-DR: Family Pictures, delayed recall; comparisons in bold can be regarded as evidence of the existence of an effect (pd >.975)." )
+
+```
+
+```{r}
+#| label: tbl-cog-pred-factors
+#| tbl-cap: Summary of group-level parameters' posteriors from the “factor scores” predictive generalized linear mixed model.
+
+# add footnotes
+tbl_cogpred$factors %>%
+
+  tab_footnote( footnote = "All cognitive predictors were scaled such that negative values mean negative effect of pre-surgery deficit on longitudinal cognitive trajectory." ) %>%
+  opt_footnote_marks(marks = "letters") %>%
+  tab_source_note( source_note = "Median: parameter value point estimate (posterior median); HDPI: highest density posterior probability interval; pd: probability of direction; ×: statistical interaction term; EF/Att.: Executive functions/Attention; EM: Episodic memory; VWM: Verbal working memory; VM: Visuospatial memory; SS: Set shifting; An: Anxiety; SWM: Spatial working memory; comparisons in bold can be regarded as evidence of the existence of an effect (pd >.975)." )
+
+```
+
+![Longitudinal post-surgery cognitive trajectories in patients with Parkinson's disease treated with subthalamic deep brain stimulation stratified by pre-surgery cognitive profile. The sample was repeatedly divided to pentiles (columns) ranging from the lowest (left) to the highest (right) performers based on each pre-surgery cognitive factor (rows) (in the case of Anxiety, patients to the left reported more pre-surgery anxiety than patients to the right). Subsequently, model predictions of Mattis Dementia Rating Scale (DRS-2, ordinate) at different post-surgery time lags (abscissa) for each pentile were calculated on three levels of inference related to the DRS-2 true score: point estimate (dark line), group-level uncertainty estimate (medium saturation ribbon), and population-level uncertainty (light ribbon). The horizontal dotted line is placed at 139 DRS-2 points which represent mild cognitive impairment cut-off with optimal specificity and sensitivity according to the Czech normative study.](figs/cogpred_stratified.jpg){#fig-cog-pred-pred}
+
 ## Structural and microstructural predictors of cognitive decline in deep brain stimulation of subthalamic nucleus in Parkinson’s disease
+
+### Sample characteristics
+
+Clinical, demographic, and stimulation-related characteristics of the sample as well as statistical comparison of these characteristics in CS versus CD groups is presented in @tbl-mri-pred-desc. Pre-surgery, the only statistically significant difference regarded patients age whereby the CD group of patients were on average older by circa ten years. No statistically significant pre-surgery difference was detected in either distribution of sex and PD-MCI or average disease duration and DRS-2 scores between the groups. On the other hand, although there was not a statistically significant difference in follow-up years, statistically significant differences between CS and CD groups were detected in post-surgery DRS-2 scores and PD-MCI distribution (with CD group having lower average DRS-2 score and higher PD-MCI prevalence). In none of the DBS-related parameters there was a statistically significant difference between CS and CD patients detected. Nonetheless, CD patients had on average lower total electrical energy delivered to the STN DBS system.
+
+```{r}
+#| label: tbl-mri-pred-desc
+#| tbl-cap: Clinical, demograhic and stimulation-related characteristics of the sample of included patients. 
+
+read.csv( here("tabs","mripred_desc.csv"), sep = "," ) %>%
+
+  gt( groupname_col = "block" ) %>%
+  cols_align( align = "center", columns = -1 ) %>%
+  cols_label(
+    var ~ "",
+    CS52 ~ "Cognitively stable (N = 52)",
+    CD20 ~ "Cognitively declining (N = 20)",
+    q ~ "q-value"
+  ) %>%
+    
+  tab_footnote(
+    locations = cells_row_groups("DBS-related information"),
+    footnote = "Available for all but one cognitively stable patient and all cognitively declining patients."
+  ) %>%
+    
+  tab_footnote(
+    locations = cells_body( columns = var, rows = c(12:17) ),
+    footnote = "Reported values are bilateral averages."
+  ) %>%
+  
+  opt_footnote_marks(marks = "letters") %>%
+  
+  text_transform(
+    locations = cells_body( columns = var ),
+    fn = function(x) sub( "mm3", "mm<sup>3</sup>", x )
+  ) %>%
+  
+  tab_source_note(
+    source_note = "DBS: deep brain stimulation; DRS-2: Dementia Rating Scale, second edition; ΔDRS-2: average annual change in Dementia Rating Scale, second edition score; Hz: Hertz; kΩ: kiloohm; mA: milliampere; MCI: mild cognitive impairment; μs: microseconds; μW: microwatts; PD: Parkinson's disease; PD-MCI: Mild cognitive impairment in Parkinson's disease; q-value: raw p-value after adjusting for 5% false discovery rate (FDR) level; STN: subthalamic nucleus; V: Volts; values are presented as in-sample mean ± standarad deviation for continuous variables, percentages for demographic categorical variables and frequencies for DBS-related categorical variables."
+  )
+  
+```
+
+### Magnetic resonance profile of patients experiencing cognitive decline
+
+In the cross-sectional analysis of pre-surgery DRS-2, no macrostructural, FA or MD correlate of current pre-surgery cognitive performance was detected. On the other hand, the comparison of longitudinally defined CS and CD groups detected wide-spread differences in cerebral cortex thickness, subcortical structures grey matter volume, FA, and MD (@tbl-mri-pred-parcels). Regarding the macrostural correlates of post-surgery cognitive decline, CS patients had relatively higher cortical thickness in bilateral inferior parietal, insular, cingulate, sensorimotor, and visual cortices as well as higher volume of both putamina. Regarding the microstructural connectivity, analysis of DWi data detected higher FA in CS patients in medial temporal, inferior parietal, cingulate, and orbito-frontal cortex bilaterally as well as FA in the cerebellum and both hippocampi. The analysis further detected lower MD in CS patients' inferior parietal, orbito-frontal, dorsolateral prefrontal, and temporal cortices as well as both hippocampi and the left putamen. Both MD and FA detected bilateral differences between CS and CD subjects in the occipital cortex.
+
+```{r}
+#| label: tbl-mri-pred-parcels
+#| tbl-cap: Results of parcellated comparison between patients with stable cognitive performance and  patients with declining cognitive performance.
+
+read.csv( here("tabs","mripred_parcels.csv"), sep = ";" ) %>%
+  
+  gt( groupname_col = "group" ) %>%
+  cols_align( align = "center", columns = -1 ) %>%
+  cols_align( align = "left", columns = "Anatomical.cluster" ) %>%
+  cols_label(
+    Anatomical.cluster ~ "Anatomical cluster",
+    d ~ "Cohen's d",
+    `T` ~ "T-statistic",
+    CS52 ~ "CS (N = 52)",
+    CD20 ~ "CD (N = 20)",
+    q ~ "q-value"
+  ) %>%
+
+  tab_spanner( label = "Descriptive statistics", columns = c("CS52","CD20"), gather = F ) %>%
+  tab_spanner( label = "Inferential statistics", columns = c("d","T","q"), gather = F ) %>%
+    
+  text_transform(
+    locations = cells_row_groups(),
+    fn = function(x) sub( "mm2", "mm<sup>2</sup>", x )
+  ) %>%
+    
+  tab_footnote(
+    locations = cells_column_labels("Anatomical.cluster"),
+    footnote = "Clusters with cortical anatomical localisation based on 22 main cortical segments and parcellation as defined by [@Glasser2016]"
+  ) %>%
+    
+  tab_footnote(
+    locations = cells_row_groups("Macrostructure (mm/unitless)"),
+    footnote = "Values in mm for cortical thickness and unitless for subcortical grey matter structure volume, the latter was standardised by estimated intracranial volume."
+  ) %>%
+  
+  tab_footnote(
+    locations = cells_row_groups( c("Fractional Anisotropy (unitless)","Mean diffusivity  (1,000 × mm2/s)") ),
+    footnote = "Results based on 46 CS and 16 CD patients"
+  ) %>%
+    
+  tab_footnote(
+    locations = cells_column_spanners("Descriptive statistics"),
+    footnote = "values are presented as in-sample mean ± standarad deviation"
+  ) %>%
+  
+  opt_footnote_marks(marks = "letters") %>%
+  
+  tab_source_note(
+    source_note = "CS: cognitively stable patients; CD: cognitively declining patients; L: left; N: number of obseravtions; q-value: raw p-value after adjusting for 5% false discovery rate (FDR) level; R: right; ROI: number of parcellation regions of interest contained in each cluster."
+  )
+
+
+```
 
 ## The Instrumental Activities of Daily Living in Parkinson’s Disease Patients Treated by Subthalamic Deep Brain Stimulation
 
