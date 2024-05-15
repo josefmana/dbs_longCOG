@@ -1,0 +1,22 @@
+var,0,1,block
+Age (years),55.50 ± 7.78,56.95 ± 7.79,Demographic and clinical variables
+Education (years),14.20 ± 3.25,-,Demographic and clinical variables
+Sex (% male),56.25,-,Demographic and clinical variables
+PD duration (years),11.37 ± 3.67,-,Demographic and clinical variables
+LEDD (mg),1819.77 ± 693.73,833.32 ± 498.48,Demographic and clinical variables
+PDAQ (range 0-60),51.34 ± 7.49,52.34 ± 6.35,Neuropsychological outcomes
+DRS-2 (range 0-144),139.28 ± 3.62,139.44 ± 3.33,Neuropsychological outcomes
+BDI-II (range 0-63),10.38 ± 7.20,9.91 ± 6.90,Neuropsychological outcomes
+Levodopa test (% response),58.42 ± 11.79,-,Motor outcomes
+MDS-UPDRS III (medication ON),18.76 ± 9.13,-,Motor outcomes
+MDS-UPDRS III (medication OFF),44.12 ± 15.05,-,Motor outcomes
+MDS-UPDRS III (stimulation ON),-,26.25 ± 10.00,Motor outcomes
+MDS-UPDRS III (stimulation OFF),-,45.16 ± 14.04,Motor outcomes
+Current right (mA),-,2.24 ± 0.55,Stimulation parameters
+Current left (mA),-,2.21 ± 0.60,Stimulation parameters
+Pulse duration right (μs),-,62.81 ± 8.88,Stimulation parameters
+Pulse duration left (μs),-,63.64 ± 9.94,Stimulation parameters
+Frequency right (Hz),-,129.06 ± 18.38,Stimulation parameters
+Frequency left (Hz),-,125.76 ± 11.73,Stimulation parameters
+Impedance right (kΩ),-,1298.83 ± 442.14,Stimulation parameters
+Impedance left (kΩ),-,1539.40 ± 1519.69,Stimulation parameters

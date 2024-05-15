@@ -1,5 +1,5 @@
 ---
-title: "Cognitive predictors of cognitive decline in Parkinson's disease treated by subthalamic deep brain stimulation"
+title: "Predictors of dementia after deep brain stimulation in Parkinson´s disease"
 subtitle: "DISSERTATION THESIS"
 author: "Mgr. Josef Mana"
 bibliography: references.bib
@@ -32,6 +32,10 @@ library(bayestestR) # pd and ROPE convenience functions
 library(ggridges) # density plots
 
 conflicted::conflicts_prefer(ggdag::filter)
+conflicted::conflicts_prefer(tidybayes::hdi)
+conflicted::conflicts_prefer(stats::lag)
+conflicted::conflict_prefer_all("brms")
+conflicted::conflict_prefer_all("ggridges")
 
 # in-house functions
 rprint <- function( x, dec=2 ) sprintf( paste0("%.",dec,"f"), round( x , dec) ) # printing rounded number
@@ -329,9 +333,9 @@ ggsave(
 
 ### Statistical analyses
 
-The data were analyzed using a set of GLMMs with responses to each item of PDAQ as an outcome, patient-specific and item-specific varying predictors, and a structure of group-level parameters dependend on research question. For *RQ4.1*, only the time of assessment (pre- vs post-surgery) was used to predict mean group-level responses. Following panel B of @fig-postop-iadl-dag, the time of assessment as well as DRS-2, BDI-II, LEDD and their interactions with the time of assessment were used to predict group-level responses in model for *RQ4.2*. Finally, following panel C of @fig-postop-iadl-dag, the time of assessment, LEDD and their interaction were used to predict group-level responses in model for *RQ4.3*. Across all models, the response variable, i.e., the answer to each single PDAQ item on 5-point Likert scale, was modeled using the *ordered-logit* response function [also called *cummulative logit model* or *graded response model* in the literature, @samejima1995; @liddell2018; @bürkner2019; @mcelreath2020]. Student- t priors with zero mean, a scale of 2.5, and three degrees of freedom were used for Intercepts and varying predictors parameters variance, and regularising Normal priors with zero mean and standard deviation of 0.5 were used for group-level parameters. The results were presented as marginalised averages and posterior predictions of each GLMM decribed by their medians and 95% HDPIs.
+The data were analyzed using a set of GLMMs with responses to each item of PDAQ as an outcome, patient-specific and item-specific varying predictors, and a structure of group-level parameters dependend on research question. For *RQ4.1*, only the time of assessment (pre- vs post-surgery) was used to predict mean group-level responses. Following panel B of @fig-postop-iadl-dag, the time of assessment as well as DRS-2, BDI-II, LEDD and their interactions with the time of assessment were used to predict group-level responses in model for *RQ4.2*. Finally, following panel C of @fig-postop-iadl-dag, the time of assessment, LEDD and their interaction were used to predict group-level responses in model for *RQ4.3*. Across all models, the response variable, i.e., the answer to each single PDAQ item on 5-point Likert scale, was modeled using the *ordered-logit* response function [also called *cummulative logit model* or *graded response model* in the literature, @samejima1995; @liddell2018; @bürkner2019; @mcelreath2020]. Student- t priors with zero mean, a scale of 2.5, and 3 degrees of freedom were used for all parameters. Parameters posterior distributions were characterised on the latent logit scale by their medians, 95% HDPIs and *pd*s. Further results were presented as posterior predictions of marginalised response probabilites decribed by their medians and 95% HDPIs.
 
-All GLMMs were fitted using via Stan’s (version `r rstan::stan_version()`) build-in HMC sampler accessed via R version `r with( version, paste(major,minor,sep=".") )` using package “brms” [@bürkner2017; @rsoft; @stan]. Four parallel chains were run each for 1,500 iterations for each GLMM with the first 500 iterations being discarded as a warm-up. Convergence was checked numerically by inspection of the $\hat{R}s$ and visually by inspection of trace plots. R packages “tidyverse,” “tidybayes,” "ggridges," and “patchwork” were used in the same roles as for Study 2 [@tidyverse; @tidybayes; @ggplot2; @ggridges; @patchwork]. Full analysis code is available at [https://github.com/josefmana/dbs_postopIADL.git](https://github.com/josefmana/dbs_postopIADL.git).
+All GLMMs were fitted using via Stan’s (version `r rstan::stan_version()`) build-in HMC sampler accessed via R version `r with( version, paste(major,minor,sep=".") )` using package “brms” [@bürkner2017; @rsoft; @stan]. Four parallel chains were run each for 2,000 iterations for each GLMM with the first 1,000 iterations being discarded as a warm-up. Convergence was checked numerically by inspection of the $\hat{R}s$ and visually by inspection of trace plots. R packages “tidyverse,” “tidybayes,” and “patchwork” were used in the same roles as for Study 2 [@tidyverse; @tidybayes; @ggplot2; @patchwork]. Full analysis code is available at [https://github.com/josefmana/dbs_postopIADL.git](https://github.com/josefmana/dbs_postopIADL.git).
 
 # Results
 
@@ -342,7 +346,7 @@ All GLMMs were fitted using via Stan’s (version `r rstan::stan_version()`) bui
 
 # raw data
 d <-
-  read.csv( here("_data","learCUR.csv"), sep = "," ) %>%
+  read.csv( here("_data","learCUR_data.csv"), sep = "," ) %>%
   mutate( logtrial = log(Trial) ) %>%
   mutate( group = case_when(
     Group0kontroly1PD == 0 ~ "HC (N = 60)",
@@ -1032,10 +1036,246 @@ read.csv( here("tabs","mripred_parcels.csv"), sep = ";" ) %>%
     source_note = "CS: cognitively stable patients; CD: cognitively declining patients; L: left; N: number of obseravtions; q-value: raw p-value after adjusting for 5% false discovery rate (FDR) level; R: right; ROI: number of parcellation regions of interest contained in each cluster."
   )
 
-
 ```
 
 ## The Instrumental Activities of Daily Living in Parkinson’s Disease Patients Treated by Subthalamic Deep Brain Stimulation
+
+```{r}
+#| label: postop-iadl-init
+
+# read data
+d <- read.csv( here("_data","postopIADL_data.csv"), sep = "," )
+v2 <- read.csv( here("_data","item_nms.csv"), sep = ",", row.names = 1 )
+pars <- read.table( here("_data","postopIADL_stimpars.txt"), header = T )
+scl2 <- read.csv( here("_data","postopIADL_scales.csv"), sep = "," ) %>% column_to_rownames("var")
+
+# transform the data from wide to long format over PDAQ items
+df <-
+  d %>%
+  pivot_longer( cols = paste0( "pdaq_" , 1:15 ) , names_to = "item" , values_to = "resp" ) %>%
+  mutate( item = as.integer( gsub( "^.*\\_" , "" , item ) ) ) %>%
+  mutate(
+    drs = ( drs - scl2["drs","M"] ) / scl2["drs","SD"],
+    bdi = ( bdi - scl2["bdi","M"] ) / scl2["bdi","SD"],
+    led = ( led - scl2["led","M"] ) / scl2["led","SD"],
+    post = as.character(post),
+    resp = as.ordered(resp)
+  )
+
+
+
+```
+
+### Sample characteristics
+
+```{r}
+#| label: tbl-postop-iadl-desc
+#| tbl-cap: Demographic, clinical, cognitive, and stimulation charactetistics of the sample.
+
+tbl_iadl_desc <- 
+  
+  # prepare a bulk of the table
+  d %>%
+  group_by(post) %>%
+  summarise(
+    `Age (years)` = msd(age_neuropsy),
+    `Education (years)` = msd(years_edu),
+    `Sex (% male)` = rprint( 100 * sum(sex=="m") / length(sex) ),
+    `LEDD (mg)` = msd(led),
+    `PDAQ (range 0-60)` = msd( rowSums( across( starts_with("pdaq_") ) ) ),
+    `DRS-2 (range 0-144)` = msd(drs),
+    `BDI-II (range 0-63)` = msd(bdi)
+  ) %>%
+    
+  # format it  
+  pivot_longer( cols = -post, names_to = "var", values_to = "val" ) %>%
+  pivot_wider( names_from = post, values_from = val ) %>%
+  mutate( `1` = case_when( var == "Education (years)" ~ "-", var == "Sex (% male)" ~ "-", .default = `1` ) ) %>%
+    
+  # add some rows according to the paper
+  add_row( var = "PD duration (years)", `0` = "11.37 ± 3.67", `1` = "-", .after = 3 ) %>%
+  add_row( var = "Levodopa test (% response)", `0` = "58.42 ± 11.79", `1` = "-", .after = 8 ) %>%
+  add_row( var = "MDS-UPDRS III (medication ON)", `0` = "18.76 ± 9.13", `1` = "-", .after = 9 ) %>%
+  add_row( var = "MDS-UPDRS III (medication OFF)", `0` = "44.12 ± 15.05", `1` = "-", .after = 10 ) %>%
+  add_row( var = "MDS-UPDRS III (stimulation ON)", `0` = "-", `1` = "26.25 ± 10.00", .after = 11 ) %>%
+  add_row( var = "MDS-UPDRS III (stimulation OFF)", `0` = "-", `1` = "45.16 ± 14.04", .after = 12 ) %>%
+    
+  full_join(
+    
+    sapply( names(pars)[c(118:121,124:127)], function(i) msd( pars[[i]] ) ) %>%
+      as.data.frame() %>%
+      rename( "1" = "." ) %>%
+      mutate(
+        var = c("Current right (mA)","Pulse duration right (μs)","Frequency right (Hz)","Impedance right (kΩ)",
+                "Current left (mA)","Pulse duration left (μs)","Frequency left (Hz)","Impedance left (kΩ)"
+                ),
+        `0` = "-",
+        .before = 1
+      ) %>%
+      slice(1,5,2,6,3,7,4,8)
+  
+    ) %>%
+  
+    # add blocks
+    mutate( block = c( rep("Demographic and clinical variables",5), rep("Neuropsychological outcomes",3), rep("Motor outcomes",5), rep("Stimulation parameters",8 ) ) )
+
+# save it
+write.table( x = tbl_iadl_desc, file = here("tabs","postopiadl_desc.csv"), sep = ",", row.names = F, quote = F )
+
+# show it
+tbl_iadl_desc %>%
+  
+  column_to_rownames("var") %>%
+  
+  gt( groupname_col = "block", rownames_to_stub = T ) %>%
+  cols_align( -1, align = "center" ) %>%
+  cols_label( `0` ~ "Pre-surgery", `1` = "Post-surgery" ) %>%
+  
+  tab_footnote(
+    locations = cells_stub( rows = c("MDS-UPDRS III (stimulation ON)","MDS-UPDRS III (stimulation OFF)") ),
+    footnote = "Post-surgery MDS-UPDRS III testing was done in the OFF mediation condition."
+  ) %>%
+  
+  opt_footnote_marks(marks = "letters") %>%
+  
+  tab_source_note(
+    source_note = "BDI-II: Beck Depression Rating Scale, second edition; DRS- 2: Dementia Rating Scale, second edition; Hz: Hertz; LEDD: levodopa equivalent daily dose; mA: milliamperes; MDS-UPDRS III: Movement Disorder Society Unified Parkinson’s Disease Rating Scale, motor part; μs: microseconds PDAQ-15: The Penn Parkinson’s Daily Activities Questionnaire-15. The values are presented as mean ± standard deviation percentage from the whole sample."
+  )
+
+```
+
+### Post-surgery IADL change
+
+```{r}
+#| label: postop-iadl-mods
+
+# set-up linear models
+# meff = total effect of time ("main effect") (the 'masked' model, RQ4.1)
+# teff = total effect of LEDD ("total effect") (the LEDD total effect model, RQ4.3)
+# deff = direct effect of LEDD ("direct effect") (the direct effects model, RQ4.2)
+f <- list(
+  meff = bf( resp ~ 1 + post + ( 1 | id ) + ( 1 | item ) ) + cumulative("logit"),
+  teff = bf( resp ~ 1 + post * led + ( 1 | id ) + ( 1 | item ) ) + cumulative("logit"),
+  deff = bf( resp ~ 1 + post * led + post * drs + post * bdi + ( 1 | id ) + ( 1 | item ) ) + cumulative("logit")
+)
+
+# set-up priors (the same for all models)
+p <- c(
+  prior( student_t(3, 0, 2.5), class = b ),
+  prior( student_t(3, 0, 2.5), class = Intercept ),
+  prior( student_t(3, 0, 2.5), class = sd, group = id ),
+  prior( student_t(3, 0, 2.5), class = sd, group = item )
+)
+
+# fit the models
+m <-
+  
+  lapply(
+    
+    setNames( names(f), names(f) ),
+    function(i)
+      
+      brm(
+        formula = f[[i]], prior = p, data = df,
+        seed = s, chains = ch, iter = it, warmup = wu,
+        file = here( "mods", paste0("postopIADL_",i,".rds" ) ),
+        save_model = here( "mods", paste0("postopIADL_",i,".stan" ) )
+      )
+    
+  )
+
+# extract the largest R hat
+rhatmax <- ubound( max( sapply( names(m), function(i) max( rhat(m[[i]]), na.rm = T ) ) ) )
+
+# extract raw group-level parameters
+modpars <-
+  
+  lapply(
+    
+    names(m),
+    function(i)
+      
+      describe_posterior( m[[i]], centrality = "median", ci = .95, ci_method = "hdi", test = "p_direction" ) %>%
+      as.data.frame() %>%
+      add_column( Model = i, .before = 1 )
+    
+  ) %>%
+  
+  do.call( rbind.data.frame, . ) %>%
+  mutate(
+    Median = rprint(Median,2),
+    HDPI = paste0("[",rprint(CI_low,2),", ",rprint(CI_high,2),"]"),
+    pd = rprint(pd,3)
+  ) %>%
+  select( Model, Parameter, Median, HDPI, pd )
+
+```
+
+```{r}
+#| label: post-iadl-fig
+
+theme_set( theme_bw( base_size = 14 ) )
+
+# prepare a list with conditional effects of interest for RQ4.1 and RQ4.2
+ce <- lapply( setNames( c("meff","deff"), c("RQ1","RQ2") ), function(i) conditional_effects( m[[i]], effects = "post", categorical = T ) )
+
+# add LEDD effects for RQ4.3
+ce$RQ3 <- conditional_effects( m$teff, effects = "led", categorical = T, conditions = make_conditions( m$teff, "post" ) )
+
+# do some common pre-processing
+for ( i in names(ce) ) {
+  ce[[i]][[1]] <-
+    ce[[i]][[1]] %>%
+    mutate( `Response:` = recode(cats__ , "4" = '"none"', "3" = '"a little"' , "2" = '"somewhat"' , "1" = '"a lot"' , "0" = '"cannot do"' ) )
+}
+
+# prepare plots for postop changes (RQ4.1 and RQ4.2)
+fig_ce <-
+  
+  lapply(
+    
+    setNames( c("RQ1","RQ2"), c("A","B") ),
+    function(i)
+      
+      ce[[i]][["post:cats__"]] %>%
+      ggplot() +
+      aes( x = post, y = estimate__, ymin = lower__, ymax = upper__, color = `Response:` ) +
+      geom_point( position = position_dodge(.66), size = 5 ) +
+      geom_errorbar( position = position_dodge(.66), size = 1 , width = .5) +
+      scale_x_discrete( name = NULL, labels = c("Pre-surgery","Post-surgery") ) +
+      scale_y_continuous( name = "Probability of response (%)", limits = c(0,1) , breaks = seq(0,1,.1), labels = seq(0,100,10) ) +
+      facet_wrap( ~case_when( i == "RQ1" ~ "Description model", i == "RQ2" ~ "Direct effect model" ) ) +
+      theme( legend.position = "none" )
+    
+  )
+
+# prepare plot for LEDD model
+fig_ce$C <-
+  
+  ce$RQ3$`led:cats__` %>%
+  mutate( post = factor( ifelse(post == 0, "Pre-surgery", "Post-surgery"), levels = paste0(c("Pre","Post"),"-surgery"), ordered = T ) ) %>%
+  
+  ggplot() +
+  aes(x = led, y = estimate__, ymin = lower__, ymax = upper__, color = `Response:`, fill = `Response:`) +
+  geom_line( size = 1.5 ) +
+  geom_ribbon( alpha = .1 , linetype = 0 ) +
+  scale_x_continuous( name = "LEDD (mg)", labels = seq(500,4000,500), breaks = (seq(500,4000,500)-scl2["led","M"]) / scl2["led","SD"] ) +
+  scale_y_continuous( name = "Probability of response (%)", limits = c(0,1) , breaks = seq(0,1,.1) , labels = seq(0,100,10) ) +
+  facet_wrap( ~ post ) +
+  theme( legend.position = "bottom" )
+
+# save it
+ggsave(
+  plot = ( ( fig_ce$A | fig_ce$B ) / fig_ce$C ) + plot_annotation( tag_levels = "A" ),
+  file = here("figs","postopiadl_pars.jpg"),
+  dpi = 300,
+  width = 9,
+  height = 9
+)
+
+```
+
+### Effect of dopaminergic medication on post-surgery IADL
 
 # Discussion
 
