@@ -30,12 +30,13 @@ library(tidybayes) # posterior manipulations
 library(emmeans) # contrasts for learning curve analysis
 library(bayestestR) # pd and ROPE convenience functions
 library(ggridges) # density plots
+library(patchwork) # plotting
 
 conflicted::conflicts_prefer(ggdag::filter)
 conflicted::conflicts_prefer(tidybayes::hdi)
 conflicted::conflicts_prefer(stats::lag)
-conflicted::conflict_prefer_all("brms")
-conflicted::conflict_prefer_all("ggridges")
+conflicted::conflict_prefer_all( "brms", quiet = T )
+conflicted::conflict_prefer_all( "ggridges", quiet = T )
 
 # in-house functions
 rprint <- function( x, dec=2 ) sprintf( paste0("%.",dec,"f"), round( x , dec) ) # printing rounded number
@@ -209,7 +210,7 @@ To describe the rate of post-surgery cognitive decline, we estimated a GLMM with
 
 To evaluate predictive utility of pre-surgery cognitive profile, we estimated further two GLMMs. Longitudinal DRS-2 performance was predicted on a group-level by post-surgery time slopes varying by either patients’ pre-surgery cognitive tests’ scores (the “test scores” model) or patients’ pre-surgery latent cognitive factors’ scores extracted from the EFA reported above (the “factor scores” model). Both models further included correlated patient-level intercepts and slopes. Since DRS-2 scores may include significant outliers, we used Studdent-t instead of Gaussian measurement error model. Furthermore, because the outcome DRS-2 has a maximum of 144 points which is achieved by a large proportion of healthy people [@bezdicek2015], the right-censored version of Student-t was used to account for the ceiling effect. Estimands relating to *RQ2.2* comprised of the two sets of interaction coefficients representing the expected prognostic value of single pre-surgery cognitive tests and latent cognitive factors. We specified equivalent prior distributions for model parameters of both the “test scores” and the “factor scores” models, most importantly the Bayesian Lasso priors for were used all group-level parameters barring the intercept [@park2008].
 
-Estimates were described by full posterior distributions, medians and 95% highest density posterior probability intervals (HDPIs) of corresponding model parameters or predictions as appropriate. When presenting results for the second version of *RQ2.1* estimand, we report medians and 90% equal-tailed posterior probability intervals (ETIs) instead. A 90% ETI can be interpreted such that a given parameter or prediction lies with 5% probability above its upper bound and with 5% probability below its lower bound.
+Estimates were described by full posterior distributions, medians and 95% highest density posterior probability intervals (HDPIs) of corresponding model parameters or predictions as appropriate. When presenting results for the second version of *RQ2.1* estimand, we report medians and 90% equal-tailed posterior probability intervals (ETIs) instead. A 90% ETI can be interpreted such that a given parameter or prediction lies with 5% probability above its upper bound and with 5% probability below its lower bound. Time-dependent parameters are denoted $\delta$ and time-independent parameters are denoted $\beta$ throughout.
 
 All GLMMs were fitted using via Stan’s (version `r rstan::stan_version()`) build-in HMC sampler accessed via R version `r with( version, paste(major,minor,sep=".") )` using package “brms” [@bürkner2017; @rsoft; @stan]. Four parallel chains were run each for 2,500 iterations for each GLMM. The first 500 iterations served as a warm-up and were discarded. Convergence was checked numerically by inspection of the $\hat{R}s$ and visually by inspection of trace plots. R package “tidyverse” was used for data operations, “tidybayes” was used for operations with model posteriors, and "ggridges," and “patchwork” were used for plotting [@tidyverse; @tidybayes; @ggplot2; @ggridges; @patchwork]. Full analysis code is available at [https://github.com/josefmana/dbs_cogPRED.git](https://github.com/josefmana/dbs_cogPRED.git).
 
@@ -333,7 +334,7 @@ ggsave(
 
 ### Statistical analyses
 
-The data were analyzed using a set of GLMMs with responses to each item of PDAQ as an outcome, patient-specific and item-specific varying predictors, and a structure of group-level parameters dependend on research question. For *RQ4.1*, only the time of assessment (pre- vs post-surgery) was used to predict mean group-level responses. Following panel B of @fig-postop-iadl-dag, the time of assessment as well as DRS-2, BDI-II, LEDD and their interactions with the time of assessment were used to predict group-level responses in model for *RQ4.2*. Finally, following panel C of @fig-postop-iadl-dag, the time of assessment, LEDD and their interaction were used to predict group-level responses in model for *RQ4.3*. Across all models, the response variable, i.e., the answer to each single PDAQ item on 5-point Likert scale, was modeled using the *ordered-logit* response function [also called *cummulative logit model* or *graded response model* in the literature, @samejima1995; @liddell2018; @bürkner2019; @mcelreath2020]. Student- t priors with zero mean, a scale of 2.5, and 3 degrees of freedom were used for all parameters. Parameters posterior distributions were characterised on the latent logit scale by their medians, 95% HDPIs and *pd*s. Further results were presented as posterior predictions of marginalised response probabilites decribed by their medians and 95% HDPIs.
+The data were analyzed using a set of GLMMs with responses to each item of PDAQ as an outcome, patient-specific and item-specific varying predictors, and a structure of group-level parameters dependend on research question. For *RQ4.1*, only the time of assessment (pre- vs post-surgery) was used to predict mean group-level responses (i.e., the "descriptive" model). Following panel B of @fig-postop-iadl-dag, the time of assessment as well as DRS-2, BDI-II, LEDD and their interactions with the time of assessment were used to predict group-level responses in model for *RQ4.2* (i.e., the "direct effect" model). Finally, following panel C of @fig-postop-iadl-dag, the time of assessment, LEDD and their interaction were used to predict group-level responses in model for *RQ4.3* (i.e., the "total effect" model). Across all models, the response variable, i.e., the answer to each single PDAQ item on 5-point Likert scale, was modeled using the *ordered-logit* response function [also called *cummulative logit model* or *graded response model* in the literature, @samejima1995; @liddell2018; @bürkner2019; @mcelreath2020]. Student- t priors with zero mean, a scale of 2.5, and 3 degrees of freedom were used for all parameters. Parameters posterior distributions were characterised on the latent logit scale by their medians, 95% HDPIs and *pd*s. Further results were presented as posterior predictions of marginalised response probabilites described by their medians and 95% HDPIs. Time-dependent parameters are denoted $\delta$ and time-independent parameters are denoted $\beta$ throughout.
 
 All GLMMs were fitted using via Stan’s (version `r rstan::stan_version()`) build-in HMC sampler accessed via R version `r with( version, paste(major,minor,sep=".") )` using package “brms” [@bürkner2017; @rsoft; @stan]. Four parallel chains were run each for 2,000 iterations for each GLMM with the first 1,000 iterations being discarded as a warm-up. Convergence was checked numerically by inspection of the $\hat{R}s$ and visually by inspection of trace plots. R packages “tidyverse,” “tidybayes,” and “patchwork” were used in the same roles as for Study 2 [@tidyverse; @tidybayes; @ggplot2; @patchwork]. Full analysis code is available at [https://github.com/josefmana/dbs_postopIADL.git](https://github.com/josefmana/dbs_postopIADL.git).
 
@@ -1062,11 +1063,11 @@ df <-
     resp = as.ordered(resp)
   )
 
-
-
 ```
 
 ### Sample characteristics
+
+Included patients characteristics are presented in @tbl-postop-iadl-desc. In general, no substantial post-surgery changes can be seen in objective cognitive performance (DRS-2), depressive symptoms (BDI-II) or total IADL as measured by the PDAQ sum score. On the other hand, there was clear LEDD reduction after STN DBS and evidence of STN DBS reducing motor symptoms independently of dopaminergic medication.
 
 ```{r}
 #| label: tbl-postop-iadl-desc
@@ -1209,7 +1210,44 @@ modpars <-
   ) %>%
   select( Model, Parameter, Median, HDPI, pd )
 
+# compute contrasts for RQ4.1 and RQ4.2
+contr <-
+  
+  lapply(
+    
+    c("meff","deff"),
+    function(i) {
+      
+      # posterior predictions at group level
+      ppred <- posterior_epred( m[[i]], newdata = data.frame( post = c(0,1), led = 0, drs = 0, bdi = 0, id = NA, item = NA ), re_formula = NA )
+    
+    # subtract predicted post-minus-pre-surgery response probabilities
+    c <- ppred[ , 2 , ] - ppred[ , 1 , ]
+    
+    # return summaries
+    return(
+      apply(
+        100 * c,
+        2,
+        function(x)
+          c( md = paste0( rprint( median(x), 1 ), "%" ),
+             absmd = paste0( rprint( abs( median(x) ), 1 ), "%" ),
+             dir = ifelse( median(x) == abs(median(x)), "increased", "decreased" ),
+             hdpi = paste0( "[", rprint( hdci(x,.95)[1], 1 ), ", ", rprint( hdci(x,.95)[2], 1 ), "]" )
+             )
+        ) %>% t() %>% as.data.frame() %>% rownames_to_column("resp") %>% add_column( mod = i, .before = 1)
+      )
+    }
+  ) %>% do.call( rbind.data.frame, . )
+
 ```
+
+All GLMMs reported in this section converged to a stationary posterior distribution within specified number of iterations ($\hat{R}$s < `r rhatmax`). Regarding the *RQ4.1*, the main effect of time of assessment (post-surgery-minus-pre-surgery) in the "descriptive" model was positive and of uncertain probability of effect existence ($\delta_{\text{Time}}$ = `r with( modpars, Median[Model == "meff" & Parameter == "b_post1"] )`, 95% HDPI `r with( modpars, HDPI[Model == "meff" & Parameter == "b_post1"] )`, *pd* = `r with( modpars, pd[Model == "meff" & Parameter == "b_post1"] )`). Consequently, without statistically adjusting for competing causes of post-surgery IADL change, the post-surgery probability that an average patient responds to an average PDAQ item with option zero (“cannot do”) `r with( contr, dir[mod == "meff" & resp == 0] )` by `r with( contr, absmd[mod == "meff" & resp == 0] )` (95% HDPI `r with( contr, hdpi[mod == "meff" & resp == 0] )`), the probability of response one (“a lot”) `r with( contr, dir[mod == "meff" & resp == 1] )` by `r with( contr, absmd[mod == "meff" & resp == 1] )` (95% HDPI `r with( contr, hdpi[mod == "meff" & resp == 1] )`), the probability of response two (“somewhat”) `r with( contr, dir[mod == "meff" & resp == 2] )` by `r with( contr, absmd[mod == "meff" & resp == 2] )` (95% HDPI `r with( contr, hdpi[mod == "meff" & resp == 2] )`), the probability of response three (“a little”) `r with( contr, dir[mod == "meff" & resp == 3] )` by `r with( contr, absmd[mod == "meff" & resp == 3] )` (95% HDPI `r with( contr, hdpi[mod == "meff" & resp == 3] )`), and the probability of response four (“none”) `r with( contr, dir[mod == "meff" & resp == 4] )` by `r with( contr, absmd[mod == "meff" & resp == 4] )` (95% HDPI `r with( contr, hdpi[mod == "meff" & resp == 4] )`).
+
+Regarding the *RQ4.2*, the main effect of time of assessment in the "direct effect" model was positive and of high effect existence probability ($\delta_{\text{Time}}$ = `r with( modpars, Median[Model == "deff" & Parameter == "b_post1"] )`, 95% HDPI `r with( modpars, HDPI[Model == "deff" & Parameter == "b_post1"] )`, *pd* = `r with( modpars, pd[Model == "deff" & Parameter == "b_post1"] )`). When potential competing causes measured by DRS-2, BDI-II and LEDD were statistically adjusted for, the post-surgery probability that an average patient responds to an average PDAQ item with option zero (“cannot do”) `r with( contr, dir[mod == "deff" & resp == 0] )` by `r with( contr, absmd[mod == "deff" & resp == 0] )` (95% HDPI `r with( contr, hdpi[mod == "deff" & resp == 0] )`), the probability of response one (“a lot”) `r with( contr, dir[mod == "deff" & resp == 1] )` by `r with( contr, absmd[mod == "deff" & resp == 1] )` (95% HDPI `r with( contr, hdpi[mod == "deff" & resp == 1] )`), the probability of response two (“somewhat”) `r with( contr, dir[mod == "deff" & resp == 2] )` by `r with( contr, absmd[mod == "deff" & resp == 2] )` (95% HDPI `r with( contr, hdpi[mod == "deff" & resp == 2] )`), the probability of response three (“a little”) `r with( contr, dir[mod == "deff" & resp == 3] )` by `r with( contr, absmd[mod == "deff" & resp == 3] )` (95% HDPI `r with( contr, hdpi[mod == "deff" & resp == 3] )`), and the probability of response four (“none”) `r with( contr, dir[mod == "deff" & resp == 4] )` by `r with( contr, absmd[mod == "deff" & resp == 4] )` (95% HDPI `r with( contr, hdpi[mod == "deff" & resp == 4] )`).
+
+Panels A and B of @fig-postop-iadl-ce present expected pre- and post-surgery response probabilities of an average patient to an average PDAQ item according to the "descriptive" and "direct effect" models respectively. Coupled with the results presented in previous two paragraphs, the results imply that (i) there is only small and uncertain positive impact of STN DBS on IADL that could be observed in an average patient (as implied by the "descriptive" model), however,
+(ii) the direct causal effect of STN-DBS can be masked by post-surgery changes in competing causes of self-reported IADL difficulty and after accounting for these it appears to be reliably positive and larger than expected by average observational data only (as implied by the "direct effect" model), and (iii) the majority of post-surgery change in self-reported IADL is due to an increase of probability that a patient reports "no difficulties" (response four in PDAQ) instead of reporting "a little difficulties" (response three in PDAQ) whereas reporting high level of IADL difficulties is rare in this cohort.
 
 ```{r}
 #| label: post-iadl-fig
@@ -1244,7 +1282,7 @@ fig_ce <-
       geom_errorbar( position = position_dodge(.66), size = 1 , width = .5) +
       scale_x_discrete( name = NULL, labels = c("Pre-surgery","Post-surgery") ) +
       scale_y_continuous( name = "Probability of response (%)", limits = c(0,1) , breaks = seq(0,1,.1), labels = seq(0,100,10) ) +
-      facet_wrap( ~case_when( i == "RQ1" ~ "Description model", i == "RQ2" ~ "Direct effect model" ) ) +
+      facet_wrap( ~case_when( i == "RQ1" ~ "Descriptive model", i == "RQ2" ~ "Direct effect model" ) ) +
       theme( legend.position = "none" )
     
   )
@@ -1275,17 +1313,74 @@ ggsave(
 
 ```
 
+![Summaries of the marginal posterior distributions of expected response probabilities to an average item from The Penn Parkinson’s Daily Activities Questionnaire (PDAQ) by an average participant pre- and post-surgery according to the "descriptive" model (A), the "direct effect" model (B), and as a function of levodopa equivalent daily dose (LEDD) in the "total effect" model (C). Potential responses to PDAQ items are differentiated by colour, points and lines represent medians, and whiskers and shades represent 95% equal-tailed intervals (ETIs) of posterior distributions.](figs/postopiadl_pars.jpg){#fig-postop-iadl-ce}
+
 ### Effect of dopaminergic medication on post-surgery IADL
+
+In the "total effect" model, the main effect of the time of assessment was positive with high effect existence probability ($\delta_{\text{Time}}$ = `r with( modpars, Median[Model == "teff" & Parameter == "b_post1"] )`, 95% HDPI `r with( modpars, HDPI[Model == "teff" & Parameter == "b_post1"] )`, *pd* = `r with( modpars, pd[Model == "teff" & Parameter == "b_post1"] )`), the main effect of LEDD was positive with high but uncertain probability of effect existence ($\beta_{\text{LEDD}}$ = `r with( modpars, Median[Model == "teff" & Parameter == "b_led"] )`, 95% HDPI `r with( modpars, HDPI[Model == "teff" & Parameter == "b_led"] )`, *pd* = `r with( modpars, pd[Model == "teff" & Parameter == "b_led"] )`), and the Time × LEDD interaction was positive with uncertain probability of effect existence ($\delta_{\text{LEDD}}$ = `r with( modpars, Median[Model == "teff" & Parameter == "b_post1:led"] )`, 95% HDPI `r with( modpars, HDPI[Model == "teff" & Parameter == "b_post1:led"] )`, *pd* = `r with( modpars, pd[Model == "teff" & Parameter == "b_post1:led"] )`). Posterior predictions of an average PDAQ item response probabilities by average patient as a function of time of assessment and LEDD are presented in @tbl-postop-iadl-ledd and panel C of @fig-postop-iadl-ce. These results imply that the statistically uncertain improvement in IADL as measured by the "descriptive" model can be partially explained by post-surgery LEDD reduction.
+
+```{r}
+#| label: tbl-postop-iadl-ledd
+#| tbl-cap: Expected response probabilities of difficulty in IADL stratified by the time of assessment and levodopa equivalent daily dose derived from the total effect GLMM.
+
+# extract posterior prediction
+ppred <-
+  
+  posterior_epred(
+    m$teff,
+    newdata = data.frame(
+        post = c( rep(0,11), rep(1,11) ) ,
+        led = ( rep( seq(0, 5000, 500), 2 ) - scl2["led","M"] ) / scl2["led","SD"],
+        id = NA, item = NA
+    ),
+    re_formula = NA
+)
+
+# prepare table
+tbl_iadl_ledd <-
+  
+  sapply( 1:22, function(i) apply( 100*ppred[ , i, ], 2, msd, 1 ) ) %>%
+  t() %>%
+  as.data.frame() %>%
+  rename_all( ~ paste0("P(resp = ",.x,")") ) %>%
+  mutate_all( ~ paste0(.x,"%") ) %>%
+  mutate( Assessment = c( rep("Pre-surgery",11), rep("Post-surgery",11) ), `LEDD (mg)` = rep( seq(0,5000,500), 2 ), .before = 1 )
+    
+# save it
+write.table( x = tbl_iadl_ledd, file = here("tabs","postopiadl_ledd.csv"), sep = ",", row.names = F, quote = F )
+
+# show it
+tbl_iadl_ledd %>%
+  
+  mutate( `LEDD (mg)` = formatC( `LEDD (mg)`, big.mark = "," ) ) %>%
+  gt( groupname_col = "Assessment" ) %>%
+  cols_align( "LEDD (mg)", align = "left" ) %>%
+  cols_align( -c(1:2), align = "center" ) %>%
+  
+  tab_source_note(
+    source_note = "GLMM: generalized linear mixed model; IADL: instrumental activities of daily living; LEDD: levodopa equivalent daily dose; P(resp = i), probability that a patient responds to any item of The Penn Parkinson’s Daily Activities Questionnaire (PDAQ) with the response “i” where “i” represents difficulties in IADL and can take on values 0 = “cannot do,” 1 = “a lot,” 2 = “somewhat,” 3 = “a little,” and 4 = “none”; the numbers represent posterior predictions of the ordered-logit GLMM for an average patient to an average PDAQ item presented as posterior mean ± standard deviation."
+  )
+
+
+```
 
 # Discussion
 
 ## Learning curve in verbal and non-verbal memory of patients with Parkinson's disease
 
+In Study 1, we demonstrated that memory impairment profile of patients diagnosed with PD-MCI varies across sensory modalities. Although patients with PD-MCI exhibited overall memory deficit in both visuospatial and auditory verbal free recall as compared to PD patients without MCI and healthy adults, the visuospatial memory deficit was characterised by impaired *retention* and relatively intact *learning curve* whereas the opposite pattern was observed in the auditory verbal memory.
+
 ## Preoperative Cognitive Profile Predictive of Cognitive Decline after Subthalamic Deep Brain Stimulation in Parkinson's Disease
+
+In Study 2, we showed that although the expected post-surgery cognitive decline is gradual and rather slow on average, there exists high inter-individual variability across patients. This inter-individual variability can be partially deparsed by measuring pre-surgery cognitive profile of the patients because pre-surgery executive dysfunction reliably predicts faster rate of post-surgery cognitive decline.
 
 ## Structural and microstructural predictors of cognitive decline in deep brain stimulation of subthalamic nucleus in Parkinson’s disease
 
+In Study 3, we mapped post-surgery cognitive decline to a widespread pre-surgery changes in macrostructural and microstructural brain charactristics in MRI. 
+
 ## The Instrumental Activities of Daily Living in Parkinson’s Disease Patients Treated by Subthalamic Deep Brain Stimulation
+
+In Study 4, we examined post-surgery changes in cognitively demanding IADL and the possibility to affect these changes via intervention upon dopaminergic medication of patients with PD treated by STN DBS.
 
 ## General Discussion
 
