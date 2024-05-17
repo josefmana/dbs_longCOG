@@ -330,7 +330,7 @@ ggsave(
 
 ```
 
-![Directed acyclic graph representing causal assumptions of relationships between variables of interest in the current study. The panels represent base causal model (A) as well as model after adjusting for covariates to extract estimate of direct post-surgery change (B), and total effect of post-surgery LEDD on post-surgery IADL.](figs/iadl_dags.jpg){#fig-postop-iadl-dag}
+![Directed acyclic graph representing causal assumptions of relationships between variables of interest in the current study. The panels represent base causal model (A) as well as model after adjusting for covariates to extract estimate of direct post-surgery change (B), and total effect of post-surgery LEDD on post-surgery IADL (C).](figs/iadl_dags.jpg){#fig-postop-iadl-dag}
 
 ### Statistical analyses
 
@@ -527,7 +527,7 @@ ggsave( plot = f_learCUR, file = here("figs","lear_curves.jpg"), dpi = 300, widt
 
 ```
 
-Both models converged to a stationary posterior distribution within specified number of iterations ($\hat{R}$s < `r rhatmax`). The data as well as model fits with uncertainty estimates on group-level, group- and participant-level, and full model with added measurement error are presented in @fig-lear-curve. Inference statistics related to research questions of Study 1 are presented in @tbl-lear-curve. In both, BVMT-R and RAVLT, there was evidence of main effect existence (*pd* > .975) practically significant (< 2.5% in ROPE) implying that patients with PD-MCI experience overall memory deficit in both visuospatial and verbal modalities. Upon closer look, our data and models imply that this deficit is due to *retention* impairment with relatively unimpaired *learning curve* in visuospatial modality while the reverse is true for the verbal domain whereby PD-MCI patients show only slight impairment in *retention*, however, there is clear *learning curve* impairment present (@tbl-lear-curve).
+Both models converged to a stationary posterior distribution within specified number of iterations ($\hat{R}$s < `r rhatmax`). The data as well as model fits with uncertainty estimates on group-level, group- and participant-level, and full model with added measurement error are presented in @fig-lear-curve. Inference statistics related to research questions of Study 1 are presented in @tbl-lear-curve. In both, BVMT-R and RAVLT, there was evidence of main effect existence (*pd* > .975) that is practically significant (< 2.5% in ROPE) implying that patients with PD-MCI experience overall memory deficit in both visuospatial and verbal modalities. Upon closer look, our data and models imply that this deficit is due to *retention* impairment with relatively unimpaired *learning curve* in visuospatial modality while the reverse is true for the verbal domain whereby PD-MCI patients show only slight impairment in *retention*, however, there is a clear *learning curve* impairment present (@tbl-lear-curve).
 
 ```{r}
 #| label: tbl-lear-curve
@@ -1369,6 +1369,10 @@ tbl_iadl_ledd %>%
 ## Learning curve in verbal and non-verbal memory of patients with Parkinson's disease
 
 In Study 1, we demonstrated that memory impairment profile of patients diagnosed with PD-MCI varies across sensory modalities. Although patients with PD-MCI exhibited overall memory deficit in both visuospatial and auditory verbal free recall as compared to PD patients without MCI and healthy adults, the visuospatial memory deficit was characterised by impaired *retention* and relatively intact *learning curve* whereas the opposite pattern was observed in the auditory verbal memory.
+
+Previous study from our research group investigating similar research questions reported PD-related deficit in visuospatial free recall (PD-MCI < PD-NC < HC) with no statistically reliable between-group differences in the *learning curve* (the *retention* as operationally defined in current study was not examined in the previous work)[@bezdicek2019]. Our current results thus do not completely coincide with these previous findings as unlike the previous study, we detected a statistically reliable *learning curve* deficit in PD-MCI patients' verbal auditory memory, and we did not detect a free recall deficit in PD-NC patients' visuospatial memory. However, some of these discrepancies may stem from the previous study having approximately half of our sample size leading to less precise estimates. Moreover, both studies imply that PD is associated with overall free recall deficit in visuospatial memory and that this deficit is especially pronounce in patients diagnosed with PD-MCI and does affect the *retention* without affecting the *learning curve*. Finally, @bronnick2011 concluded that patients with *de novo* PD already show *learning slope* deficit compared to healthy adults on a sample of 133 patients and 133 healthy controls.
+
+Overall, the Study 1 demonstrates that MCI can lead to differential cognitive profiles in PD. This finding is used as a validation of employing pre-surgery cognitive profile as a predictor for post-surgery cognitive decline after STN DBS in PD patients in the Study 2.
 
 ## Preoperative Cognitive Profile Predictive of Cognitive Decline after Subthalamic Deep Brain Stimulation in Parkinson's Disease
 
