@@ -83,7 +83,7 @@ The thesis describes post-surgery cognitive changes in patients with Parkinson's
 
 **Abstrakt**
 
-Překládaná disertační práce popisuje pooperační kognitivní trajektorie pacientů s Parkinsonovou nemocí (PN) léčených hlubokou mozkovou stimulací subthalamického jádra (STN DBS). Cílem práce je identifikovat předoperační charakteristiky pacinetů s vysokým rizikem rozvoje pooperační kognitivní poruchy. V teoretické části jsou shrnuty moderní přístupy měření kognitivních funkcí a teoretické pozadí propojující poruchy mozkových okruhů se specifickými kognitivními dysfunkcemi u PN. Hlavním cílem empirické části práce je identifikovat předoperační kognitivní profil a profil abnormit v obraze magnetické resonance (MRI), který reliabilně predikuje pooperační zhoršení kognitivních funkcí. Druhotným cílem je charakterizovat efekt STN DBS na kognitivně náročné instrumentální aktivity denního života (IADL). Prezentovaná zjištění ukazují na předoperační kognitivní profil v neuropsychologickém vyšetření a profil strukturální integrity mozku v MRI, který indikuje zvýšené riziko rozvoje kognitivního deficitu po zahájení léčby STN DBS a dává tyto výsledky do souvislosti s teoriemi prezentovanými v teoretické části práce. Na základě analýzy pro řešení druhotného cíle je vytvořena pracovní hypotéza o společném efektu STN DBS a pooperační redukce dopaminergní medikace na IADL v sebepouzení pacientů. Disertační práce je zakončena sekcí propojující prezentovaná zjištění s novým výzkumen zabývajícím se genetickým profilováním pro stratifikaci rizik rozvoje kognitivního deficitu u pacientů s PN léčených STN DBS.
+Překládaná disertační práce popisuje pooperační kognitivní trajektorie pacientů s Parkinsonovou nemocí (PN) léčených hlubokou mozkovou stimulací subthalamického jádra (STN DBS). Cílem práce je identifikovat předoperační charakteristiky pacinetů s vysokým rizikem rozvoje pooperační kognitivní poruchy. V teoretické části jsou shrnuty moderní přístupy měření kognitivních funkcí a teoretické pozadí propojující poruchy mozkových okruhů se specifickými kognitivními dysfunkcemi u PN. Hlavním cílem empirické části práce je identifikovat předoperační kognitivní profil a profil abnormit v obraze magnetické resonance (MRI), který reliabilně predikuje pooperační zhoršení kognitivních funkcí. Druhotným cílem je charakterizovat efekt STN DBS na kognitivně náročné instrumentální aktivity denního života (IADL). Prezentovaná zjištění ukazují na předoperační kognitivní profil v neuropsychologickém vyšetření a profil strukturální integrity mozku v MRI, který indikuje zvýšené riziko rozvoje kognitivního deficitu po zahájení léčby STN DBS a dává tyto výsledky do souvislosti s teoriemi prezentovanými v teoretické části práce. Na základě analýzy pro řešení druhotného cíle je vytvořena pracovní hypotéza o společném efektu STN DBS a pooperační redukce dopaminergní medikace na IADL v sebeposouzení pacientů. Disertační práce je zakončena sekcí propojující prezentovaná zjištění s novým výzkumen zabývajícím se genetickým profilováním pro stratifikaci rizik rozvoje kognitivního deficitu u pacientů s PN léčených STN DBS.
 
 **Klíčová slova:** Parkinsonova nemoc, kognitivní porucha, hluboká mozková stimulace, instrumentální aktivity denního života, stratifikace rizik
 
@@ -129,7 +129,7 @@ Překládaná disertační práce popisuje pooperační kognitivní trajektorie 
 
 **DWI** diffusion weighted imaging
 
-**EF/Att** executive functions/attention
+**EF/Att.** executive function/attention
 
 **EFA** exploratory factor analysis
 
@@ -347,7 +347,7 @@ Secondary aims are to enhance the description of pre-surgery cognitive profile p
 
 To achieve these research goals, I begin by showing that psychologically meaningful differences between patients with and without cognitive impairment can be even in principle observed by studying differences in verbal and non-verbal memory learning curves of PD patients with and without diagnosed PD-MCI [@havlik2020]. Next, I present a longitudinal study that includes data of 126 PD patients repeatedly screened for cognitive dysfunction while being treated by STN DBS [@mana2024]. Discussion regarding this study will comprise the majority of the thesis as it directly addresses its primary research aim. Finally, I build upon the second study by addressing the secondary aims by exploring pre-surgery structural connectivity profile in MRI of patients who experience severe post-surgery cognitive decline [@filip2024], and relating the objective post-surgery cognitive performance assessed in laboratory settings to patients' subjective difficulty in performing cognitively demanding IADLs [@bezdicek2022].
 
-The assumptions underlying each research questions of each included study can be regarded as null hypotheses and results presented in this thesis could does be used to attempt to falsify the following: *H1)* Declarative memory deficit profile in PD-MCI does not vary vary by modality or memory processes; *H2)* Pre-surgery cognitive profile is not predictive of post-surgery cognitive decline in STN DBS treated patients with PD; *H3)* Pre-surgery MRI markers of structural integrity and microstructural connectivity are not predictive of post-surgery cognitive decline in STN DBS treated patients with PD; and *H4)* There is no post-surgery change in self-reported difficulties in IADLs in STN DBS treated patients with PD. **Following the most recent recommendations of the American Statistical Association on statistical significance [@wasserstein2016], in majority of presented studies, I do not apply any decision threshold to arrived at conclusions from the data (principle 3), and I share software code used to arrive at results presented in this thesis (principle 4). Study 3 constitutes an exception from this rule as it is based upon analysis of MRI data which is a subfield with a long tradition of using decision thresholds to bring attention to potentially significant brain areas with respect to an outcome of interest.**
+The assumptions underlying each research questions of each included study can be regarded as null hypotheses and results presented in this thesis could does be used to attempt to falsify the following: *H1)* Declarative memory deficit profile in PD-MCI does not vary by modality or memory processes; *H2)* Pre-surgery cognitive profile is not predictive of post-surgery cognitive decline in STN DBS treated patients with PD; *H3)* Pre-surgery MRI markers of structural integrity and microstructural connectivity are not predictive of post-surgery cognitive decline in STN DBS treated patients with PD; and *H4)* There is no post-surgery change in self-reported difficulties in IADLs in STN DBS treated patients with PD. **Following the most recent recommendations of the American Statistical Association on statistical significance [@wasserstein2016], in majority of presented studies, I do not apply any decision threshold to arrive at conclusions from the data (principle 3), and I share software code used to arrive at results presented in this thesis (principle 4). Study 3 constitutes an exception from this rule as it is based upon analysis of MRI data which is a subfield with a long tradition of using decision thresholds to bring attention to potentially significant brain areas with respect to an outcome of interest.**
 
 ## Study 1: Learning Curve in Verbal and Non-verbal Memory of Patients with Parkinson's Disease
 
@@ -508,9 +508,9 @@ Both pre-surgery and post-surgery neuropsychological assessment was performed in
 
 ### Causal assumptions
 
-Causal assumptions of Study 4 are represented in the form of a directed acyclic graph (DAG) depicted in @fig-postop-iadl-dag (panel A). Full description of this graphical model is presented in the source article [@bezdicek2022]. Briefly, the assumptions are that post-surgery responses to PDAQ are determined by their pre-surgery level, time-locked clinical characteristics (MDRS, BDI-II, LEDD), patient- and item-specific characteristics, and DBS itself which is in turn determined by pre-surgery patient's cognitive, affective and medication profiles, all of which are used by clinicians to decide whether to treat the patient with STN DBS or not. The double-headed arrow between $\text{BDI}_{\text{pre}}$ and DBS indicates a common cause of these nodes, namely underlying depressive syndrome can both inform the psychiatrist about contraindication to DBS treatment and increase BDI-II score.[^6] The only difference between the model presented in @fig-postop-iadl-dag and the source paper is that here I added further edges from the patient node to DBS node as well as all clinical characteristics on top of its edge to PDAQ. This change is meant to represent the assumption that patient-specific time-invariant characteristics (such as disease type or genetic profile) affect not only PDAQ responses but also all the other variables in the model. Nonetheless, adding edges from the patient node did not change the adjustment sets needed to answer the research questions compared to the source article.
+Causal assumptions of Study 4 are represented in the form of a directed acyclic graph (DAG) depicted in @fig-postop-iadl-dag (panel A). Full description of this graphical model is presented in the source article [@bezdicek2022]. Briefly, the assumptions are that post-surgery responses to PDAQ are determined by their pre-surgery level, time-locked clinical characteristics (MDRS, BDI-II, LEDD), patient- and item-specific characteristics, and DBS itself which is in turn determined by pre-surgery patient's cognitive, affective and medication profiles, all of which are used by clinicians to decide whether to treat the patient with STN DBS or not. The double-headed arrow between $\text{BDI}_{\text{pre}}$ and DBS indicates a common cause of these nodes, namely underlying depressive syndrome can both inform the psychiatrist about contraindication to DBS treatment and increase BDI-II score.[^5] The only difference between the model presented in @fig-postop-iadl-dag and the source paper is that here I added further edges from the patient node to DBS node as well as all clinical characteristics on top of its edge to PDAQ. This change is meant to represent the assumption that patient-specific time-invariant characteristics (such as disease type or genetic profile) affect not only PDAQ responses but also all the other variables in the model. Nonetheless, adding edges from the patient node did not change the adjustment sets needed to answer the research questions compared to the source article.
 
-[^6]: Note that the decision to exclude patient from STN DBS treatment for current depression is not based on BDI-II (which is adminstered by a neuropsychologist at our institution), but by an independent neuropsychiatric evaluation.
+[^5]: Note that the decision to exclude patient from STN DBS treatment for current depression is not based on BDI-II (which is administered by a neuropsychologist at our institution), but by an independent neuropsychiatric evaluation.
 
 Importantly, to answer *RQ4.2* and *RQ4.3*, the back-door criterion can be applied to the DAG presented in @fig-postop-iadl-dag to derive *adjustment sets*, i.e., the set of covariates that, if conditioned on, allow for interpretation of statistical modelling results as causal [@pearl2009; @mcelreath2020; @cinelli2022]. Applying the back-door criterion, we arrive at adjustment sets presented in panels B and C of @fig-postop-iadl-dag for *RQ4.2* and *RQ4.3* respectively. Variables that should be adjusted for in the statistical model are represented by squares and the back-doors that are being closed by these adjustments are depicted as light grey edges in the figure. Although the adjustment set in panel C in @fig-postop-iadl-dag does not contain the "item" node, item-level parameters were still included into analysis because they represent competing causes and their inclusion thus will not lead to bias while potentially improving statistical efficiency [see Model 8 in @cinelli2022].
 
@@ -643,7 +643,7 @@ In total, `r nums[["HC"]]` HC participants and `r nums[["PD"]]` patients with PD
 #| label: tbl-lear-curve-desc
 #| tbl-cap: Demographic characteristics of normative and control sample of Study 1.
 
-d0 %>%
+t2 <- d0 %>%
   
   group_by(group) %>%
   summarise(
@@ -664,6 +664,9 @@ d0 %>%
   tab_source_note(
     source_note = "BDI-II: Beck Depression Rating Scale, second edition; HC: healthy control group; LEDD: levodopa equivalent daily dose; MoCA: Montreal Cognitive Assessment; N: number of observations; PD: Parkinson's Disease; PD-MCI: Mild Cognitive Impairment in Parkinson's Disease; PD-NC: Normal Cognition in Parkinson's Disease; UPDRS III: Unified Parkinson’s Disease Rating Scale, motor part; all values represent mean (standard deviation) for continuous and percentages for nominal variables."
   )
+
+gtsave( t2, here("tabs","table2.docx") ) # save it
+t2 # show it
 
 ```
 
@@ -804,7 +807,7 @@ Both models converged to a stationary posterior distribution within specified nu
 #| label: tbl-lear-curve
 #| tbl-cap: "Analysis of visuospatial and verbal learning curves"
 
-t_post_learCUR <-
+t3 <- t_post_learCUR <-
   
   lapply(
     
@@ -863,8 +866,8 @@ t_post_learCUR <-
 # write it
 write.table( t_post_learCUR, file = here("tabs","lear_curves.csv"), sep = ";", row.names = F, quote = F )
 
-# sho it
-t_post_learCUR %>%
+# show it
+t3 <- t_post_learCUR %>%
   
   gt( groupname_col = "effect", rowname_col = "Contrast" ) %>%
   cols_align( columns = -1, align = "center" ) %>%
@@ -885,9 +888,12 @@ t_post_learCUR %>%
     
   tab_source_note( source_note = "BVMT-R: Brief Visuospatial Memory Test - Revised; HC: healthy adult control participants; HDPI: highest density posterior interval; pdir: probability of direction; PD-MCI: Parkinson’s disease patients with mild cognitive impairment; PD-NC: Parkinson’s disease patients without mild cognitive impairment; RAVLT: Rey Auditory Visual Learning Test; ROPE: region of practical equivalence; comparisons in bold can be regarded as evidence of the existence of an effect (pdir >.975)." )
 
+gtsave( t3, here("tabs","table3.docx") ) # save it
+t3 # show it
+
 ```
 
-![Visuospatial and verbal learning curves of control participants and Parkinson’s Disease patients. Lines and black points represent median posterior predictions with 95% highest density posterior intervals from group-level predictions (thick vertical lines), group- and participant-level predictions (thin vertical lines), and full model with added mesurement error (error bars). Coloured points represent observed data-points jittered horizontally for visualisation purposes; BVMT-R: Brief Visuospatial Memory Test – Revised; RAVLT: Rey Auditory Visual Learning Test; HC: healthy controls; PD-NC: Parkinson’s Disease with normal cognition; PD-MCI: Parkinson’s Disease with Mild Cognitive Impairment.](figs/lear_curves.jpg){#fig-lear-curve}
+![Visuospatial and verbal learning curves of control participants and Parkinson’s Disease patients. Lines and black points represent median posterior predictions with 95% highest density posterior intervals from group-level predictions (thick vertical lines), group- and participant-level predictions (thin vertical lines), and full model with added measurement error (error bars). Coloured points represent observed data-points jittered horizontally for visualisation purposes; BVMT-R: Brief Visuospatial Memory Test – Revised; RAVLT: Rey Auditory Visual Learning Test; HC: healthy controls; PD-NC: Parkinson’s Disease with normal cognition; PD-MCI: Parkinson’s Disease with Mild Cognitive Impairment.](figs/lear_curves.jpg){#fig-lear-curve}
 
 ### Manuscript contribution
 
@@ -903,9 +909,9 @@ Baseline demographic, clinical and neuropsychological characteristics as well as
 
 ```{r}
 #| label: tbl-cog-pred-demo
-#| tbl-cap: Clinical and neuropsychological characteristics of the sample of patients included in Study 2.
+#| tbl-cap: Clinical and neuropsychological characteristics of the sample of patients included in Study 2
 
-read.csv( here("tabs","demo_clinchar.csv"), sep = "," ) %>%
+t4 <- read.csv( here("tabs","demo_clinchar.csv"), sep = "," ) %>%
   
   full_join(
     read.csv( here("tabs","demo_basepsych.csv"), sep = "," ) %>%
@@ -928,6 +934,9 @@ read.csv( here("tabs","demo_clinchar.csv"), sep = "," ) %>%
   tab_source_note(
     source_note = "N: number of observations; Md: median; M: mean; SD: standard deviation; MDS-UPDRS III: Movement Disorder Society Unified Parkinson’s Disease Rating Scale, motor part; LEDD: levodopa equivalent daily dose; Levodopa test: a percentage change of the MDS-UPDRS III score from medication OFF to medication ON state during the levodopa test as described in the main text; V: Volts; mA: milliampere; μs: microseconds; Hz: Hertz; MDRS: Dementia Rating Scale, second edition; BDI-II: Beck Depression Rating Scale, second edition; STAI-X1: State-Trait Anxiety Inventory, the state version; STAI-X2: State-Trait Anxiety Inventory, the trait version; TMT-A: Trail Making Test, part A; TMT-B: Trail Making Test, part B; DS-F: Digit Span forward; DS-B: Digit Span backward; LNS: letter-number sequencing; SS-F: Spatial Span forward; SS-B: Spatial Span backward; TOL: Tower of London task; PST-D: Prague Stroop Test, dot colour naming; PST-W: Prague Stroop Test, word colour naming; PST-C: Prague Stroop Test, interference condition; COWAT: Controlled Oral Word Association Test; CFT: category fluency test; Sim.: Similarities; RAVLT-IR: Rey Auditory Verbal Learning Test, immediate recall; RAVLT-B: Rey Auditory Verbal Learning Test, recall of the interference set; RAVLT-DR: Rey Auditory Verbal Learning Test, delayed recall; RAVLT- Rec50: Rey Auditory Verbal Learning Test, delayed recognition from 50 items (15 correct answers + 35 distractors); RAVLT-Rec15: Rey Auditory Verbal Learning Test, delayed recognition, number of correctly identified from 15 items; FP-IR: Family Pictures, immediate recall; FP-DR: Family Pictures, delayed recall; Secs: seconds; Total words: word count in two minutes (one minute per each letter P and K); words/min.: word count in one minute time limit."
   )
+
+gtsave( t4, here("tabs","table4.docx") ) # save it
+t4 # show it
 
 ```
 
@@ -1085,9 +1094,9 @@ The descriptive longitudinal GLMM converged to a stationary posterior distributi
 
 ```{r}
 #| label: tbl-cog-pred-desc
-#| tbl-cap: "Posterior predictions of cognitive change after STN DBS surgery."
+#| tbl-cap: Posterior predictions of cognitive change after STN DBS surgery
 
-read.csv( here("tabs","cogpred_contrasts.csv"), sep = ";" ) %>%
+t5 <- read.csv( here("tabs","cogpred_contrasts.csv"), sep = ";" ) %>%
   
   rename(
     "Group-level" = "Group.level.parameters",
@@ -1131,6 +1140,9 @@ read.csv( here("tabs","cogpred_contrasts.csv"), sep = ";" ) %>%
   tab_source_note(
     source_note = "Yi: assessment i years post-surgery; values represent posterior prediction median [90% equal tailed interval (ETI)]; all values were calculated by first generating predictions from the linear descriptive model using parameters specified above and then censoring values higher than 144 or less than 0 before calculating medians and 90% ETIs."
   )
+
+gtsave( t5, here("tabs","table5.docx") ) # save it
+t5 # show it
 
 ```
 
@@ -1188,27 +1200,33 @@ Both predictive longitudinal GLMMs converged to a stationary posterior distribut
 
 ```{r}
 #| label: tbl-cog-pred-tests
-#| tbl-cap: Summary of group-level parameters' posteriors from the “test scores” predictive generalised linear mixed model.
+#| tbl-cap: Summary of group-level parameters' posteriors from the “test scores” predictive generalised linear mixed model
 
 # add footnotes
-tbl_cogpred$tests %>%
+t6 <- tbl_cogpred$tests %>%
 
   tab_footnote( footnote = "All cognitive predictors were scaled such that negative values mean negative effect of pre-surgery deficit on longitudinal cognitive trajectory." ) %>%
   opt_footnote_marks(marks = "letters") %>%
   tab_source_note( source_note = "Median: parameter value point estimate (posterior median); HDPI: highest density posterior probability interval; pdir: probability of direction; ×: statistical interaction term; STAI-X1: State-Trait Anxiety Inventory, the state version; STAI-X2: State-Trait Anxiety Inventory, the trait version; TMT-A: Trail Making Test, part A; TMT-B: Trail Making Test, part B; DS-F: Digit Span forward; DS-B: Digit Span backward; LNS: letter-number sequencing; SS-F: Spatial Span forward; SS-B: Spatial Span backward; TOL: Tower of London task; PST-D: Prague Stroop Test, dot colour naming; PST-W: Prague Stroop Test, word colour naming; PST-C: Prague Stroop Test, interference condition; COWAT: Controlled Oral Word Association Test; CFT: category fluency test; Sim.: Similarities; RAVLT-IR: Rey Auditory Verbal Learning Test, immediate recall; RAVLT-B: Rey Auditory Verbal Learning Test, recall of the interference set; RAVLT-DR: Rey Auditory Verbal Learning Test, delayed recall; RAVLT-Rec50: Rey Auditory Verbal Learning Test, delayed recognition from 50 items (15 correct answers + 35 distractors); RAVLT-Rec15: Rey Auditory Verbal Learning Test, delayed recognition, number of correctly identified from 15 items; FP-IR: Family Pictures, immediate recall; FP-DR: Family Pictures, delayed recall; comparisons in bold can be regarded as evidence of the existence of an effect (pdir >.975)." )
 
+gtsave( t6, here("tabs","table6.docx") ) # save it
+t6 # show it
+
 ```
 
 ```{r}
 #| label: tbl-cog-pred-factors
-#| tbl-cap: Summary of group-level parameters' posteriors from the “factor scores” predictive generalised linear mixed model.
+#| tbl-cap: Summary of group-level parameters' posteriors from the “factor scores” predictive generalised linear mixed model
 
 # add footnotes
-tbl_cogpred$factors %>%
+t7 <- tbl_cogpred$factors %>%
 
   tab_footnote( footnote = "All cognitive predictors were scaled such that negative values mean negative effect of pre-surgery deficit on longitudinal cognitive trajectory." ) %>%
   opt_footnote_marks(marks = "letters") %>%
   tab_source_note( source_note = "Median: parameter value point estimate (posterior median); HDPI: highest density posterior probability interval; pdir: probability of direction; ×: statistical interaction term; EF/Att.: Executive function/Attention; EM: Episodic memory; VWM: Verbal working memory; VM: Visuospatial memory; SS: Set shifting; An: Anxiety; SWM: Spatial working memory; comparisons in bold can be regarded as evidence of the existence of an effect (pdir >.975)." )
+
+gtsave( t7, here("tabs","table7.docx") ) # save it
+t7 # show it
 
 ```
 
@@ -1228,9 +1246,9 @@ Clinical, demographic, and stimulation-related characteristics of the sample as 
 
 ```{r}
 #| label: tbl-mri-pred-desc
-#| tbl-cap: Clinical, demograhic and stimulation-related characteristics of the sample of patients included in Study 3.
+#| tbl-cap: Clinical, demographic and stimulation-related characteristics of the sample of patients included in Study 3
 
-read.csv( here("tabs","mripred_desc.csv"), sep = "," ) %>%
+t8 <- read.csv( here("tabs","mripred_desc.csv"), sep = "," ) %>%
 
   gt( groupname_col = "block" ) %>%
   cols_align( align = "center", columns = -1 ) %>%
@@ -1254,14 +1272,17 @@ read.csv( here("tabs","mripred_desc.csv"), sep = "," ) %>%
   opt_footnote_marks(marks = "letters") %>%
   
   text_transform(
-    locations = cells_body( columns = var ),
+    locations = cells_body(columns = var),
     fn = function(x) sub( "mm3", "mm<sup>3</sup>", x )
   ) %>%
   
   tab_source_note(
     source_note = "DBS: deep brain stimulation; MDRS: Dementia Rating Scale, second edition; ΔMDRS: average annual change in Dementia Rating Scale, second edition score; Hz: Hertz; kΩ: kiloohm; mA: milliampere; MCI: mild cognitive impairment; μs: microseconds; μW: microwatts; PD: Parkinson's disease; PD-MCI: Mild cognitive impairment in Parkinson's disease; q-value: raw p-value after adjusting for 5% false discovery rate (FDR) level; STN: subthalamic nucleus; V: Volts; values are presented as in-sample mean ± standarad deviation for continuous variables, percentages for demographic categorical variables and frequencies for DBS-related categorical variables."
   )
-  
+
+gtsave( t8, here("tabs","table8.docx") ) # save it
+t8 # show it
+
 ```
 
 ### Magnetic resonance profile of patients experiencing cognitive decline
@@ -1270,9 +1291,9 @@ In the cross-sectional analysis of pre-surgery MDRS, no macrostructural, FA or M
 
 ```{r}
 #| label: tbl-mri-pred-parcels
-#| tbl-cap: Results of parcellated comparison between patients with stable cognitive performance and  patients with declining cognitive performance.
+#| tbl-cap: Results of parcellated comparison between patients with stable cognitive performance and  patients with declining cognitive performance
 
-read.csv( here("tabs","mripred_parcels.csv"), sep = ";" ) %>%
+t9 <- read.csv( here("tabs","mripred_parcels.csv"), sep = ";" ) %>%
   
   gt( groupname_col = "group" ) %>%
   cols_align( align = "center", columns = -1 ) %>%
@@ -1320,6 +1341,9 @@ read.csv( here("tabs","mripred_parcels.csv"), sep = ";" ) %>%
     source_note = "CS: cognitively stable patients; CD: cognitively declining patients; L: left; N: number of obseravtions; q-value: raw p-value after adjusting for 5% false discovery rate (FDR) level; R: right; ROI: number of parcellation regions of interest contained in each cluster."
   )
 
+gtsave( t9, here("tabs","table9.docx") ) # save it
+t9 # show it
+
 ```
 
 ### Manuscript contribution
@@ -1360,7 +1384,7 @@ Included patients' characteristics are presented in @tbl-postop-iadl-desc. In ge
 
 ```{r}
 #| label: tbl-postop-iadl-desc
-#| tbl-cap: Demographic, clinical, cognitive, and stimulation charactetistics of the sample of Study 4.
+#| tbl-cap: Demographic, clinical, cognitive, and stimulation characteristics of the sample of Study 4
 
 tbl_iadl_desc <- 
   
@@ -1413,7 +1437,7 @@ tbl_iadl_desc <-
 write.table( x = tbl_iadl_desc, file = here("tabs","postopiadl_desc.csv"), sep = ",", row.names = F, quote = F )
 
 # show it
-tbl_iadl_desc %>%
+t10 <- tbl_iadl_desc %>%
   
   column_to_rownames("var") %>%
   
@@ -1431,6 +1455,9 @@ tbl_iadl_desc %>%
   tab_source_note(
     source_note = "BDI-II: Beck Depression Rating Scale, second edition; MDRS: Dementia Rating Scale, second edition; Hz: Hertz; LEDD: levodopa equivalent daily dose; mA: milliamperes; MDS-UPDRS III: Movement Disorder Society Unified Parkinson’s Disease Rating Scale, motor part; μs: microseconds PDAQ-15: The Penn Parkinson’s Daily Activities Questionnaire-15. The values are presented as mean ± standard deviation percentage from the whole sample."
   )
+
+gtsave( t10, here("tabs","table10.docx") ) # save it
+t10 # really show it
 
 ```
 
@@ -1609,7 +1636,7 @@ In the *"total effect"* model, the main effect of the time of assessment was pos
 
 ```{r}
 #| label: tbl-postop-iadl-ledd
-#| tbl-cap: Expected response probabilities of difficulty in IADL stratified by the time of assessment and levodopa equivalent daily dose derived from the total effect GLMM.
+#| tbl-cap: Expected response probabilities of difficulty in IADL stratified by the time of assessment and levodopa equivalent daily dose derived from the total effect GLMM
 
 # extract posterior prediction
 ppred <-
@@ -1638,7 +1665,7 @@ tbl_iadl_ledd <-
 write.table( x = tbl_iadl_ledd, file = here("tabs","postopiadl_ledd.csv"), sep = ",", row.names = F, quote = F )
 
 # show it
-tbl_iadl_ledd %>%
+t11 <- tbl_iadl_ledd %>%
   
   mutate( `LEDD (mg)` = formatC( `LEDD (mg)`, big.mark = "," ) ) %>%
   gt( groupname_col = "Assessment" ) %>%
@@ -1649,6 +1676,8 @@ tbl_iadl_ledd %>%
     source_note = "GLMM: generalised linear mixed model; IADL: instrumental activities of daily living; LEDD: levodopa equivalent daily dose; P(resp = i), probability that a patient responds to any item of The Penn Parkinson’s Daily Activities Questionnaire (PDAQ) with the response “i” where “i” represents difficulties in IADL and can take on values 0 = “cannot do,” 1 = “a lot,” 2 = “somewhat,” 3 = “a little,” and 4 = “none”; the numbers represent posterior predictions of the ordered-logit GLMM for an average patient to an average PDAQ item presented as posterior mean ± standard deviation."
   )
 
+gtsave( t11, here("tabs","table11.docx") ) # save it
+t11 # really show it
 
 ```
 
@@ -1684,9 +1713,9 @@ Study 2 thus contributes to a substantial body of evidence implying that pre-sur
 
 In contrast to the processing speed component of executive function, the results of predictive value of pre-surgery set shifting factor score are indefinite. The set shifting factor reflected primarily performance in TMT-B, TMT-A, TOL, and RAVLT interference set recall (i.e., RAVLT-B). In accordance with previous research, set shifting and verbal working memory factor reliably predicted pre-surgery MDRS performance cross-sectionally [@lopez2021]. However, neither set shifting nor verbal working memory were predictive of MDRS performance changes longitudinally (compare $\beta$ and $\delta$ parameters in @tbl-cog-pred-factors). These findings stay in opposition of the dual-syndrome hypothesis predictions presented above as both set shifting and verbal working memory comprise executive function components linked to fronto-striatal circuitry [@emch2019; @bezdicek2021], yet these factors do not seem to be reliably predictive of post-surgery cognitive decline in PD. It needs to be noted, that in our study, the pre-surgery set shifting factor was inconsistently estimated across imputations in EFA (see @fig-cog-pred-factanal) which increased uncertainty in GLMMs related to it. Nonetheless, both psychometric advances in measuring processing speed-independent executive function components as well as theoretical advances in the dual-syndrome hypothesis will greatly benefit future understanding of cognitive profile related to high risk PD phenotypes for STN DBS.
 
-Finally, recent meta-analysis identified both pre-surgery executive dysfunction as well as poorer pre-surgery memory to be reliably predictive of post-surgery cognitive decline [@jahanshahi2022]. The results of Study 2 corroborate the former but oppose the latter finding of this meta-analysis.[^7] Nevertheless, as showed in Study 1, memory profile of PD patients can be further differentiated implying that the discrepancy between our results and conclusions of @jahanshahi2022 regarding pre-surgery memory predictive value can be explained by future studies examining more granular memory processes.
+Finally, recent meta-analysis identified both pre-surgery executive dysfunction as well as poorer pre-surgery memory to be reliably predictive of post-surgery cognitive decline [@jahanshahi2022]. The results of Study 2 corroborate the former but oppose the latter finding of this meta-analysis.[^6] Nevertheless, as showed in Study 1, memory profile of PD patients can be further differentiated implying that the discrepancy between our results and conclusions of @jahanshahi2022 regarding pre-surgery memory predictive value can be explained by future studies examining more granular memory processes.
 
-[^7]: The results regarding predictive value of episodic memory are compatible with null hypothesis of no predictive value of pre-surgery episodic memory for post-surgery cognitive decline risk above and beyond information provided by the rest of pre-surgery cognitive profile (see @tbl-cog-pred-factors and @fig-cog-pred-pred).
+[^6]: The results regarding predictive value of episodic memory are compatible with null hypothesis of no predictive value of pre-surgery episodic memory for post-surgery cognitive decline risk above and beyond information provided by the rest of pre-surgery cognitive profile (see @tbl-cog-pred-factors and @fig-cog-pred-pred).
 
 ## Structural and microstructural predictors of cognitive decline in deep brain stimulation of subthalamic nucleus in Parkinson’s disease
 
@@ -1702,7 +1731,7 @@ Overall, the main takeaways from Study 3 are as follows: (i) post-surgery cognit
 
 Study 4 examines post-surgery changes in cognitively demanding IADLs and the possibility to affect these changes via intervening upon dopaminergic medication of patients with PD treated by STN DBS. Based on presented models and data, only a small and uncertain improvement in IADLs can be observed one year post-surgery (*RQ4.1*). However, this may be mainly due to post-surgery changes in competing causes of IADL as after adjusting for the competing causes identified in this study, the expected "unmasked" post-surgery improvement in IADL is statistically reliable (*RQ4.2*). One of these competing causes, the amount of dopaminergic medication operationally defined as LEDD, can be used to affect post-surgery IADLs (*RQ4.3*).
 
-The primary added value of this study comes from disentangling putative total and direct causal effects of STN DBS on self-reported IADLs in carefully selected PD patients.[^T] Whereas the direct effect (*RQ4.2*) is large and reliable, its reflection in simple real life observation (i.e., the total effect, *RQ4.1*) is contaminated by STN DBS effects on other variables predictive of IADL change leading to a small and uncertain estimate. Most importantly, one significant and desirable outcome of STN DBS is dopaminergic medication reduction [@molinuevo2000; @russmann2004]. At the same time, the results of Study 4 imply that lowering LEDD leads to increase in IADL difficulties both pre- and post-surgery (with the effect being possibly marginally larger after STN DBS surgery, see panel C of @fig-postop-iadl-ce). As a result of these opposing effects whereby STN DBS decreases IADL difficulties directly but indirectly increases it via reducing LEDD, medical professionals may want to carefully consider how much to reduce the LEDD after STN-DBS surgery in PD patients to avoid negative effects on IADL. For this purpose, @tbl-postop-iadl-ledd provides expectations of self-rated IADL difficulty response probabilities both pre- and post-surgery at different levels of LEDD.
+The primary added value of this study comes from disentangling putative total and direct causal effects of STN DBS on self-reported IADLs in carefully selected PD patients.[^7] Whereas the direct effect (*RQ4.2*) is large and reliable, its reflection in simple real life observation (i.e., the total effect, *RQ4.1*) is contaminated by STN DBS effects on other variables predictive of IADL change leading to a small and uncertain estimate. Most importantly, one significant and desirable outcome of STN DBS is dopaminergic medication reduction [@molinuevo2000; @russmann2004]. At the same time, the results of Study 4 imply that lowering LEDD leads to increase in IADL difficulties both pre- and post-surgery (with the effect being possibly marginally larger after STN DBS surgery, see panel C of @fig-postop-iadl-ce). As a result of these opposing effects whereby STN DBS decreases IADL difficulties directly but indirectly increases it via reducing LEDD, medical professionals may want to carefully consider how much to reduce the LEDD after STN-DBS surgery in PD patients to avoid negative effects on IADL. For this purpose, @tbl-postop-iadl-ledd provides expectations of self-rated IADL difficulty response probabilities both pre- and post-surgery at different levels of LEDD.
 
 [^7]: Since only patients already selected for STN DBS via criteria similar to the CAPSIT protocol [@defer1999] were included into the analysis, we cannot generalise the findings to other PD patients that may not pass CAPSIT-like inclusion/exclusion protocol without added assumptions such as exchangeability between different subpopulation of PD patients. For this reason, I limit the conclusions to patients that are already suitable for STN DBS treatment according to existing patient selection guidelines.
 
@@ -1710,53 +1739,55 @@ Overall, Study 4 contributes to the discussion of cognitive decline in patients 
 
 ## General Discussion
 
-The results presented in this thesis indicate that there are psychologically meaningful differences in memory profile and by extension overall cognitive profile between patients with and without cognitive impairment [Study 1, @havlik2020], there is a slow gradual long-term cognitive decline with high inter-individual variability after STN DBS in PD patients that can be reliably predicted by pre-surgery processing speed component of executive functions [Study 2, @mana2024], patients with PD treated by STN DBS who experience post-surgery cognitive decline show signs of lowered structural integrity of subcortical structures as well as frontal and posterior cortical areas in pre-surgery MRI [Study 4, @filip2024], and STN DBS in PD patients leads to decrease in self-reported IADL difficulties that is partially masked by LEDD decrease after surgery in a short-term [Study 4, @bezdicek2022]. The primary aim of this thesis was to identify pre-surgery cognitive factors predictive of post-surgery dementia in PD patients treated with STN DBS. The most relevant answers to this question comes from the combination of Study 2 and Study 3 results.
+The results presented in this thesis indicate that there are psychologically meaningful differences in memory profile between patients with and without cognitive impairment [Study 1, @havlik2020], there is a slow gradual long-term cognitive decline with high inter-individual variability after STN DBS in PD patients that can be reliably predicted by pre-surgery processing speed component of executive function [Study 2, @mana2024], patients with PD treated by STN DBS who experience post-surgery cognitive decline show signs of lowered structural integrity of subcortical grey matter as well as frontal and posterior cortical areas in pre-surgery MRI [Study 4, @filip2024], and STN DBS in PD patients leads to a decrease in self-reported IADL difficulties that is partially masked by LEDD reduction after surgery in a short-term [Study 4, @bezdicek2022]. The primary aim of this thesis was to identify pre-surgery cognitive factors predictive of post-surgery dementia in PD patients treated with STN DBS. The most relevant answers to this question come from the combination of Study 2 and Study 3 results all the while Study 1 provides justification for assumptions made by Study 2, and Study 4 examines facets of cognitive functioning that affect patients' everyday functioning.
 
 ### Dementia in Parkinson's disease
 
-Major limitation of this thesis is that it investigated core diagnostic features of PD-D, namely the objective cognitive decline and IADL difficulties [@dubois2007; @emre2007; @goetz2008], without operationally defining PD-D itself. Prior studies that examined pre-surgery predictors of post-surgery PD-D defined dementia retrospectively applying Diagnostic and Statistical Manual of Mental Disorders, Fifth Edition (DSM-5) criteria [@bove2020] or MDS Task Force clinical diagnostic criteria [@krishnan2019]. However, neither study provides sufficient information for reproduction of their diagnostic algorithm and due to their retrospective design, the validity of diagnosis cannot be ascertained. Unfortunately, if we were to define PD-D in studies presented in this article, we would encounter the same difficulties with retrospective design for PD-D diagnosis accuracy. And since both previously mentioned studies imply that PD-D is rather rare in PD patients after STN DBS in mid- to long-term, any diagnostic inaccuracies would be amplified. Consequently, this thesis focuses on investigating single core diagnostic features of PD-D which can be measured with reasonable accuracy even when sampled retrospectively. Importantly, impairment of features investigated in this thesis is necessary (but not sufficient) condition for PD-D diagnosis and analysis of these features thus still provides some useful information about post-surgery PD-D conversion.
+Major limitation of this thesis is that it investigated core diagnostic features of PD-D, namely the objective cognitive decline and IADL difficulties, without operationally defining PD-D itself. Prior studies that examined pre-surgery predictors of post-surgery PD-D defined dementia retrospectively applying Diagnostic and Statistical Manual of Mental Disorders, Fifth Edition (DSM-5) criteria [@bove2020] or MDS Task Force clinical diagnostic criteria [@krishnan2019]. However, neither study provides sufficient information for reproduction of their diagnostic algorithm and due to their retrospective design, the validity of diagnosis cannot be fully ascertained. Unfortunately, if we were to define PD-D in studies presented in this article, we would encounter the same difficulties with retrospective design for PD-D diagnosis accuracy. And since both previously mentioned studies imply that PD-D is rather rare in PD patients after STN DBS in mid- to long-term, any diagnostic inaccuracies would be amplified. Consequently, this thesis focuses on investigating single core diagnostic features of PD-D which can be measured with reasonable accuracy even when sampled retrospectively. Importantly, impairment of features investigated in this thesis is necessary (but not sufficient) condition for PD-D diagnosis and analysis of these features thus still provides useful information about post-surgery PD-D conversion.
 
 ### Constraints on generality
 
-Severe constraints on generality apply to studies presented in this thesis. Most importantly, all studies investigating STN DBS outcomes presented here lack control group. Consequently, the results can be safely generalised only to STN DBS treated patients that were selected for treatment using similar exclusion criteria as those applied in studies presented here [i.e., the CAPSIT protocol criteria or their equivalent, @defer1999]. In order to generalise to PD populations defined in a different manner (most importantly a population of candidates for STN DBS), one would have to assert further assumptions such as exchangeability between patients who pass CAPSIT-like criteria and those that do not. However, as implied by for instance the dual-syndrome hypothesis [@kehagia2010; @kehagia2012], this assumptions might be untenable. Due to this selection mechanism being applied to samples included in studies presented here, applying the results to guide selection of patients for STN DBS from a larger population of PD patients may lead to unexpected results due to estimates distortion via the collider bias [@cinelli2022]. I thus strongly advice against using the findings of this thesis as a basis for patient selection for STN DBS. Instead, the results can be used to single out patients who could benefit from more monitoring provided they were already selected for STN DBS treatment via the current best practices [@defer1999; @armstrong2020].
+Severe constraints on generality apply to studies presented in this thesis. Most importantly, all studies investigating STN DBS outcomes presented here lack control group. Consequently, the results can be safely generalised only to STN DBS treated patients that were selected for treatment using similar exclusion criteria as those applied in studies presented here [i.e., the CAPSIT protocol criteria or their equivalent, @defer1999]. In order to generalise to PD populations defined in a different manner (most importantly a population of candidates for STN DBS), one would have to assert further assumptions such as exchangeability between patients who pass CAPSIT-like criteria and those that do not. However, as implied by for instance the dual-syndrome hypothesis [@kehagia2010; @kehagia2012], this assumptions might be untenable. Due to this selection mechanism being applied to samples included in studies presented here, applying the results to guide selection of patients for STN DBS from a larger population of PD patients may lead to unexpected results due to estimates distortion via the collider bias [@cinelli2022; @berkson1946]. I thus strongly advice against using the findings of this thesis as a basis for patient selection for STN DBS. Instead, the results can be directly used to single out patients who could benefit from more monitoring provided they were already selected for STN DBS treatment via the current best practices [@defer1999; @armstrong2020].
 
 ### Genetic profiling
 
-Finally, a significant patient-specific variable not directly considered in this thesis that garnered attention lately is patients' genetic profile. Principally, heterozygous mutations in the glucocerebrosidase gene (GBA) have been associated with parkinsonism in general as well as faster cognitive decline in PD patients [@sidransky2012; @davis2016; @szwedo2016].
+Finally, a significant patient-specific variable not directly considered in this thesis that garnered much attention lately is patients' genetic profile. Principally, heterozygous mutations in the glucocerebrosidase gene (GBA) have been associated with parkinsonism in general as well as faster cognitive decline in PD patients [@sidransky2012; @davis2016; @szwedo2016].
 
-Several recent large sample studies implied an important role of GBA mutation in STN DBS treated PD patients specifically. @mangone2020 re-tested 208 patients (25 of which tested positively for GBA mutation) and observed substantially larger MDRS change score in GBA mutation carriers (GBA+) (*M* = -3.2, *SD* = 5.1) compared to patients without known genetic mutation (*M* = -1.4, *SD* = 4.4). @pal2022 published a large sample observational study of STN DBS treated patients with PD including both GBA+ and GBA mutation non-carriers (GBA-) as well as patients with and without STN DBS that included 366 subjects across 12 study sites followed for up to 5 years post-surgery. In this study, the results implied that GBA mutation is associated with fast cognitive decline specifically in STN DBS treated patients. Compared to GBA- patients with STN DBS, GBA+ patients with STN DBS showed decline circa 1.56 MDRS points/year faster [@pal2022]. Finally, @avenali2024 recently reported another large scale multicenter study including 365 patients (73 of which were GBA+) followed for up to 5 years showing that although GBA+ patients experience faster MDRS post-surgery decline, other clinical markers including motor and neuropsychiatric symptoms are similar between GBA+ and GBA- patients.
+Several recent large sample studies implied an important role of GBA mutation in STN DBS treated PD patients. @mangone2020 re-tested 208 patients (25 of which tested positively for GBA mutation) and observed substantially larger MDRS change scores in GBA mutation carriers (GBA+) (*M* = -3.2, *SD* = 5.1) compared to patients without known genetic mutation (*M* = -1.4, *SD* = 4.4). @pal2022 published a large sample observational study of STN DBS treated patients with PD including both GBA+ and GBA mutation non-carriers (GBA-) as well as patients with and without STN DBS. The study included 366 subjects across 12 study sites followed for up to 5 years post-surgery. Their results imply that GBA mutation is associated with fast cognitive decline specifically in STN DBS treated patients. Compared to GBA- patients with STN DBS, GBA+ patients with STN DBS showed decline that was circa 1.56 MDRS points/year faster [@pal2022]. Finally, @avenali2024 recently reported another large scale multicenter study that included 365 patients (73 of which were GBA+) followed for up to 5 years and showed that although GBA+ patients experience faster MDRS post-surgery decline, other clinical markers including motor and neuropsychiatric symptoms are similar between GBA+ and GBA- patients.
 
-Since datasets used in this thesis do not include genetic profiling data, the results do not explicitly account for the GBA status of included patients. However, since the GBA mutation status is patient-specific time-invariant characteristic, the statistical model used in Study 2 does in principle adjust its estimates for this factor implicitly via estimating patient-level parameters [@mcelreath2020]. Presence of GBA+ patients in the dataset may thus partially explain the large inter-individual variability in true score changes identified by Study 2 (see @tbl-cog-pred-desc and @fig-cog-pred-desc). Interestingly, GBA mutation in PD was previously associated with deficits in verbal working memory, set shifting and visuospatial functions in PD [@mata2016]. This GBA-associated cognitive profile is almost identical to cognitive profile that was predictive of pre-surgery MDRS score cross-sectionally but was not predictive of post-surgery MDRS score longitudinally in Study 2 (compare $\beta$ and $\delta$ parameters in @tbl-cog-pred-factors). Further investigation into GBA association with cross-sectional cognitive profile, structural and functional brain characteristics, and longitudinal change of patients' cognitive profile after STN DBS would thus significantly benefit our understanding of biological mechanisms underlying cognitive side effects of PD and its interplay with STN DBS. Finally, new projects at the Movement Disorders Center, Department of Neurology at First Faculty of Medicine and General University Hospital in Prague were already commenced that include genetic profiling of patients with PD treated by STN DBS. So far, we tried to replicate results of @pal2022, however, GBA+ patients demonstrate very similar rate of post-surgery cognitive decline in our dataset (the project and its progress is being documented and is publicly available at <https://github.com/josefmana/dbs_coGBA.git>).
+Since datasets used in this thesis do not include genetic profiling data, the results do not explicitly account for the GBA status of included patients. However, since the GBA mutation status is patient-specific time-invariant characteristic, the statistical model used in Study 2 does in principle adjust its estimates for this factor implicitly via estimating patient-level parameters [@mcelreath2020]. Presence of GBA+ patients in the dataset may thus partially explain the large inter-individual variability in true score changes identified by Study 2 (see @tbl-cog-pred-desc and @fig-cog-pred-desc). Interestingly, GBA mutation in PD was previously associated with deficits in verbal working memory, set shifting and visuospatial functions in PD [@mata2016]. This GBA-associated cognitive profile is almost identical to cognitive profile that was predictive of pre-surgery MDRS score cross-sectionally but was not predictive of post-surgery MDRS score longitudinally in Study 2 (compare $\beta$ and $\delta$ parameters in @tbl-cog-pred-factors). Further investigation into GBA association with cross-sectional cognitive profile, structural and functional brain characteristics, and longitudinal change of patients' cognitive profile after STN DBS would thus significantly benefit our understanding of biological mechanisms underlying cognitive side effects of PD and its interplay with STN DBS.
+
+Finally, new projects at the Movement Disorders Center, Department of Neurology at First Faculty of Medicine and General University Hospital in Prague were already commenced that include genetic profiling of patients with PD treated by STN DBS. So far, we tried to replicate results of @pal2022, however, GBA+ patients demonstrate very similar rate of post-surgery cognitive decline in our dataset (the project and its progress is being documented and is publicly available at <https://github.com/josefmana/dbs_coGBA.git>). **Since genetic profiling is becoming more accessible in the clinical research, addition of the genotype factor to neuropsychologic theories and prognostic models constitutes an attractive avenue for improving accuracy of risks evaluation of treatment options such as STN DBS.**
 
 # Conclusions
 
-Under the current guidelines for patient selection, the STN DBS treatment in combination with oral dopaminergic therapy is a relatively safe treatment option from a cognitive standpoint. Longitudinally, most patients do not reach level of cognitive decline that would be considered clinically significant sooner than three or more years post-surgery. Nonetheless, high inter-individual in the rate of post-surgery cognitive decline exists between patients, most likely reflecting distinct PD phenotypes of patients selected for STN DBS treatment.
+Under the current guidelines for patient selection, the STN DBS treatment in combination with oral dopaminergic therapy is a relatively safe treatment option from a cognitive standpoint. Longitudinally, most patients do not reach level of cognitive decline that would be considered clinically significant sooner than three or more years post-surgery. Nonetheless, high inter-individual in the rate of post-surgery cognitive decline exists between patients, most likely reflecting distinct PD phenotypes **and their underlying genetic variants** of patients selected for STN DBS treatment.
 
-The conclusion that it is disease type rather than effect of stimulation as such that is responsible for differences in post-surgery cognitive decline rates between patients follows from the findings that already pre-surgery, the patients who are at risk of experiencing fast cognitive decline show processing speed deficit coupled with widespread structural brain changes compared to patients with low risk of developing post-surgery cognitive dysfunction. These results holds in spite of both groups of patients being otherwise equivalent at pre-surgery neuropsychologic assessment. However, it needs to be stressed that due to the lack of control group in studies of this thesis, these conclusions remain putative and ought to be subject of falsification attempts in future research.
+The conclusion that it is disease type rather than effect of stimulation as such that is responsible for differences in post-surgery cognitive decline rates between patients follows from the finding that already pre-surgery, the patients who are at risk of experiencing fast cognitive decline show processing speed deficit or widespread structural brain changes compared to patients with low risk of developing post-surgery cognitive decline. These results hold in spite of both groups of patients being otherwise equivalent at pre-surgery neuropsychologic assessment. However, it needs to be stressed that due to the lack of control group in studies of this thesis, these conclusions remain putative and ought to be subject of falsification attempts in future research.
 
-Outside of the objective cognitive assessment, the STN DBS treatment appears to be safe or even beneficial for self-reported functional independence in a short-term. In this thesis, I suggested a push/pull mechanism whereby decrease in cognitively demanding activities of daily living difficulties due to commencing the STN DBS treatment is being counterbalanced by an increase of such difficulties due to dopaminergic medication reduction. Since dopaminergic medication reduction is itself a desirable outcome of STN DBS, achieving optimal results requires a balance between medication reduction that is high enough to bring about its intrinsic benefits yet not too high to outweigh STN DBS benefits for reduction of PD-related post-surgery difficulties in cognitive daily living activities. Future research may more fully characterise the interplay between STN DBS and oral medication as factors influencing cognitively demanding activities of daily living by conducting longer longitudinal observations as the effect of medication observed in this study could have resulted from high changes of medication levels in short time span rather than from the effect of medication as such.
+Outside the objective cognitive assessment, the STN DBS treatment appears to be safe or even beneficial for self-reported functional independence in a short-term. In this thesis, I suggested a push/pull mechanism whereby decrease in cognitively demanding activities of daily living difficulties due to commencing the STN DBS treatment is being counterbalanced by an increase of such difficulties due to dopaminergic medication reduction. Since dopaminergic medication reduction is itself a desirable outcome of STN DBS, achieving optimal results requires a balance between medication reduction that is high enough to bring about its intrinsic benefits, yet not too high to outweigh STN DBS benefits for reduction of PD-related post-surgery difficulties in cognitive daily living activities **to reach the best synergistic effect**. Future research may more fully characterise the interplay between STN DBS and oral medication as factors influencing cognitively demanding activities of daily living by conducting longer longitudinal observations as the effect of medication observed in this study could have resulted from large changes of medication levels in short time span rather than from the effect of medication as such.
 
-Overall, this thesis aimed at identifying pre-surgery variables predictive of post-surgery cognitive decline in STN DBS treated PD patients. The results imply a profile of PD with processing speed component of executive functions deficit and widespread structural brain changes including lower cortical thickness, subcortical volume and decreased connectivity. The findings presented here can serve as basis of clinical decision making as well as further theoretical development in defining high risk PD phenotypes for STN DBS.
+Overall, this thesis aimed at identifying pre-surgery variables predictive of post-surgery cognitive decline in STN DBS treated PD patients. The results imply a profile of PD with processing speed component of executive function deficit and widespread structural brain changes including lower cortical thickness, subcortical volume and decreased anatomical connectivity. The findings presented here can serve as basis of clinical decision making as well as further theoretical development in defining high risk PD phenotypes for STN DBS.
 
 # Summary
 
-Cognitive dysfunction represents a severe non-motor symptom of Parkinson's disease (PD) associated with lowered quality of life and high patient and carer burden. Severe cognitive dysfunction is one of the factors that can substantially reduce effectiveness of advanced treatments such as deep brain stimulation (DBS) of subthalamic nucleus (STN). Careful monitoring of potential cognitive side effects of the treatment and ability to predict which patients will develop post-surgery cognitive dysfunction is thus clinically and scientifically relevant. In this thesis, I aim to describe the rate of post-surgery cognitive change, identify pre-surgery cognitive and magnetic resonance imaging (MRI) profiles of patients with high risk of developing post-surgery cognitive decline, and examine effects of the treatment on cognitively demanding instrumental activities of daily living (IADL) in STN DBS treated patients with PD.
+Cognitive dysfunction represents a severe non-motor symptom of Parkinson's disease (PD) associated with lowered quality of life and high patient and carer burden. Severe cognitive dysfunction is one of the factors that can substantially reduce effectiveness of advanced treatments such as deep brain stimulation (DBS) of subthalamic nucleus (STN). Careful monitoring of potential cognitive side effects of the treatment and ability to predict which patients will develop post-surgery cognitive dysfunction is thus clinically and scientifically relevant. In this thesis, I aim to describe the rate of post-surgery cognitive change, identify pre-surgery cognitive and magnetic resonance imaging (MRI) profiles of patients with high risk of developing post-surgery cognitive decline, and examine the effect of the treatment on cognitively demanding instrumental activities of daily living (IADL) in STN DBS treated patients with PD.
 
-The theoretical part of this thesis presents a brief introduction to epidemiology, pathophysiology and clinical manifestations of PD followed by discussion of the brain circuits theories of cognitive dysfunction in PD, neuropsychological assessment strategies and a brief discussion DBS as it regards to cognition in PD. The empirical part includes four studies aimed to collectively provide a coherent answer to questions posited above. Methodology used for each study is introduced in detail and links to public projects associated with the studies shared for increased transparency.
+The theoretical part of this thesis presents a brief introduction to epidemiology, pathophysiology and clinical manifestations of PD followed by a discussion of brain circuits theories of cognitive dysfunction in PD, neuropsychological assessment strategies and a brief discussion of DBS as it regards to cognition in PD. The empirical part includes four studies aimed to collectively provide a coherent answer to questions posited above. Methodology used for each study is introduced in detail and links to public projects associated with the studies shared for increased transparency.
 
-In the empirical part, I have shown that STN DBS is largely safe from cognitive point of view as the expected post-surgery cognitive decline amounted to approximately 0.90 our of 144 points yearly decline in Mattis Dementia Rating Scale (MDRS). The rate of post-surgery cognitive decline was below published reliable change cutoffs, however, there was large inter-individual heterogeneity. Patients with worse pre-surgery performance in tasks reflecting processing speed component of executive functions and patients with lowere cortical frontal and posterior as well as subcortical structural and miscrostructural integrity in MRI experience faster post-surgery cognitive decline. Regarding patients self-reported IADLs, the STN DBS treatment seems to have a neutral to positive effect which is moderated by dopaminergic medication reduction.
+In the empirical part, I have shown that STN DBS is largely safe from cognitive point of view as the expected post-surgery cognitive decline amounted to approximately 0.90 our of 144 points yearly decline in Mattis Dementia Rating Scale (MDRS). The rate of post-surgery cognitive decline was below published reliable change cutoffs, however, there was large inter-individual heterogeneity. Patients with worse pre-surgery performance in tasks reflecting processing speed component of executive function and patients with lower cortical frontal and posterior as well as subcortical structural and miscrostructural integrity in MRI experienced faster post-surgery cognitive decline. Regarding patients self-reported IADLs, the STN DBS treatment seems to have a neutral to positive effect which is moderated by dopaminergic medication reduction.
 
 The findings presented in this thesis have the potential to serve as a basis for identifying patients who could benefit from more monitoring after STN DBS surgery. The combined cognitive profile and MRI results also call into question the exact form of theories used to explain post-surgery cognitive decline in previous studies and suggest potential way to address these issues. Finally, the analysis of IADLs yielded a working hypothesis of STN DBS/dopaminergic medication interaction in affecting cognitively demanding daily tasks that should be submitted to further scrutiny in future research.
 
 # Souhrn
 
-Kognitivní porucha je závažným nemotorickým symptomem Parkinsonovy nemoci (PN) spojeným s nízkou kvalitou života a zvýšenou zátěží jak pro pacienty, tak pro pečovatele. Hluboká kognitivní dysfunkce je jedním z faktorů, které mohou významně snížit efektivnost pokročilých druhů terapie jakou je např. hluboká mozková stimulace (DBS) subthalamického jádra (STN). Pečlivé monitorování kognitivních nežádoucích účinků léčby a schopnost identifikovat pacienty s vysokým rizikem rozvinutí pooperační kognitivní dysfunkce je tedy kliniciky i vědecky relevantní. V této disertační práci si kladu za cíl popsat pooperační kognitivní trajektorii, identifikovat předoperační kognitivní profil a profil v obraze magnetické resonance (MRI) predikující vysoké riziko rozvinutí pooperačního kognitivního deficitu a prozkoumat efekt léčby na kognitivně náročné instrumentální aktivity denního života (IADL) u pacientů s PN léčených STN DBS.
+Kognitivní porucha je závažným nemotorickým symptomem Parkinsonovy nemoci (PN) spojeným s nízkou kvalitou života a zvýšenou zátěží pro pacienty i pečovatele. Hluboká kognitivní dysfunkce je jedním z faktorů, které mohou významně snížit efektivnost pokročilých druhů terapie jakou je např. hluboká mozková stimulace (DBS) subthalamického jádra (STN). Pečlivé monitorování kognitivních nežádoucích účinků léčby a schopnost identifikovat pacienty s vysokým rizikem rozvinutí pooperační kognitivní dysfunkce je tedy klinicky i vědecky relevantní. V této disertační práci si kladu za cíl popsat pooperační kognitivní trajektorii, identifikovat předoperační kognitivní profil a profil v obraze magnetické resonance (MRI) predikující vysoké riziko rozvinutí pooperačního kognitivního deficitu a prozkoumat efekt léčby na kognitivně náročné instrumentální aktivity denního života (IADL) u pacientů s PN léčených STN DBS.
 
 Teoretická část práce obsahuje krátký úvod do epidemiologie, patofyziologie a klinckých projevů PN. Následuje diskuze teorií kognitivní dysfunkce u PN na podkladu dysfunkce specifických mozkových okruhů, úvod do metod neuropsychologického testování a krátká diskuze DBS a jejích kognitivních korelátů u PN. Empirická část práce obsahuje čtyři studie zaměřené na poskytnutí odpovědí na výše uvedené výzkumné otázky. V této části detailně představuji metodologii užitou v každé studii spolu s odkazy na veřejně dostupné repozitáře navázané na jednotlivé studie za účelem zvýšení transparentnosti práce.
 
-V empirické části práce ukazuju, že STN DBS lze považovat z kognitivního hlediska za převážně bezpečnou metodu léčby PN. Kognitivní výkon pacientů v souboru se v průměru ročně snižoval o přibližně 0,90 z celkem 144 bodů v Mattisově škále demence, což představuje zhoršování výkonu výrazně nižší než doposud publikované odhady reliabiltní, tj. klinicky významné změny. Zároveň ovšem platí, že mé výsledky ukazují na velkou interindividuální variabilitu v rychlosti kognitivní změny po zahájení léčby STN DBS napříč pacienty. Tato variabilita lze částečně vysvětlit tím, že pacienti s předoperačně sníženým výkonem v testech odrážejících rychlost zpracování informace a pacienti s předoperačně sníženou strukturální integritou frontální kůry, posteriorních korových oblastí i subkortikálních struktur dle MRI vykazovali rychlejší vývoj pooperačního kognitivního deficitu. STN DBS léčba se jeví mít neutrální či pozitivní efekt na IADL dle pacientského sebehodnocení. Tento efekt je ovšem moderován velikostí pooperační redukce dopaminergní medikace.
+V empirické části práce ukazuji, že STN DBS lze považovat z kognitivního hlediska za převážně bezpečnou metodu léčby PN. Kognitivní výkon pacientů v souboru se v průměru ročně snižoval o přibližně 0,90 z celkem 144 bodů v Mattisově škále demence, což představuje zhoršování výkonu výrazně nižší než doposud publikované odhady reliabiltní, tj. klinicky významné, změny. Zároveň ovšem platí, že mé výsledky ukazují na velkou interindividuální variabilitu v rychlosti kognitivní změny po zahájení léčby STN DBS mezi pacienty. Tato variabilita lze částečně vysvětlit tím, že pacienti s předoperačně sníženým výkonem v testech odrážejících rychlost zpracování informace a pacienti s předoperačně sníženou strukturální integritou frontální kůry, posteriorních korových oblastí i subkortikálních struktur dle MRI vykazovali rychlejší vývoj pooperačního kognitivního deficitu. STN DBS léčba se naproti tomu jeví mít neutrální či pozitivní efekt na IADL dle pacientského sebehodnocení. Tento efekt je ovšem moderován velikostí pooperační redukce dopaminergní medikace.
 
-Zjištění této disertační práce mají potenciál sloužit jako podklad pro identifikaci kognitivně rizikových pacientů, kteří mohou profitovat z častějších neuropsychologických kontrol po zahájení léčby STN DBS. Kombinované výsledky předoperačního kognitivního profilu a profilu v MRI podporují část teorií vysvětlujících pooperační kognitivní úpadek u pacientů s PN, poukazují ovšem na některé nesrovnalosti a možnosti jak tyto nesrovnalosti využít k pokroku v pochopení kognice u PN. Konečně, analýza pooperačních IADL mě vedla k postulaci pracovní hypotézy o interakci mezi STN DBS a dopaminergní medikací jako společnými příčinami změn v pacientském vnímání obtíží s kognitivně náročnými aktivitami denního života. Tato hypotéza by v budoucnu měla být vystavena testům a pokusům o falsifikaci.
+Zjištění této disertační práce mají potenciál sloužit jako podklad pro identifikaci pacientů s rizikem rozvoje kognitivního deficitu, kteří mohou profitovat z častějších neuropsychologických kontrol po zahájení léčby STN DBS. Kombinované výsledky předoperačního kognitivního profilu a profilu v MRI podporují část teorií vysvětlujících pooperační kognitivní úpadek u pacientů s PN, poukazují ovšem také na některé nesrovnalosti a možnosti jak tyto nesrovnalosti využít k pokroku v pochopení kognice u PN. Konečně, analýza pooperačních IADL vedla k postulaci pracovní hypotézy o interakci mezi STN DBS a dopaminergní medikací jako společnými příčinami změn v pacientském vnímání obtíží s kognitivně náročnými aktivitami denního života. Tato hypotéza by v budoucnu měla být vystavena testům a pokusům o falsifikaci.
 
 # References
 
