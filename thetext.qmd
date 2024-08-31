@@ -85,7 +85,7 @@ Many thanks go to Prof. MUDR. Robert Jech, Ph.D. During the last six years, Prof
 
 I am also grateful to Mgr. Filip Havlík, my colleague and fellow doctoral student, who always had my back when I needed more space or time for writing this thesis by temporarily taking on himself my work responsibilites, and who for years patiently listened to my rumbling on how much do we need a scientific reform in biomedical statistics.
 
-I also thank all my co-authors, with special thanks going to Prof. MUDr. Evžen Růžička, DrSc., FCMA, FEAN, MUDr. Pavel Filip, Ph.D., MUDr. Filip Růžička, Ph.D, MUDr. Andrej Lasica and Assoc. Prof. Mgr. Tomáš Nikolai, Ph.D., all of whom helped immensely with preparing and debugging the articles this thesis is based upon.
+I also thank all my co-authors, with special thanks going to Prof. MUDr. Evžen Růžička, DrSc., FCMA, FEAN, MUDr. Pavel Filip, Ph.D. MBA FEBN, MUDr. Filip Růžička, Ph.D, MUDr. Andrej Lasica and Assoc. Prof. Mgr. Tomáš Nikolai, Ph.D., all of whom helped immensely with preparing and debugging the articles this thesis is based upon.
 
 I am also thankful to all patients who agreed to take part in the studies and their family. I hope this piece of work will prove useful as a stepping stone in better understanding and managing their medical condition.
 
@@ -999,37 +999,44 @@ vaccount <-
         
   )
 
-# prepare the figure
-fig_factanal <-
-  
-  lapply(
-    1:100,
+# extract loadings
+loads <- lapply(
+
+  1:100,
     function(i)
       loadings(fa$efa[[i]][[5]]) %>%
       as.data.frame() %>%
       rownames_to_column("test") %>%
       pivot_longer( cols = -test, names_to = "factor", values_to = "load" )
-  ) %>%
+
+) %>%
   
   do.call( rbind.data.frame, . ) %>%
   mutate( load = ifelse( grepl("pst|tmt",test), -load, load ) ) %>%
-  mutate( test = sapply( 1:nrow(.), function(i) v[ test[i], "name" ] ) ) %>%
-  mutate( test = factor( test, levels = rev(o), ordered = T ) ) %>%
-    
-  ggplot() +
-  aes( x = load, y = test, fill = after_stat( abs(x) > .3  ) ) +
-  geom_density_ridges_gradient( scale = 1.5, rel_min_height = 0.001 ) +
-  scale_fill_manual( values = c("grey93","#E69F00") ) +
-  labs( x = "Factor loading", y= NULL ) +
-  theme_bw( base_size = 14 ) +
-  theme( legend.position = "none" ) +
-  facet_wrap(
-    ~ factor( factor, levels = colnames( loadings(fa$efa[[1]][[5]]) ) ),
-    nrow = 1,
-    labeller = as_labeller(
-      c( exec_fun = "EF/Att.", epis_mem = "EM", verb_wm = "VWM", visp_mem = "VM", set_shift = "SS", anxiety = "An.", visp_wm = "VWM")
-    )
+  mutate(
+    test = factor( sapply( 1:nrow(.), function(i) v[ test[i], "name" ] ), , levels = rev(o), ordered = T ),
+    factor = factor( sapply( 1:nrow(.), function(i) v[ factor[i], "name" ] ), , levels = c("EF/Att.", "EM", "VWM", "VM", "SS", "An.", "SWM"), ordered = T )
+  ) %>%
+  group_by(test, factor) %>%
+  summarise( M = mean(load), SD = sd(load) ) %>%
+  ungroup() %>%
+  mutate(
+    text = paste0( rprint(M,2)," ± ",rprint(SD,2) ),
+    col = if_else(M > .66, "white", "black"),
+    Loading = M
   )
+
+# prepare the figure
+fig_factanal <- loads %>%
+    
+    ggplot() +
+    aes(x = factor, y = test, fill = Loading, label = text) +
+    geom_tile(colour = "black") +
+    geom_text(colour = loads$col, size = 4) +
+    scale_fill_gradientn( colors = hcl.colors(20, "RdYlGn"), limits = c(-1,1) ) +
+    labs( x = NULL, y = NULL ) +
+    theme_minimal(base_size = 14) + 
+    theme(legend.position = "right")
 
 # save it
 ggsave( plot = fig_factanal, file = here("figs","cogpred_factnal.jpg"), dpi = 300, width = 11.7, height = 10.32  )
@@ -1038,7 +1045,7 @@ ggsave( plot = fig_factanal, file = here("figs","cogpred_factnal.jpg"), dpi = 30
 
 In the EFAs, from three up to eight factor solutions for pre-surgery cognitive profile were examined. According to TLI and RMSEA, there was a clear improvement when increasing the number from six to seven factors whereby good TLI (i.e., TLI \> .9) increased from 76 to 97, and good RMSEA (i.e., RMSEA \< .05) increased from 96 to 99 out of 100 imputed data sets. Moreover, the seven factor solution showed the most consistency of factors across imputations. Finally, even though the eight factor solution had better fit statistics than the seven factor solution, it resulted in factors loaded on substantially (i.e., with a factor loading above 0.3) by only a single cognitive test score which impedes theoretical interpretation of such factors. Consequently, the seven factor solution was retained for further analyses. Summary of factor loadings across imputations is presented in @fig-cog-pred-factanal. On average, the seven factors accounted for a total of `r vaccount['mean']` of variance (SD = `r vaccount['sd']`) and corresponded to seven cognitive functions: 1) executive function/attention (EF/Att.) was loaded on primarily by PST tasks, TMT tasks, verbal fluency tests and TOL, 2) episodic memory (EM) was loaded on primarily by indexes of RAVLT except for the recall of interference list (RAVLT-B), 3) verbal working memory (VWM) was loaded on primarily by Digit Span tasks, LNS and Similarities, 4) visuospatial memory (VM) was loaded on primarily by indexes of the Family Pictures test, 5) set shifting (SS) was loaded on primarily by TMT tasks and RAVLT-B, 6) anxiety (An.) was loaded on primarily by STAI, and 7) spatial working memory (SWM) was loaded on primarily by Spatial Span tasks.
 
-![Factor loadings for the selected exploratory factor analysis represented as density plots across 100 imputations. Coloured portion of each densitiy represents proportion of loadings > 0.3 across imputed data sets.](figs/cogpred_factnal.jpg){#fig-cog-pred-factanal}
+![The selected seven factor solution exploratory factor analysis represented as means ± standard deviations of factor loadings across 100 imputated data sets. All variables were scaled such that higher values indicate better performance (or more anxiety in the case of anxiety inventories.)](figs/cogpred_factnal.jpg){#fig-cog-pred-factanal}
 
 ### Post-surgery cognitive change description
 
@@ -1737,7 +1744,7 @@ In the sample analysed in this thesis, pre-surgery executive function/attention 
 
 Study 2 thus contributes to a substantial body of evidence implying that pre-surgery executive deficit is reliably predictive of post-surgery cognitive decline in patients with PD who were selected for STN DBS treatment via current recommended criteria [@defer1999; @armstrong2020]. Yet, it remains unclear which executive function components provide the most information for predicting post-surgery cognitive decline. Study 2 of this thesis can partially address this question courtesy of extracting from data two arguably distinct executive function-related factors in the predictive model. Most importantly, the pre-surgery EF/Att. factor that is according to data and models presented here with high certainty reliably predictive of post-surgery cognitive decline was loaded on primarily by timed test scores. Consequently, this factor may reflect a general processing speed component of executive function rather than any other high-level processes such as planning, problem solving, sensitivity to interference, set shifting or mental flexibility. Processing speed has been shown to be impaired in clinically cognitively intact patients with PD and it was shown to be the primary executive component impaired in pre-clinical synucleinopathies [@monchi2004; @sawada2012; @cholerton2021; @leitner2024]. The processing speed executive function component may thus be a reliable marker of disease progression sensitive to biological determinants of cognitively high-risk PD.
 
-In contrast to the processing speed component of executive function, the results of predictive value of pre-surgery set shifting factor score are indefinite. The set shifting factor reflected primarily performance in TMT-B, TMT-A, TOL, and RAVLT interference set recall (i.e., RAVLT-B). In accordance with previous research, set shifting and verbal working memory factor reliably predicted pre-surgery MDRS performance cross-sectionally [@lopez2021]. However, neither set shifting nor verbal working memory were predictive of MDRS performance changes longitudinally (compare $\beta$ and $\delta$ parameters in @tbl-cog-pred-factors). These findings stay in opposition of the dual-syndrome hypothesis predictions presented above as both set shifting and verbal working memory comprise executive function components linked to fronto-striatal circuitry [@emch2019; @bezdicek2021], yet these factors do not seem to be reliably predictive of post-surgery cognitive decline in PD. It needs to be noted, that in our study, the pre-surgery set shifting factor was inconsistently estimated across imputations in EFA (see @fig-cog-pred-factanal) which increased uncertainty in GLMMs related to it. Nonetheless, both psychometric advances in measuring processing speed-independent executive function components as well as theoretical advances in the dual-syndrome hypothesis will greatly benefit future understanding of cognitive profile related to high risk PD phenotypes for STN DBS.
+In contrast to the processing speed component of executive function, the results of predictive value of pre-surgery set shifting factor score are indefinite. The set shifting factor reflected primarily performance in TMT-B, TMT-A, TOL, and RAVLT interference set recall (i.e., RAVLT-B). In accordance with previous research, set shifting and verbal working memory factor reliably predicted pre-surgery MDRS performance cross-sectionally [@lopez2021]. However, neither set shifting nor verbal working memory were predictive of MDRS performance changes longitudinally (compare $\beta$ and $\delta$ parameters in @tbl-cog-pred-factors). These findings stay in opposition of the dual-syndrome hypothesis predictions presented above as both set shifting and verbal working memory comprise executive function components linked to fronto-striatal circuitry [@emch2019; @bezdicek2021], yet these factors do not seem to be reliably predictive of post-surgery cognitive decline in PD. It needs to be noted, that in our study, the pre-surgery set shifting factor was inconsistently estimated across imputations in EFA (see standard deviations in @fig-cog-pred-factanal) which increased uncertainty in GLMMs related to it. Nonetheless, both psychometric advances in measuring processing speed-independent executive function components as well as theoretical advances in the dual-syndrome hypothesis will greatly benefit future understanding of cognitive profile related to high risk PD phenotypes for STN DBS.
 
 Finally, recent meta-analysis identified both pre-surgery executive dysfunction as well as poorer pre-surgery memory to be reliably predictive of post-surgery cognitive decline [@jahanshahi2022]. The results of Study 2 corroborate the former but oppose the latter finding of this meta-analysis.[^6] Nevertheless, as showed in Study 1, memory profile of PD patients can be further differentiated implying that the discrepancy between our results and conclusions of @jahanshahi2022 regarding pre-surgery memory predictive value can be explained by future studies examining more granular memory processes.
 
@@ -1769,7 +1776,11 @@ The results presented in this thesis indicate that there are psychologically mea
 
 ### Dementia in Parkinson's disease
 
-Major limitation of this thesis is that it investigated core diagnostic features of PD-D, namely the objective cognitive decline and IADL difficulties, without operationally defining PD-D itself. Prior studies that examined pre-surgery predictors of post-surgery PD-D defined dementia retrospectively applying Diagnostic and Statistical Manual of Mental Disorders, Fifth Edition (DSM-5) criteria [@bove2020] or MDS Task Force clinical diagnostic criteria [@krishnan2019]. However, neither study provides sufficient information for reproduction of their diagnostic algorithm and due to their retrospective design, the validity of diagnosis cannot be fully ascertained. Unfortunately, if we were to define PD-D in studies presented in this article, we would encounter the same difficulties with retrospective design for PD-D diagnosis accuracy. And since both previously mentioned studies imply that PD-D is rather rare in PD patients after STN DBS in mid- to long-term, any diagnostic inaccuracies would be amplified. Consequently, this thesis focuses on investigating single core diagnostic features of PD-D which can be measured with reasonable accuracy even when sampled retrospectively. Importantly, impairment of features investigated in this thesis is necessary (but not sufficient) condition for PD-D diagnosis and analysis of these features thus still provides useful information about post-surgery PD-D conversion.
+Potential major limitation of this thesis is that it investigated core diagnostic features of PD-D, namely the objective cognitive decline and IADL difficulties, without operationally defining PD-D itself. Prior studies that examined pre-surgery predictors of post-surgery PD-D defined dementia via retrospectively applying Diagnostic and Statistical Manual of Mental Disorders, Fifth Edition (DSM-5) criteria [@bove2020] or MDS Task Force clinical diagnostic criteria [@krishnan2019]. However, neither study provides sufficient information for reproduction of their diagnostic algorithm and due to their retrospective design, the validity of diagnosis cannot be fully ascertained. If we were to define PD-D in studies presented in this thesis, we would encounter the same difficulties with diagnostic accuracy due to the retrospective design as the diagnosis would have to be made *ex post facto* from patients' clinical reports. And since both previously mentioned studies imply that PD-D is rather rare in PD patients after STN DBS in mid- to long-term, any diagnostic inaccuracies can have a relatively large impact on the results.
+
+Another issue that comes about with using PD-D category as the primary outcome variable is a variability in definitions. Specifically, although the MDS Task Force clinical diagnostic criteria and DSM-5 criteria of PD-D agree on most points, they differ in significant ways. The MDS Task Force clinical diagnostic criteria of probable PD-D demand that at least two out of four cognitive domains (attention, executive function, visuospatial functions, and free recall memory) are impaired [@goetz2008], whereas the DSM-5 criteria of probable Major Nerocognitive Disorder due to PD demand that at least one out of six cognitive domains (complex attention, executive function, learning and memory, language, perceptual-motor, and social cognition) is impaired [@apa2013]. The same patient could thus be diagnosed with the Major Nerocognitive Disorder due to PD by DSM-5 while not fulfilling criteria for PD-D according to the MDS Task Force clinical diagnostic criteria.
+
+On the other hand, the MDS Task Force clinical diagnostic criteria and DSM-5 criteria agree on the core features of PD-D, namely the objective cognitive decline with insidious onset and difficulties in cognitively driven activities of daily living that can, but do not need to, be accompanied by behavioural signs and symptoms. Consequently, the focus of this thesis on investigating single core diagnostic features of PD-D could lead to more reliable and generalisable conclusions than retrospectively diagnosing PD-D as the primary outcome would. Importantly, impairment of features investigated in this thesis is necessary (albeit not sufficient) condition for PD-D diagnosis and analysis of these features thus still provides useful information about post-surgery PD-D conversion.
 
 ### Constraints on generality
 
@@ -1807,7 +1818,7 @@ The findings presented in this thesis have the potential to serve as a basis for
 
 # Souhrn
 
-Kognitivní porucha je závažným nemotorickým symptomem Parkinsonovy nemoci (PN) spojeným s nízkou kvalitou života a zvýšenou zátěží pro pacienty i pečovatele. Těžká kognitivní dysfunkce je jedním z faktorů, které mohou významně snížit efektivnost pokročilých druhů terapie jakou je např. hluboká mozková stimulace (DBS) subthalamického jádra (STN). Pečlivé monitorování kognitivních nežádoucích účinků léčby a schopnost identifikovat pacienty s vysokým rizikem rozvinutí pooperační kognitivní dysfunkce je tedy klinicky i vědecky relevantní. V této disertační práci si kladu za cíl popsat pooperační kognitivní trajektorii, identifikovat předoperační kognitivní profil a profil v obraze magnetické resonance (MRI) predikující vysoké riziko rozvinutí pooperačního kognitivního deficitu a prozkoumat efekt léčby na kognitivně náročné instrumentální aktivity denního života (IADL) u pacientů s PN léčených STN DBS.
+Kognitivní porucha je závažným nemotorickým symptomem Parkinsonovy nemoci (PN) spojeným s nízkou kvalitou života a zvýšenou zátěží pro pacienty i pečovatele. Těžká kognitivní dysfunkce je jedním z faktorů, které mohou významně snížit efektivnost pokročilých druhů terapie jakou je např. hluboká mozková stimulace (DBS) subthalamického jádra (STN). Pečlivé monitorování kognitivních nežádoucích účinků léčby a schopnost identifikovat pacienty s vysokým rizikem rozvinutí pooperační kognitivní dysfunkce je tedy klinicky i vědecky relevantní. = této disertační práci si kladu za cíl popsat pooperační kognitivní trajektorii, identifikovat předoperační kognitivní profil a profil v obraze magnetické resonance (MRI) predikující vysoké riziko rozvinutí pooperačního kognitivního deficitu a prozkoumat efekt léčby na kognitivně náročné instrumentální aktivity denního života (IADL) u pacientů s PN léčených STN DBS.
 
 Teoretická část práce obsahuje krátký úvod do epidemiologie, patofyziologie a klinických projevů PN. Následuje diskuze teorií kognitivní dysfunkce u PN na podkladu dysfunkce specifických mozkových okruhů, úvod do metod neuropsychologického testování a krátká diskuze DBS a jejích kognitivních korelátů u PN. Empirická část práce obsahuje čtyři studie zaměřené na poskytnutí odpovědí na výše uvedené výzkumné otázky. V této části detailně představuji metodologii užitou v každé studii spolu s odkazy na veřejně dostupné repozitáře navázané na jednotlivé studie za účelem zvýšení transparentnosti práce.
 
