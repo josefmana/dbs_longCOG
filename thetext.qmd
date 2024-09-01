@@ -5,7 +5,7 @@ author: "Mgr. Josef Mana"
 bibliography: references.bib
 csl: apa.csl
 format:
-  pdf:
+  docx:
     toc: true
     table-of-contents: true
     number-sections: true
@@ -167,9 +167,9 @@ Překládaná disertační práce popisuje pooperační kognitivní trajektorii 
 
 **FDR** False Discovery Rate
 
-**FP-DR**, Family Pictures delayed recall
+**FP-DR** Family Pictures delayed recall
 
-**FP-IR**, Family Pictures immediate recall
+**FP-IR** Family Pictures immediate recall
 
 **GBA** glucocerebrosidase gene
 
@@ -231,11 +231,11 @@ Překládaná disertační práce popisuje pooperační kognitivní trajektorii 
 
 **PD-NC** Parkinson's Diseases with normal cognition
 
-**PST-C**, Prague Stroop Test, interference condition
+**PST-C** Prague Stroop Test, interference condition
 
-**PST-D**, Prague Stroop Test, dot colour naming condition
+**PST-D** Prague Stroop Test, dot colour naming condition
 
-**PST-W**, Prague Stroop Test, naming colour of neutral words
+**PST-W** Prague Stroop Test, naming colour of neutral words
 
 **RAVLT-B** Rey Auditory Verbal Learning Test, recall of the interference set
 
@@ -245,9 +245,9 @@ Překládaná disertační práce popisuje pooperační kognitivní trajektorii 
 
 **RAVLT-Rec15** Rey Auditory Verbal Learning Test, delayed recognition, number of correctly identified from 15 items
 
-**RAVLT-Rec50**, Rey Auditory Verbal Learning Test, delayed recognition from 50 items
+**RAVLT-Rec50** Rey Auditory Verbal Learning Test, delayed recognition from 50 items
 
-**RCT** randomised controlled trials
+**RCT** randomised controlled trial
 
 **RMSEA** root-mean-square error approximation
 
@@ -534,7 +534,7 @@ Both pre-surgery and post-surgery neuropsychological assessment was performed in
 
 ### Causal assumptions
 
-Causal assumptions of Study 4 are represented in the form of a directed acyclic graph (DAG) depicted in @fig-postop-iadl-dag (panel A). Full description of this graphical model is presented in the source article [@bezdicek2022]. Briefly, the assumptions are that post-surgery responses to PDAQ are determined by their pre-surgery level, time-locked clinical characteristics (MDRS, BDI-II, LEDD), patient- and item-specific characteristics, and DBS itself which is in turn determined by pre-surgery patient's cognitive, affective and medication profiles, all of which are used by clinicians to decide whether to treat the patient with STN DBS or not. The double-headed arrow between $\text{BDI}_{\text{pre}}$ and DBS indicates a common cause of these nodes, namely underlying depressive syndrome can both inform the psychiatrist about contraindication to DBS treatment and increase BDI-II score.[^5] The only difference between the model presented in @fig-postop-iadl-dag and the source paper is that here I added further edges from the patient node to DBS node as well as all clinical characteristics on top of its edge to PDAQ. This change is meant to represent the assumption that patient-specific time-invariant characteristics (such as disease type or genetic profile) affect not only PDAQ responses but also all the other variables in the model. Nonetheless, adding edges from the patient node did not change the adjustment sets needed to answer the research questions compared to the source article.
+Causal assumptions of Study 4 are represented in the form of a directed acyclic graph (DAG) depicted in @fig-postop-iadl-dag. Full description of this graphical model is presented in the source article [@bezdicek2022]. Briefly, the assumptions are that post-surgery responses to PDAQ are determined by their pre-surgery level, time-locked clinical characteristics (MDRS, BDI-II, LEDD), patient- and item-specific characteristics, and DBS itself which is in turn determined by pre-surgery patient's cognitive, affective and medication profiles, all of which are used by clinicians to decide whether to treat the patient with STN DBS or not. The double-headed arrow between $\text{BDI}_{\text{pre}}$ and DBS indicates a common cause of these nodes, namely underlying depressive syndrome can both inform the psychiatrist about contraindication to DBS treatment and increase BDI-II score.[^5] The only difference between the model presented in @fig-postop-iadl-dag and the source paper is that here I added further edges from the patient node to DBS node as well as all clinical characteristics on top of its edge to PDAQ. This change is meant to represent the assumption that patient-specific time-invariant characteristics (such as disease type or genetic profile) affect not only PDAQ responses but also all the other variables in the model. Nonetheless, adding edges from the patient node did not change the adjustment sets needed to answer the research questions compared to the source article.
 
 [^5]: Note that the decision to exclude patient from STN DBS treatment for current depression is not based on BDI-II (which is administered by a neuropsychologist at our institution), but by an independent neuropsychiatric evaluation.
 
@@ -594,21 +594,21 @@ adjdag_post <- dag %>% ggdag_adjustment_set( exposure = c("P_pre","DBS"), outcom
 adjdag_ledd <- dag %>% ggdag_adjustment_set( exposure = "L_post", outcome = "P_post", effect = "total", type = "minimal" )
 
 # prepare the DAG with adjustment set for direct time/DBS effect
-dagfig <-
+dagfig <- full_join(
   
-  dag %>%
-  mutate( adjusted = "unadjusted", set = "A" ) %>%
-  full_join( adjdag_post$data %>% mutate( set = "B" ) ) %>%
-  full_join( adjdag_ledd$data %>% filter( set == "{DBS, L_pre, pat}" ) %>% mutate( set = "C" ) ) %>%
+  adjdag_post$data %>% mutate(set = "A"),
+  adjdag_ledd$data %>% filter(set == "{DBS, L_pre, pat}") %>% mutate(set = "B")
     
+) %>%
+  
   ggplot() +
   aes( x = x, y = y, xend = xend, yend = yend, shape = adjusted ) +
   geom_dag_point( colour = "grey85", size = 20 ) +
   geom_dag_edges( aes(edge_colour = adjusted) ) +
   scale_edge_colour_manual( values = c( unadjusted = "black", adjusted = "grey87" ) ) +
   scale_shape_manual( values = c( unadjusted = 19, adjusted = 15 ) ) +
-  geom_dag_text( label = rep(lab,3), parse = T, size = 3.6, colour = "black" ) +
-  facet_wrap( ~set, nrow = 3 ) +
+  geom_dag_text( label = rep(lab,2), parse = T, size = 3.6, colour = "black" ) +
+  facet_wrap( ~set, nrow = 2 ) +
   theme_dag() +
   theme( legend.position = "none", strip.text.x = element_text(hjust = 0.025, size = 20) )
 
@@ -617,13 +617,13 @@ ggsave(
   plot = last_plot(),
   file = here("figs","iadl_dags.jpg"),
   dpi = 300,
-  width = 6,
-  height = 14.7
+  width = 8,
+  height = 12
 )
 
 ```
 
-![Directed acyclic graph representing causal assumptions of relationships between variables of the Study 4. Panels represent base causal model (A) as well as model after adjusting for covariates to extract estimate of direct post-surgery change (B), and total effect of post-surgery LEDD on post-surgery IADL (C).](figs/iadl_dags.jpg){#fig-postop-iadl-dag}
+![Directed acyclic graph representing causal assumptions of relationships between variables of the Study 4. Panels represent model after adjusting for covariates to extract estimate of direct post-surgery change (A), and total effect of post-surgery LEDD on post-surgery IADL (B). Conditional on the model, black lines represent causal influences that contribute to measured associations whereas grey lines represent causal influences that do not contribute to measured association after adjusting for variables in circles. In both figures, the outcome of interest is the PDAQpost variable.](figs/iadl_dags.jpg){#fig-postop-iadl-dag}
 
 ### Statistical analyses
 
@@ -927,7 +927,7 @@ I was the primary psychometrician of this study. I build, fitted and interpreted
 
 ## Preoperative Cognitive Profile Predictive of Cognitive Decline after Subthalamic Deep Brain Stimulation in Parkinson's Disease
 
-**Mana, J.,** Růžička, F., Šmídová, A., Klempířová, O., Nikolai, T., Uhrová, T., ... & Jech, R. (2024). Preoperative Cognitive Profile Predictive of Cognitive Decline after Subthalamic Deep Brain Stimulation in Parkinson's Disease. *Authorea Preprints.* <https://doi.org/10.22541/au.169661569.99978744/v1>. \[Submitted to *European Journal of Neuroscience* (Submission ID: EJN-2023-10-30949.R2)\]
+**Mana, J.**, Bezdicek, O., Růžička, F., Lasica, A., Šmídová, A., Klempířová, O., Nikolai, T., Uhrová, T., Růžička, E., Urgošík, D., & Jech, R. (2024). Preoperative cognitive profile predictive of cognitive decline after subthalamic deep brain stimulation in Parkinson's disease. *European Journal of Neuroscience*, 1–21. https://doi.org/10.1111/ejn.16521
 
 ### Sample characteristics
 
@@ -1023,14 +1023,14 @@ loads <- lapply(
   mutate(
     text = paste0( rprint(M,2)," ± ",rprint(SD,2) ),
     col = if_else(M > .66, "white", "black"),
-    Loading = M
+    `Factor\nloading` = M
   )
 
 # prepare the figure
 fig_factanal <- loads %>%
     
     ggplot() +
-    aes(x = factor, y = test, fill = Loading, label = text) +
+    aes(x = factor, y = test, fill = `Factor\nloading`, label = text) +
     geom_tile(colour = "black") +
     geom_text(colour = loads$col, size = 4) +
     scale_fill_gradientn( colors = hcl.colors(20, "RdYlGn"), limits = c(-1,1) ) +
@@ -1832,10 +1832,48 @@ Zjištění této disertační práce mají potenciál sloužit jako podklad pro
 
 ## Publications Related to the Thesis
 
+**Mana, J.**, Bezdicek, O., Růžička, F., Lasica, A., Šmídová, A., Klempířová, O., Nikolai, T., Uhrová, T., Růžička, E., Urgošík, D., & Jech, R. (2024). Preoperative cognitive profile predictive of cognitive decline after subthalamic deep brain stimulation in Parkinson's disease. *European Journal of Neuroscience*, 1–21. https://doi.org/10.1111/ejn.16521 **[2023 Clarivate IF: 2.3]**
 
+Filip, P., **Mana, J.**, Lasica, A., Keller, J., Urgošík, D., May, J., ... & Růžička, F. (2024). Structural and microstructural predictors of cognitive decline in deep brain stimulation of subthalamic nucleus in Parkinson’s disease. *NeuroImage: Clinical,* 103617. **[2023 Clarivate IF: 3.4]**
+
+Bezdicek, O., **Mana, J.**, Růžička, F., Havlik, F., Fečíková, A., Uhrová, T., ... & Jech, R. (2022). The Instrumental Activities of Daily Living in Parkinson’s Disease Patients Treated by Subthalamic Deep Brain Stimulation. *Frontiers in Aging Neuroscience, 14,* 886491. **[2023 Clarivate IF: 4.1]**
+
+Havlík, F., **Mana, J.**, Dušek, P., Jech, R., Růžička, E., Kopeček, M., ... & Bezdicek, O. (2020). Brief visuospatial memory test-revised: Normative data and clinical utility of learning indices in Parkinson’s disease. *Journal of Clinical and Experimental Neuropsychology, 42*(10), 1099-1110. **[2023 Clarivate IF: 1.8]**
 
 ## Publications Unrelated to the Thesis
 
-Plzáková, V., **Mana, J.,** Růžička, E., & Nikolai, T. (2024). Efficacy of non-computerized cognitive rehabilitation in Parkinson’s disease: A one year follow up study. *Applied Neuropsychology: Adult,* 1-12.  [2022 Clarivate IF: 1.7]
+**Mana, J.**, Vaneckova, M., Klempíř, J., Lišková, I., Brožová, H., Poláková, K., ... & Bezdicek, O. (2019). Methanol poisoning as an acute toxicological basal ganglia lesion model: evidence from brain volumetry and cognition. *Alcoholism: Clinical and Experimental Research, 43*(7), 1486-1497. **[2023 Clarivate IF: 3]**
+
+Hlusicka, J., **Mana, J.**, Vaneckova, M., Kotikova, K., Diblik, P., Urban, P., ... & Zakharov, S. (2020). MRI-based brain volumetry and retinal optical coherence tomography as the biomarkers of outcome in acute methanol poisoning. *Neurotoxicology, 80*, 12-19. **[2023 Clarivate IF: 3.4]**
+
+Bukacova, K., **Mana, J.**, Klempíř, J., Lišková, I., Brožová, H., Poláková, K., ... & Bezdicek, O. (2021). Cognitive changes after methanol exposure: Longitudinal perspective. *Toxicology letters, 349*, 101-108. **[2023 Clarivate IF: 2.9]**
+
+Bezdicek, O., Rosická, A. M., **Mana, J.**, Libon, D. J., Kopeček, M., & Georgi, H. (2021). The 30-item and 15-item Boston naming test Czech version: Item response analysis and normative values for healthy older adults. *Journal of Clinical and Experimental Neuropsychology, 43*(9), 890-905. **[2023 Clarivate IF: 1.8]**
+
+**Mana, J.**, & Bezdicek, O. (2022). Cognition in successful aging: Systematic review and future directions. *Clinical Gerontologist, 45*(3), 477-485. **[2023 Clarivate IF: 2.6]**
+
+Wenke, Š., **Mana, J.**, Havlík, F., Cohn, M., Nikolai, T., Buschke, H., ... & Bezdicek, O. (2022). Characterization of memory profile in idiopathic REM sleep behavior disorder. *Journal of Clinical and Experimental Neuropsychology, 44*(3), 237-250. **[2023 Clarivate IF: 1.8]**
+
+Bukacova, K., **Mana, J.**, Zakharov, S., Diblík, P., Pelclova, D., Urban, P., ... & Bezdicek, O. (2023). Höffding step and beyond: The impact of visual sensory impairment on cognitive performance in neuropsychological testing of survivors of acute methanol poisoning. *NeuroRehabilitation, 53*(1), 51-60. **[2023 Clarivate IF: 1.7]**
+
+Mühlbäck, A., **Mana, J.**, Wallner, M., Frank, W., Lindenberg, K. S., Hoffmann, R., ... & REGISTRY investigators of the European Huntington’s Disease Network, the Enroll-HD investigators. (2023). Establishing normative data for the evaluation of cognitive performance in Huntington’s disease considering the impact of gender, age, language, and education. *Journal of Neurology, 270*(10), 4903-4913. **[2023 Clarivate IF: 4.8]**
+
+Mala, C., Havlík, F., **Mana, J.**, Nepožitek, J., Dostálová, S., Růžička, E., ... & Krupička, R. (2024). Cortical and subcortical morphometric changes and their relation to cognitive impairment in isolated REM sleep behavior disorder. *Neurological Sciences, 45*(2), 613-627. **[2023 Clarivate IF: 2.7]**
+
+Plzáková, V., **Mana, J.**, Růžička, E., & Nikolai, T. (2024). Efficacy of non-computerized cognitive rehabilitation in Parkinson’s disease: A one year follow up study. *Applied Neuropsychology: Adult,* 1-12. **[2023 Clarivate IF: 1.4]**
+
+Filip, P., Lasica, A., Uhrová, T., **Mana, J.**, Růžička, F., Keller, J., ... & Jech, R. (2024). Mixed anxiety-depressive disorder in Parkinson's disease associated with worse resting state functional response to deep brain stimulation of subthalamic nucleus. *Heliyon, 10*(10). **[2023 Clarivate IF: 3.4]**
+
+{{< pagebreak >}}
 
 # Supplement
+
+1. **Mana, J.**, Bezdicek, O., Růžička, F., Lasica, A., Šmídová, A., Klempířová, O., Nikolai, T., Uhrová, T., Růžička, E., Urgošík, D., & Jech, R. (2024). Preoperative cognitive profile predictive of cognitive decline after subthalamic deep brain stimulation in Parkinson's disease. *European Journal of Neuroscience*, 1–21. https://doi.org/10.1111/ejn.16521 **[2023 Clarivate IF: 2.3]**
+
+2. Filip, P., **Mana, J.**, Lasica, A., Keller, J., Urgošík, D., May, J., ... & Růžička, F. (2024). Structural and microstructural predictors of cognitive decline in deep brain stimulation of subthalamic nucleus in Parkinson’s disease. *NeuroImage: Clinical,* 103617. **[2023 Clarivate IF: 3.4]**
+
+3. Bezdicek, O., **Mana, J.**, Růžička, F., Havlik, F., Fečíková, A., Uhrová, T., ... & Jech, R. (2022). The Instrumental Activities of Daily Living in Parkinson’s Disease Patients Treated by Subthalamic Deep Brain Stimulation. *Frontiers in Aging Neuroscience, 14,* 886491. **[2023 Clarivate IF: 4.1]**
+
+4. Havlík, F., **Mana, J.**, Dušek, P., Jech, R., Růžička, E., Kopeček, M., ... & Bezdicek, O. (2020). Brief visuospatial memory test-revised: Normative data and clinical utility of learning indices in Parkinson’s disease. *Journal of Clinical and Experimental Neuropsychology, 42*(10), 1099-1110. **[2023 Clarivate IF: 1.8]**
+
+{{< pagebreak >}}
