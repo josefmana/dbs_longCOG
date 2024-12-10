@@ -26,7 +26,7 @@ library(gt) # tables formatting
 library(english) # number to text conversion
 library(ggdag) # directed acyclic graphs
 library(ggraph) # help with DAGs plotting
-library(brms) # modeling
+library(brms) # modelling
 library(tidybayes) # posterior manipulations
 library(emmeans) # contrasts for learning curve analysis
 library(bayestestR) # pd and ROPE convenience functions
@@ -46,7 +46,7 @@ ubound <- function( x, dec=2 ) ifelse( round(x,dec) > x, rprint(x,dec), rprint( 
 msd <- function( x, dec=2 ) paste0( rprint( mean(x,na.rm=T), dec )," ± ", rprint( sd(x,na.rm=T), dec ) ) # descriptives
 
 # folders
-sapply( c("figs","tabs","mods"), function(i) if( !dir.exists(i) ) dir.create(i) )
+sapply( c("figs","_tabs","mods"), function(i) if( !dir.exists(i) ) dir.create(i) )
 
 # HMC settings (for lear-curve chapter)
 options( mc.cores = parallel::detectCores() ) # use all parallel CPU cores
@@ -691,7 +691,7 @@ t2 <- d0 %>%
     source_note = "BDI-II: Beck Depression Rating Scale, second edition; HC: healthy control group; LEDD: levodopa equivalent daily dose; MoCA: Montreal Cognitive Assessment; N: number of observations; PD: Parkinson's Disease; PD-MCI: Mild Cognitive Impairment in Parkinson's Disease; PD-NC: Normal Cognition in Parkinson's Disease; UPDRS III: Unified Parkinson’s Disease Rating Scale, motor part; all values represent mean (standard deviation) for continuous and percentages for nominal variables."
   )
 
-gtsave( t2, here("tabs","table2.docx") ) # save it
+gtsave( t2, here("_tabs","table2.docx") ) # save it
 t2 # show it
 
 ```
@@ -890,7 +890,7 @@ t3 <- t_post_learCUR <-
   relocate( roperc_BVMT, .before = Median_RAVLT )
 
 # write it
-write.table( t_post_learCUR, file = here("tabs","lear_curves.csv"), sep = ";", row.names = F, quote = F )
+write.table( t_post_learCUR, file = here("_tabs","lear_curves.csv"), sep = ";", row.names = F, quote = F )
 
 # show it
 t3 <- t_post_learCUR %>%
@@ -914,7 +914,7 @@ t3 <- t_post_learCUR %>%
     
   tab_source_note( source_note = "BVMT-R: Brief Visuospatial Memory Test - Revised; HC: healthy adult control participants; HDPI: highest density posterior interval; pdir: probability of direction; PD-MCI: Parkinson’s disease patients with mild cognitive impairment; PD-NC: Parkinson’s disease patients without mild cognitive impairment; RAVLT: Rey Auditory Visual Learning Test; ROPE: region of practical equivalence; comparisons in bold can be regarded as evidence of the existence of an effect (pdir >.975)." )
 
-gtsave( t3, here("tabs","table3.docx") ) # save it
+gtsave( t3, here("_tabs","table3.docx") ) # save it
 t3 # show it
 
 ```
@@ -937,10 +937,10 @@ Baseline demographic, clinical and neuropsychological characteristics as well as
 #| label: tbl-cog-pred-demo
 #| tbl-cap: Clinical and neuropsychological characteristics of the sample of patients included in Study 2
 
-t4 <- read.csv( here("tabs","demo_clinchar.csv"), sep = "," ) %>%
+t4 <- read.csv( here("_tabs","demo_clinchar.csv"), sep = "," ) %>%
   
   full_join(
-    read.csv( here("tabs","demo_basepsych.csv"), sep = "," ) %>%
+    read.csv( here("_tabs","demo_basepsych.csv"), sep = "," ) %>%
       rename( "Characteristic" = "Test" ) %>%
       add_column( Type = "Pre-surgery cognitive profile", .after = "Characteristic" ) %>%
       mutate_if( is.numeric, as.character )
@@ -961,7 +961,7 @@ t4 <- read.csv( here("tabs","demo_clinchar.csv"), sep = "," ) %>%
     source_note = "N: number of observations; Md: median; M: mean; SD: standard deviation; MDS-UPDRS III: Movement Disorder Society Unified Parkinson’s Disease Rating Scale, motor part; LEDD: levodopa equivalent daily dose; Levodopa test: a percentage change of the MDS-UPDRS III score from medication OFF to medication ON state during the levodopa test as described in the main text; V: Volts; mA: milliampere; μs: microseconds; Hz: Hertz; MDRS: Dementia Rating Scale, second edition; BDI-II: Beck Depression Rating Scale, second edition; STAI-X1: State-Trait Anxiety Inventory, the state version; STAI-X2: State-Trait Anxiety Inventory, the trait version; TMT-A: Trail Making Test, part A; TMT-B: Trail Making Test, part B; DS-F: Digit Span forward; DS-B: Digit Span backward; LNS: letter-number sequencing; SS-F: Spatial Span forward; SS-B: Spatial Span backward; TOL: Tower of London task; PST-D: Prague Stroop Test, dot colour naming; PST-W: Prague Stroop Test, word colour naming; PST-C: Prague Stroop Test, interference condition; COWAT: Controlled Oral Word Association Test; CFT: category fluency test; Sim.: Similarities; RAVLT-IR: Rey Auditory Verbal Learning Test, immediate recall; RAVLT-B: Rey Auditory Verbal Learning Test, recall of the interference set; RAVLT-DR: Rey Auditory Verbal Learning Test, delayed recall; RAVLT- Rec50: Rey Auditory Verbal Learning Test, delayed recognition from 50 items (15 correct answers + 35 distractors); RAVLT-Rec15: Rey Auditory Verbal Learning Test, delayed recognition, number of correctly identified from 15 items; FP-IR: Family Pictures, immediate recall; FP-DR: Family Pictures, delayed recall; Secs: seconds; Total words: word count in two minutes (one minute per each letter P and K); words/min.: word count in one minute time limit."
   )
 
-gtsave( t4, here("tabs","table4.docx") ) # save it
+gtsave( t4, here("_tabs","table4.docx") ) # save it
 t4 # show it
 
 ```
@@ -1055,7 +1055,7 @@ In the EFAs, from three up to eight factor solutions for pre-surgery cognitive p
 m0 <- readRDS( here("mods","cogPRED_linear.rds") ) # model
 rhatmax <- ubound( max( rhat(m0) ) ) # max Rhat
 
-scl <- read.csv( here("tabs","cogpred_scaling.csv"), sep = "," ) %>% column_to_rownames("variable")
+scl <- read.csv( here("_tabs","cogpred_scaling.csv"), sep = "," ) %>% column_to_rownames("variable")
 
 # get pre-surgery and slope predictions
 tcontr <-
@@ -1129,7 +1129,7 @@ The descriptive longitudinal GLMM converged to a stationary posterior distributi
 #| label: tbl-cog-pred-desc
 #| tbl-cap: Posterior predictions of cognitive change after STN DBS surgery
 
-t5 <- read.csv( here("tabs","cogpred_contrasts.csv"), sep = ";" ) %>%
+t5 <- read.csv( here("_tabs","cogpred_contrasts.csv"), sep = ";" ) %>%
   
   rename(
     "Group-level" = "Group.level.parameters",
@@ -1174,7 +1174,7 @@ t5 <- read.csv( here("tabs","cogpred_contrasts.csv"), sep = ";" ) %>%
     source_note = "Yi: assessment i years post-surgery; values represent posterior prediction median [90% equal tailed interval (ETI)]; all values were calculated by first generating predictions from the linear descriptive model using parameters specified above and then censoring values higher than 144 or less than 0 before calculating medians and 90% ETIs."
   )
 
-gtsave( t5, here("tabs","table5.docx") ) # save it
+gtsave( t5, here("_tabs","table5.docx") ) # save it
 t5 # show it
 
 ```
@@ -1205,7 +1205,7 @@ tbl_cogpred <-
     setNames( c("factors","tests"), c("factors","tests") ),
     function(i)
       
-      read.csv( here( "tabs", paste0("cogpred_",i,"post.csv") ), sep = ";" ) %>%
+      read.csv( here( "_tabs", paste0("cogpred_",i,"post.csv") ), sep = ";" ) %>%
       rename( "Median" = "b", "95% HDPI" = "X95..PPI" ) %>%
       mutate( pdir = zerolead( rprint( ifelse( pdir > .5, pdir, 1- pdir), 3 ) ) ) %>%
       gt( groupname_col = "Group" ) %>%
@@ -1242,7 +1242,7 @@ t6 <- tbl_cogpred$tests %>%
   opt_footnote_marks(marks = "letters") %>%
   tab_source_note( source_note = "Median: parameter value point estimate (posterior median); HDPI: highest density posterior probability interval; pdir: probability of direction; ×: statistical interaction term; STAI-X1: State-Trait Anxiety Inventory, the state version; STAI-X2: State-Trait Anxiety Inventory, the trait version; TMT-A: Trail Making Test, part A; TMT-B: Trail Making Test, part B; DS-F: Digit Span forward; DS-B: Digit Span backward; LNS: letter-number sequencing; SS-F: Spatial Span forward; SS-B: Spatial Span backward; TOL: Tower of London task; PST-D: Prague Stroop Test, dot colour naming; PST-W: Prague Stroop Test, word colour naming; PST-C: Prague Stroop Test, interference condition; COWAT: Controlled Oral Word Association Test; CFT: category fluency test; Sim.: Similarities; RAVLT-IR: Rey Auditory Verbal Learning Test, immediate recall; RAVLT-B: Rey Auditory Verbal Learning Test, recall of the interference set; RAVLT-DR: Rey Auditory Verbal Learning Test, delayed recall; RAVLT-Rec50: Rey Auditory Verbal Learning Test, delayed recognition from 50 items (15 correct answers + 35 distractors); RAVLT-Rec15: Rey Auditory Verbal Learning Test, delayed recognition, number of correctly identified from 15 items; FP-IR: Family Pictures, immediate recall; FP-DR: Family Pictures, delayed recall; comparisons in bold can be regarded as evidence of the existence of an effect (pdir >.975)." )
 
-gtsave( t6, here("tabs","table6.docx") ) # save it
+gtsave( t6, here("_tabs","table6.docx") ) # save it
 t6 # show it
 
 ```
@@ -1258,7 +1258,7 @@ t7 <- tbl_cogpred$factors %>%
   opt_footnote_marks(marks = "letters") %>%
   tab_source_note( source_note = "Median: parameter value point estimate (posterior median); HDPI: highest density posterior probability interval; pdir: probability of direction; ×: statistical interaction term; EF/Att.: Executive function/Attention; EM: Episodic memory; VWM: Verbal working memory; VM: Visuospatial memory; SS: Set shifting; An: Anxiety; SWM: Spatial working memory; comparisons in bold can be regarded as evidence of the existence of an effect (pdir >.975)." )
 
-gtsave( t7, here("tabs","table7.docx") ) # save it
+gtsave( t7, here("_tabs","table7.docx") ) # save it
 t7 # show it
 
 ```
@@ -1281,7 +1281,7 @@ Clinical, demographic, and stimulation-related characteristics of the sample as 
 #| label: tbl-mri-pred-desc
 #| tbl-cap: Clinical, demographic and stimulation-related characteristics of the sample of patients included in Study 3
 
-t8 <- read.csv( here("tabs","mripred_desc.csv"), sep = "," ) %>%
+t8 <- read.csv( here("_tabs","mripred_desc.csv"), sep = "," ) %>%
 
   gt( groupname_col = "block" ) %>%
   cols_align( align = "center", columns = -1 ) %>%
@@ -1313,7 +1313,7 @@ t8 <- read.csv( here("tabs","mripred_desc.csv"), sep = "," ) %>%
     source_note = "DBS: deep brain stimulation; MDRS: Dementia Rating Scale, second edition; ΔMDRS: average annual change in Dementia Rating Scale, second edition score; Hz: Hertz; kΩ: kiloohm; mA: milliampere; MCI: mild cognitive impairment; μs: microseconds; μW: microwatts; PD: Parkinson's disease; PD-MCI: Mild cognitive impairment in Parkinson's disease; q-value: raw p-value after adjusting for 5% false discovery rate (FDR) level; STN: subthalamic nucleus; V: Volts; values are presented as in-sample mean ± standarad deviation for continuous variables, percentages for demographic categorical variables and frequencies for DBS-related categorical variables."
   )
 
-gtsave( t8, here("tabs","table8.docx") ) # save it
+gtsave( t8, here("_tabs","table8.docx") ) # save it
 t8 # show it
 
 ```
@@ -1326,7 +1326,7 @@ In the cross-sectional analysis of pre-surgery MDRS, no macrostructural, FA or M
 #| label: tbl-mri-pred-parcels
 #| tbl-cap: Results of parcellated comparison between patients with stable cognitive performance and  patients with declining cognitive performance
 
-t9 <- read.csv( here("tabs","mripred_parcels.csv"), sep = ";" ) %>%
+t9 <- read.csv( here("_tabs","mripred_parcels.csv"), sep = ";" ) %>%
   
   gt( groupname_col = "group" ) %>%
   cols_align( align = "center", columns = -1 ) %>%
@@ -1374,7 +1374,7 @@ t9 <- read.csv( here("tabs","mripred_parcels.csv"), sep = ";" ) %>%
     source_note = "CS: cognitively stable patients; CD: cognitively declining patients; L: left; N: number of obseravtions; q-value: raw p-value after adjusting for 5% false discovery rate (FDR) level; R: right; ROI: number of parcellation regions of interest contained in each cluster."
   )
 
-gtsave( t9, here("tabs","table9.docx") ) # save it
+gtsave( t9, here("_tabs","table9.docx") ) # save it
 t9 # show it
 
 ```
@@ -1467,7 +1467,7 @@ tbl_iadl_desc <-
     mutate( block = c( rep("Demographic and clinical variables",5), rep("Neuropsychological outcomes",3), rep("Motor outcomes",5), rep("Stimulation parameters",8 ) ) )
 
 # save it
-write.table( x = tbl_iadl_desc, file = here("tabs","postopiadl_desc.csv"), sep = ",", row.names = F, quote = F )
+write.table( x = tbl_iadl_desc, file = here("_tabs","postopiadl_desc.csv"), sep = ",", row.names = F, quote = F )
 
 # show it
 t10 <- tbl_iadl_desc %>%
@@ -1489,7 +1489,7 @@ t10 <- tbl_iadl_desc %>%
     source_note = "BDI-II: Beck Depression Rating Scale, second edition; MDRS: Dementia Rating Scale, second edition; Hz: Hertz; LEDD: levodopa equivalent daily dose; mA: milliamperes; MDS-UPDRS III: Movement Disorder Society Unified Parkinson’s Disease Rating Scale, motor part; μs: microseconds PDAQ-15: The Penn Parkinson’s Daily Activities Questionnaire-15. The values are presented as mean ± standard deviation percentage from the whole sample."
   )
 
-gtsave( t10, here("tabs","table10.docx") ) # save it
+gtsave( t10, here("_tabs","table10.docx") ) # save it
 t10 # really show it
 
 ```
@@ -1695,7 +1695,7 @@ tbl_iadl_ledd <-
   mutate( Assessment = c( rep("Pre-surgery",11), rep("Post-surgery",11) ), `LEDD (mg)` = rep( seq(0,5000,500), 2 ), .before = 1 )
     
 # save it
-write.table( x = tbl_iadl_ledd, file = here("tabs","postopiadl_ledd.csv"), sep = ",", row.names = F, quote = F )
+write.table( x = tbl_iadl_ledd, file = here("_tabs","postopiadl_ledd.csv"), sep = ",", row.names = F, quote = F )
 
 # show it
 t11 <- tbl_iadl_ledd %>%
@@ -1709,7 +1709,7 @@ t11 <- tbl_iadl_ledd %>%
     source_note = "GLMM: generalised linear mixed model; IADL: instrumental activities of daily living; LEDD: levodopa equivalent daily dose; P(resp = i), probability that a patient responds to any item of The Penn Parkinson’s Daily Activities Questionnaire (PDAQ) with the response “i” where “i” represents difficulties in IADL and can take on values 0 = “cannot do,” 1 = “a lot,” 2 = “somewhat,” 3 = “a little,” and 4 = “none”; the numbers represent posterior predictions of the ordered-logit GLMM for an average patient to an average PDAQ item presented as posterior mean ± standard deviation."
   )
 
-gtsave( t11, here("tabs","table11.docx") ) # save it
+gtsave( t11, here("_tabs","table11.docx") ) # save it
 t11 # really show it
 
 ```
