@@ -46,7 +46,7 @@ ubound <- function( x, dec=2 ) ifelse( round(x,dec) > x, rprint(x,dec), rprint( 
 msd <- function( x, dec=2 ) paste0( rprint( mean(x,na.rm=T), dec )," ± ", rprint( sd(x,na.rm=T), dec ) ) # descriptives
 
 # folders
-sapply( c("figs","_tabs","mods"), function(i) if( !dir.exists(i) ) dir.create(i) )
+sapply( c("_figs","_tabs","mods"), function(i) if( !dir.exists(i) ) dir.create(i) )
 
 # HMC settings (for lear-curve chapter)
 options( mc.cores = parallel::detectCores() ) # use all parallel CPU cores
@@ -615,7 +615,7 @@ dagfig <- full_join(
 # pull them together and save it
 ggsave(
   plot = last_plot(),
-  file = here("figs","iadl_dags.jpg"),
+  file = here("_figs","iadl_dags.jpg"),
   dpi = 300,
   width = 8,
   height = 12
@@ -623,7 +623,7 @@ ggsave(
 
 ```
 
-![Directed acyclic graph representing causal assumptions of relationships between variables of the Study 4. Panels represent model after adjusting for covariates to extract estimate of direct post-surgery change (A), and total effect of post-surgery LEDD on post-surgery IADL (B). Conditional on the model, black lines represent causal influences that contribute to measured associations whereas grey lines represent causal influences that do not contribute to measured association after adjusting for variables in circles. In both figures, the outcome of interest is the PDAQpost variable.](figs/iadl_dags.jpg){#fig-postop-iadl-dag}
+![Directed acyclic graph representing causal assumptions of relationships between variables of the Study 4. Panels represent model after adjusting for covariates to extract estimate of direct post-surgery change (A), and total effect of post-surgery LEDD on post-surgery IADL (B). Conditional on the model, black lines represent causal influences that contribute to measured associations whereas grey lines represent causal influences that do not contribute to measured association after adjusting for variables in circles. In both figures, the outcome of interest is the PDAQpost variable.](_figs/iadl_dags.jpg){#fig-postop-iadl-dag}
 
 ### Statistical analyses
 
@@ -823,7 +823,7 @@ f_learCUR <-
   theme( legend.position = "bottom" )
 
 # save it
-ggsave( plot = f_learCUR, file = here("figs","lear_curves.jpg"), dpi = 300, width = 14, height = 7 )
+ggsave( plot = f_learCUR, file = here("_figs","lear_curves.jpg"), dpi = 300, width = 14, height = 7 )
 
 ```
 
@@ -919,7 +919,7 @@ t3 # show it
 
 ```
 
-![Visuospatial and verbal learning curves of control participants and Parkinson’s Disease patients. Lines and black points represent median posterior predictions with 95% highest density posterior intervals from group-level predictions (thick vertical lines), group- and participant-level predictions (thin vertical lines), and full model with added measurement error (error bars). Coloured points represent observed data-points jittered horizontally for visualisation purposes; BVMT-R: Brief Visuospatial Memory Test – Revised; RAVLT: Rey Auditory Visual Learning Test; HC: healthy controls; PD-NC: Parkinson’s Disease with normal cognition; PD-MCI: Parkinson’s Disease with Mild Cognitive Impairment.](figs/lear_curves.jpg){#fig-lear-curve}
+![Visuospatial and verbal learning curves of control participants and Parkinson’s Disease patients. Lines and black points represent median posterior predictions with 95% highest density posterior intervals from group-level predictions (thick vertical lines), group- and participant-level predictions (thin vertical lines), and full model with added measurement error (error bars). Coloured points represent observed data-points jittered horizontally for visualisation purposes; BVMT-R: Brief Visuospatial Memory Test – Revised; RAVLT: Rey Auditory Visual Learning Test; HC: healthy controls; PD-NC: Parkinson’s Disease with normal cognition; PD-MCI: Parkinson’s Disease with Mild Cognitive Impairment.](_figs/lear_curves.jpg){#fig-lear-curve}
 
 ### Manuscript contribution
 
@@ -966,7 +966,7 @@ t4 # show it
 
 ```
 
-![Distribution of assessments. Distribution of (A) follow-up years and (B) number of assessments per patient for N = 126 patients included in Study 2. Negative values on horizontal axis in (A) represent pre-surgery assessments, number of assessments in (B) includes one pre-surgery and various number of post-surgery assessments.](figs/demo_assessments.jpg){#fig-cog-pred-dist}
+![Distribution of assessments. Distribution of (A) follow-up years and (B) number of assessments per patient for N = 126 patients included in Study 2. Negative values on horizontal axis in (A) represent pre-surgery assessments, number of assessments in (B) includes one pre-surgery and various number of post-surgery assessments.](_figs/demo_assessments.jpg){#fig-cog-pred-dist}
 
 ### Pre-surgery cognitive profile
 
@@ -1039,13 +1039,13 @@ fig_factanal <- loads %>%
     theme(legend.position = "right")
 
 # save it
-ggsave( plot = fig_factanal, file = here("figs","cogpred_factnal.jpg"), dpi = 300, width = 11.7, height = 10.32  )
+ggsave( plot = fig_factanal, file = here("_figs","cogpred_factnal.jpg"), dpi = 300, width = 11.7, height = 10.32  )
 
 ```
 
 In the EFAs, from three up to eight factor solutions for pre-surgery cognitive profile were examined. According to TLI and RMSEA, there was a clear improvement when increasing the number from six to seven factors whereby good TLI (i.e., TLI \> .9) increased from 76 to 97, and good RMSEA (i.e., RMSEA \< .05) increased from 96 to 99 out of 100 imputed data sets. Moreover, the seven factor solution showed the most consistency of factors across imputations. Finally, even though the eight factor solution had better fit statistics than the seven factor solution, it resulted in factors loaded on substantially (i.e., with a factor loading above 0.3) by only a single cognitive test score which impedes theoretical interpretation of such factors. Consequently, the seven factor solution was retained for further analyses. Summary of factor loadings across imputations is presented in @fig-cog-pred-factanal. On average, the seven factors accounted for a total of `r vaccount['mean']` of variance (SD = `r vaccount['sd']`) and corresponded to seven cognitive functions: 1) executive function/attention (EF/Att.) was loaded on primarily by PST tasks, TMT tasks, verbal fluency tests and TOL, 2) episodic memory (EM) was loaded on primarily by indexes of RAVLT except for the recall of interference list (RAVLT-B), 3) verbal working memory (VWM) was loaded on primarily by Digit Span tasks, LNS and Similarities, 4) visuospatial memory (VM) was loaded on primarily by indexes of the Family Pictures test, 5) set shifting (SS) was loaded on primarily by TMT tasks and RAVLT-B, 6) anxiety (An.) was loaded on primarily by STAI, and 7) spatial working memory (SWM) was loaded on primarily by Spatial Span tasks.
 
-![The selected seven factor solution exploratory factor analysis represented as means ± standard deviations of factor loadings across 100 imputated data sets. All variables were scaled such that higher values indicate better performance (or more anxiety in the case of anxiety inventories.)](figs/cogpred_factnal.jpg){#fig-cog-pred-factanal}
+![The selected seven factor solution exploratory factor analysis represented as means ± standard deviations of factor loadings across 100 imputated data sets. All variables were scaled such that higher values indicate better performance (or more anxiety in the case of anxiety inventories.)](_figs/cogpred_factnal.jpg){#fig-cog-pred-factanal}
 
 ### Post-surgery cognitive change description
 
@@ -1179,7 +1179,7 @@ t5 # show it
 
 ```
 
-![Post-surgery change scores estimates from the descriptive longitudinal model of Mattis Dementia Rating Scale (MDRS) change in patients with Parkinson's disease treated by subthalamic deep brain stimulation. The plot represents estimated change in MDRS with respect to pre-surgery assessment (ordinate) at different time lags from five months to five years post-surgery (abscissa) on three levels: point estimate (black line), inference at group- (dark pink) and population-level (medium pink), and prediction with added measurement error (light pink).](figs/cogpred_contrasts.jpg){#fig-cog-pred-desc}
+![Post-surgery change scores estimates from the descriptive longitudinal model of Mattis Dementia Rating Scale (MDRS) change in patients with Parkinson's disease treated by subthalamic deep brain stimulation. The plot represents estimated change in MDRS with respect to pre-surgery assessment (ordinate) at different time lags from five months to five years post-surgery (abscissa) on three levels: point estimate (black line), inference at group- (dark pink) and population-level (medium pink), and prediction with added measurement error (light pink).](_figs/cogpred_contrasts.jpg){#fig-cog-pred-desc}
 
 ### Post-surgery cognitive change prediction
 
@@ -1263,7 +1263,7 @@ t7 # show it
 
 ```
 
-![Longitudinal post-surgery cognitive trajectories in patients with Parkinson's disease treated with subthalamic deep brain stimulation stratified by pre-surgery cognitive profile. The sample was repeatedly divided to pentiles (columns) ranging from the lowest (left) to the highest (right) performers based on each pre-surgery cognitive factor (rows) (in the case of Anxiety, patients to the left reported more pre-surgery anxiety than patients to the right). Subsequently, model predictions of Mattis Dementia Rating Scale (MDRS, ordinate) at different post-surgery time lags (abscissa) for each pentile were calculated on three levels of inference related to the MDRS true score: point estimate (dark line), group-level uncertainty estimate (medium saturation ribbon), and population-level uncertainty (light ribbon). The horizontal dotted line is placed at 139 MDRS points which represent mild cognitive impairment cut-off with optimal specificity and sensitivity according to the Czech normative study.](figs/cogpred_stratified.jpg){#fig-cog-pred-pred}
+![Longitudinal post-surgery cognitive trajectories in patients with Parkinson's disease treated with subthalamic deep brain stimulation stratified by pre-surgery cognitive profile. The sample was repeatedly divided to pentiles (columns) ranging from the lowest (left) to the highest (right) performers based on each pre-surgery cognitive factor (rows) (in the case of Anxiety, patients to the left reported more pre-surgery anxiety than patients to the right). Subsequently, model predictions of Mattis Dementia Rating Scale (MDRS, ordinate) at different post-surgery time lags (abscissa) for each pentile were calculated on three levels of inference related to the MDRS true score: point estimate (dark line), group-level uncertainty estimate (medium saturation ribbon), and population-level uncertainty (light ribbon). The horizontal dotted line is placed at 139 MDRS points which represent mild cognitive impairment cut-off with optimal specificity and sensitivity according to the Czech normative study.](_figs/cogpred_stratified.jpg){#fig-cog-pred-pred}
 
 ### Manuscript contribution
 
@@ -1653,7 +1653,7 @@ fig_ce$C <-
 # save it
 ggsave(
   plot = ( ( fig_ce$A | fig_ce$B ) / fig_ce$C ) + plot_annotation( tag_levels = "A" ),
-  file = here("figs","postopiadl_pars.jpg"),
+  file = here("_figs","postopiadl_pars.jpg"),
   dpi = 300,
   width = 9,
   height = 9
@@ -1661,7 +1661,7 @@ ggsave(
 
 ```
 
-![Summaries of the marginal posterior distributions of expected response probabilities to an average item from The Penn Parkinson’s Daily Activities Questionnaire (PDAQ) by an average participant pre- and post-surgery according to the "descriptive" model (A), the "direct effect" model (B), and as a function of levodopa equivalent daily dose (LEDD) in the "total effect" model (C). Potential responses to PDAQ items are differentiated by colour, points and lines represent medians, and whiskers and shades represent 95% equal-tailed intervals (ETIs) of posterior distributions.](figs/postopiadl_pars.jpg){#fig-postop-iadl-ce}
+![Summaries of the marginal posterior distributions of expected response probabilities to an average item from The Penn Parkinson’s Daily Activities Questionnaire (PDAQ) by an average participant pre- and post-surgery according to the "descriptive" model (A), the "direct effect" model (B), and as a function of levodopa equivalent daily dose (LEDD) in the "total effect" model (C). Potential responses to PDAQ items are differentiated by colour, points and lines represent medians, and whiskers and shades represent 95% equal-tailed intervals (ETIs) of posterior distributions.](_figs/postopiadl_pars.jpg){#fig-postop-iadl-ce}
 
 ### Effect of dopaminergic medication on post-surgery IADL
 
